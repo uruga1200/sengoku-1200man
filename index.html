@@ -1,0 +1,2528 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="戦国の世に、千二百万人のうちの誰かとして生まれ、死ぬまでを生きる人生シミュレーション。">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}body{margin:0;font-size:14px;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>戦国 千二百万分の一</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: 一冊の過去帳。上に名札と六つの枡（能力）、下へ年ごとの記録が流れ、分かれ道は書状として下からせり上がる */
+:root{
+  --bg:#E6ECF2; --paper:#F6F8FB; --ink:#17253A; --muted:#566578; --line:#C6D0DC;
+  --ai:#22446C; --kin:#9E6B14; --kin-ink:#FFFFFF; --blood:#9A2C24; --good:#356B44;
+  --f-brush:"Yuji Syuku","Hiragino Mincho ProN","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP","Noto Sans CJK JP",sans-serif;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D151F; --paper:#15202D; --ink:#E2E8EF; --muted:#8E9CAD; --line:#2A3A4E;
+    --ai:#93B4DC; --kin:#E0B357; --kin-ink:#1A1206; --blood:#E6705F; --good:#82BF8E;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D151F; --paper:#15202D; --ink:#E2E8EF; --muted:#8E9CAD; --line:#2A3A4E;
+  --ai:#93B4DC; --kin:#E0B357; --kin-ink:#1A1206; --blood:#E6705F; --good:#82BF8E;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{height:100%;box-sizing:border-box}
+body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-text-size-adjust:100%;overflow:hidden}
+.wrap{max-width:560px;margin:0 auto;height:100%}
+.screen{height:100%;overflow-y:auto;padding-block:20px 32px;-webkit-overflow-scrolling:touch}
+h1,h2,h3{text-wrap:balance;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible+span,summary:focus-visible{outline:2px solid var(--kin);outline-offset:2px}
+.primary{background:var(--kin);color:var(--kin-ink);border:0;border-radius:var(--r);padding:12px 22px;font-weight:700;letter-spacing:.12em;font-size:16px}
+.primary:active{transform:translateY(1px)}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:var(--r);padding:10px 16px;color:var(--ink)}
+.lbl{font-size:12px;letter-spacing:.14em;color:var(--muted);font-weight:500}
+
+/* ---------- 表紙 ---------- */
+.hero{display:flex;flex-direction:row-reverse;gap:18px;align-items:flex-start;padding-top:8px}
+.vt{writing-mode:vertical-rl;white-space:nowrap;font-family:var(--f-brush);font-weight:400;font-size:clamp(38px,10.5vw,60px);line-height:1.05;letter-spacing:.04em;color:var(--ink);flex:none}
+.vt .sm{font-size:.42em;color:var(--kin);letter-spacing:.3em;margin-block-end:.4em;display:inline-block}
+.intro{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;padding-top:6px}
+.lede{font-size:17px;line-height:1.8;margin:0;font-weight:500}
+.intro p{margin:0}
+.intro .sub{color:var(--muted);font-size:14px}
+.intro .primary{font-size:18px;padding:14px 26px}
+.modes{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.primary.alt{background:var(--ai);color:var(--paper)}
+.mode-note{font-size:13px;color:var(--muted);line-height:1.7}
+.mode-note b{color:var(--ink);font-weight:700}
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--paper);background:var(--ai);border-radius:3px;padding:0 6px;margin-left:4px;vertical-align:2px}
+.block{margin-top:30px;border-top:1px solid var(--line);padding-top:16px}
+.block h2{font-family:var(--f-brush);font-weight:400;font-size:20px;margin-bottom:10px}
+.odds{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.odds li{display:grid;grid-template-columns:3.6em 1fr 3em;align-items:center;gap:10px;font-size:14px}
+.odds .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.odds .bar i{display:block;height:100%;background:var(--ai)}
+.odds .pc{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.kako{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.kako li{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:grid;gap:2px}
+.kako .k1{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.kako .k1 b{font-family:var(--f-brush);font-weight:400;font-size:17px}
+.kako .k2{font-size:13px;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;margin:0}
+.foot{margin-top:28px;font-size:12px;color:var(--muted);line-height:1.7}
+
+/* ---------- 本編 ---------- */
+#app{height:100%;display:grid;grid-template-rows:auto auto auto 1fr auto;gap:10px;padding-block:12px 10px}
+.plate{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.seal{width:46px;height:46px;border:2px solid var(--kin);color:var(--kin);border-radius:8px;display:grid;place-items:center;font-family:var(--f-brush);font-size:26px;line-height:1}
+.who{min-width:0}
+.nm{font-family:var(--f-brush);font-size:23px;line-height:1.25;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.nm small{font-family:var(--f-body);font-size:12px;color:var(--muted);letter-spacing:.08em}
+.meta{font-size:12.5px;color:var(--muted);line-height:1.55}
+.meta b{color:var(--ink);font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.st{display:grid;grid-template-columns:1.3em 1fr 2em;gap:6px;align-items:center;font-size:13px}
+.st .k{font-family:var(--f-brush);font-size:16px;line-height:1}
+.st .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.st .bar i{display:block;height:100%;background:var(--ai);transition:width .4s}
+.st.low .bar i{background:var(--blood)}
+.st .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+.purse{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin-top:2px}
+.purse b{color:var(--ink);font-variant-numeric:tabular-nums}
+.log{overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-right:2px}
+.yr{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.yr .y{font-family:var(--f-brush);font-size:15px;line-height:1.2;color:var(--ai)}
+.yr .y small{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.4}
+.ents{display:grid;gap:6px;min-width:0}
+.en{margin:0;font-size:14.5px;line-height:1.7}
+.en.quiet{color:var(--muted)}
+.en.news{color:var(--muted);font-size:13.5px}
+.uw{font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 4px;margin-right:6px;color:var(--ai);letter-spacing:.1em;font-weight:500}
+.ss{display:inline-block;font-family:var(--f-brush);font-size:13px;line-height:1.35;color:var(--kin);border:1px solid var(--kin);border-radius:3px;padding:0 4px;margin-right:7px;vertical-align:1px}
+.en.new,.yr.new{animation:fadein .45s ease-out}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.en.big{font-weight:700}
+.en.death{color:var(--blood);font-weight:700}
+.en .res{display:block;margin-top:2px}
+.en .pick{color:var(--kin);font-weight:700}
+.d{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:1px}
+.d span{font-size:11px;font-weight:500;padding:0 5px;border-radius:3px;background:var(--paper);border:1px solid var(--line);font-variant-numeric:tabular-nums;color:var(--good)}
+.d span.m{color:var(--blood)}
+.ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
+.ctrl .primary{padding:10px 16px;min-width:6.5em}
+.speed{display:flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.speed button{background:transparent;border:0;padding:8px 10px;font-size:13px;color:var(--muted)}
+.speed button[aria-pressed="true"]{background:var(--ai);color:var(--paper);font-weight:700}
+.auto{display:flex;align-items:center;gap:6px;font-size:13px;margin-left:auto;cursor:pointer;user-select:none}
+.auto input{width:18px;height:18px;accent-color:var(--kin)}
+
+/* ---------- 書状（選択） ---------- */
+#sheet{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 55%,transparent);display:flex;align-items:flex-end;justify-content:center;z-index:20;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.letter{width:100%;max-width:540px;background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--kin);border-radius:var(--r);padding:16px 16px 14px;box-shadow:0 -10px 30px rgba(10,20,35,.18);animation:rise .28s ease-out;max-height:80vh;overflow-y:auto}
+@keyframes rise{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+.letter .when{font-size:12px;color:var(--muted);letter-spacing:.1em}
+.letter h3{font-family:var(--f-brush);font-weight:400;font-size:21px;margin:2px 0 6px}
+.letter p{margin:0 0 12px;font-size:15px}
+.choices{display:grid;gap:8px}
+.choices button{text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:11px 14px;font-size:15px;line-height:1.5}
+.choices button:hover{border-color:var(--kin)}
+
+/* ---------- 終幕 ---------- */
+.end-top{display:flex;flex-direction:row-reverse;gap:16px;align-items:flex-start}
+.jisei{writing-mode:vertical-rl;font-family:var(--f-brush);font-size:22px;line-height:1.9;letter-spacing:.08em;min-height:12em;flex:none;padding:4px 0;border-right:2px solid var(--kin);padding-right:10px}
+.jisei .none{font-family:var(--f-body);font-size:13px;color:var(--muted);letter-spacing:.1em}
+.end-body{flex:1;min-width:0;display:grid;gap:4px}
+.kyonen{font-family:var(--f-brush);font-size:46px;line-height:1.1;color:var(--blood)}
+.kyonen small{font-size:18px;color:var(--muted);margin-right:6px}
+.end-name{font-family:var(--f-brush);font-weight:400;font-size:24px}
+.kaimyo{font-size:13px;color:var(--muted);margin:0}
+.cause{margin:6px 0 0;font-size:14.5px}
+.sum{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:20px 0 0;font-size:14px}
+.sum dt{color:var(--muted);font-size:12.5px;letter-spacing:.08em;padding-top:2px}
+.sum dd{margin:0;font-variant-numeric:tabular-nums}
+.major{margin:0;padding-left:2.3em;display:grid;gap:6px;font-size:14px}
+.major li::marker{color:var(--kin);font-variant-numeric:tabular-nums}
+details{margin-top:18px;border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;color:var(--ai);font-weight:700;font-size:14px}
+#endLog{max-height:none;overflow:visible}
+.end-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.tag{font-size:13px;color:var(--muted);margin-top:22px;text-align:center;letter-spacing:.1em}
+.gl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-decoration:underline dotted;text-decoration-color:var(--muted);text-underline-offset:4px;line-height:inherit;text-align:left}
+.gl sup{color:var(--kin);font-size:.72em;margin-left:1px;font-weight:700;text-decoration:none;display:inline-block}
+button.gl:hover{text-decoration-color:var(--kin)}
+.nt{display:block;font-size:12.5px;line-height:1.6;color:var(--muted);background:var(--paper);border-left:2px solid var(--kin);padding:4px 9px;margin-top:5px;border-radius:0 4px 4px 0;font-weight:400}
+.nts{display:grid;gap:4px;margin:-4px 0 12px}
+.nts:empty{display:none}
+.choices .gl{text-decoration:none}
+.scene{display:flex;justify-content:center}
+.scene canvas{width:min(100%,440px);aspect-ratio:8/3;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid var(--ink);border-radius:2px;background:#bfe0f5;display:block}
+.lineup{margin-top:22px;display:flex;justify-content:center}
+.lineup canvas{width:min(100%,396px);aspect-ratio:132/30;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
+.endpx{width:72px;height:90px;image-rendering:pixelated;image-rendering:crisp-edges;margin-bottom:6px}
+@media (max-height:700px){.scene canvas{width:min(100%,300px)}}
+.kidl{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:14px}
+.kidl li{display:grid;grid-template-columns:3.2em minmax(4.5em,auto) minmax(0,1fr);gap:4px 10px;align-items:baseline}
+.kidl b{color:var(--kin);font-weight:700;font-size:13px}
+.kidl .kn{font-family:var(--f-brush);font-size:16px}
+.kidl .kf{color:var(--muted);font-size:13px}
+.yen{color:var(--muted);font-size:.92em}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (max-width:370px){.yr{grid-template-columns:50px minmax(0,1fr)}.speed button{padding:8px 7px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section id="title" class="screen">
+  <div class="hero">
+    <h1 class="vt"><span class="sm">戦国</span>千二百万分の一</h1>
+    <div class="intro">
+      <p class="lede">一説に、慶長（けいちょう）のころこの国に暮らした人はおよそ千二百万。そのうちの誰かとして生まれ、死ぬまでを生きる。</p>
+      <p class="sub">生まれる年は、応仁の乱（1467年）から関ヶ原のころ（1600年）まで。身分も国も親も選べない。百姓か、武士か、商人か、公家（くげ）か、寺の子か。決められるのは人生の分かれ道だけ。</p>
+      <div class="modes">
+        <button id="btnBorn" class="primary" type="button">生まれる</button>
+        <button id="btnBushi" class="primary alt" type="button">武士として生まれる</button>
+      </div>
+      <p class="mode-note"><b>生まれる</b>：身分も性別も運しだい。<br><b>武士として生まれる</b>：必ず武家の男子として生まれ、武士の道を歩む。家の知行（大きさ）は運しだい。</p>
+    </div>
+  </div>
+  <div class="lineup"><canvas id="titlePx" width="132" height="30" role="img" aria-label="百姓・武士・町人・僧・公家などのドット絵"></canvas></div>
+  <div class="block">
+    <h2>本作での生まれの割合</h2>
+    <ul class="odds" id="odds"></ul>
+  </div>
+  <div class="block">
+    <h2>過去帳（かこちょう）</h2>
+    <ol class="kako" id="kakoList"></ol>
+    <p class="empty" id="kakoEmpty">まだ誰の名も記されていない。最初の一生を始めよう。</p>
+  </div>
+  <p class="foot">年齢は数え年（生まれた年を1歳とし、正月ごとに1つ増やす数え方）。銭は貫文（かんもん／一貫文＝銭千枚。今のお金でおよそ6万5千円）、知行（ちぎょう）は石（こく／一石＝大人一人が一年に食べる米の量）で記す。桶狭間（おけはざま）・本能寺・関ヶ原などの史実と、創作の「あるある」が入り混じる。<br>※のついた言葉は、押すと解説が出る。七つまでは神のうち。幼くして亡くなる人生もある。</p>
+</section>
+
+<section id="app" hidden>
+  <header class="plate">
+    <div class="seal" id="seal" aria-hidden="true">百</div>
+    <div class="who">
+      <div class="nm" id="nm"></div>
+      <div class="meta" id="meta"></div>
+    </div>
+  </header>
+  <section class="stats" id="stats" aria-label="能力"></section>
+  <div class="scene"><canvas id="scene" width="128" height="48" role="img" aria-label="いまの場面のドット絵"></canvas></div>
+  <main class="log" id="log" aria-live="polite"></main>
+  <footer class="ctrl">
+    <button id="btnPlay" class="primary" type="button">一年進める</button>
+    <div class="speed" role="group" aria-label="進む速さ">
+      <button type="button" data-sp="0" aria-pressed="false">止める</button>
+      <button type="button" data-sp="1" aria-pressed="false">ゆっくり</button>
+      <button type="button" data-sp="2" aria-pressed="true">ふつう</button>
+      <button type="button" data-sp="3" aria-pressed="false">はやい</button>
+    </div>
+    <label class="auto" for="auto"><input type="checkbox" id="auto"><span>おまかせ</span></label>
+  </footer>
+</section>
+
+<section id="end" class="screen" hidden>
+  <div class="end-top">
+    <div class="jisei" id="jisei"></div>
+    <div class="end-body">
+      <canvas id="endPx" width="24" height="30" class="endpx" role="img" aria-label="この一生の主人公のドット絵"></canvas>
+      <p class="lbl">享年（きょうねん）・数え</p>
+      <div class="kyonen" id="kyonen"></div>
+      <h2 class="end-name" id="endName"></h2>
+      <p class="kaimyo" id="kaimyo"></p>
+      <p class="cause" id="cause"></p>
+    </div>
+  </div>
+  <dl class="sum" id="sum"></dl>
+  <div class="block">
+    <h2>生涯の主な出来事</h2>
+    <ol class="major" id="major"></ol>
+  </div>
+  <div class="block" id="kidBlock">
+    <h2>子と孫</h2>
+    <ul class="kidl" id="kidl"></ul>
+  </div>
+  <details>
+    <summary>年表をすべて見る</summary>
+    <div id="endLog" class="log"></div>
+  </details>
+  <div class="end-btns">
+    <button id="btnAgain" class="primary" type="button">もう一度生まれる</button>
+    <button id="btnTitle" class="ghost" type="button">表紙へ戻る</button>
+  </div>
+  <p class="tag">この一生も、千二百万分の一。</p>
+</section>
+</div>
+
+<div id="sheet" hidden>
+  <div class="letter" role="dialog" aria-modal="true" aria-labelledby="shH">
+    <div class="when" id="shW"></div>
+    <h3 id="shH"></h3>
+    <p id="shT"></p>
+    <div class="nts" id="shN"></div>
+    <div class="choices" id="shC"></div>
+  </div>
+</div>
+<script>
+'use strict';
+/* ===== 小道具 ===== */
+const R=Math.random, rnd=(a,b)=>a+Math.floor(R()*(b-a+1)), pick=a=>a[Math.floor(R()*a.length)];
+const chance=p=>R()<p, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function wpick(list,wf){let t=0;const ws=list.map(x=>{const w=Math.max(0,wf(x)||0);t+=w;return w});if(!t)return null;let r=R()*t;for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i]}return list[list.length-1]}
+
+/* ===== 元号 ===== */
+const ERAS=[[1467,'応仁'],[1469,'文明'],[1487,'長享'],[1489,'延徳'],[1492,'明応'],[1501,'文亀'],[1504,'永正'],[1521,'大永'],[1528,'享禄'],[1532,'天文'],[1555,'弘治'],[1558,'永禄'],[1570,'元亀'],[1573,'天正'],[1592,'文禄'],[1596,'慶長'],[1615,'元和'],[1624,'寛永'],[1644,'正保'],[1648,'慶安'],[1652,'承応'],[1655,'明暦'],[1658,'万治'],[1661,'寛文'],[1673,'延宝'],[1681,'天和'],[1684,'貞享'],[1688,'元禄']];
+const KN='〇一二三四五六七八九';
+const kj=n=>{const t=Math.floor(n/10),o=n%10;return (t?(t>1?KN[t]:'')+'十':'')+(o?KN[o]:'')};
+function eraOf(y){let e=ERAS[0];for(const x of ERAS)if(y>=x[0])e=x;const n=y-e[0]+1;return {name:e[1],num:n===1?'元':kj(n)}}
+const eraStr=y=>{const e=eraOf(y);return e.name+e.num+'年'};
+
+/* ===== 身分 ===== */
+const CLS={
+  hyak:{name:'百姓',seal:'百',w:62,odds:'百姓'},
+  buke:{name:'武家',seal:'武',w:16,odds:'武家'},
+  cho:{name:'町人',seal:'商',w:12,odds:'町人'},
+  ji:{name:'寺',seal:'寺',w:6,odds:'寺の子'},
+  kuge:{name:'公家',seal:'公',w:4,odds:'公家'}
+};
+
+/* ===== 国と領主（[この年まで, 領主, その年で滅ぶ]） ===== */
+const REG={
+  owari:{n:'尾張',l:[[1554,'斯波家（守護代は織田家）'],[1582,'織田家'],[1600,'豊臣方の諸将'],[9999,'徳川家']]},
+  mino:{n:'美濃',l:[[1552,'土岐家',1],[1567,'斎藤家',1],[1582,'織田家'],[1600,'豊臣方の諸将'],[9999,'徳川方の諸将']]},
+  mikawa:{n:'三河',l:[[1548,'松平家'],[1560,'今川家'],[1590,'徳川家'],[1600,'豊臣方の諸将'],[9999,'徳川家']]},
+  suruga:{n:'駿河',l:[[1568,'今川家',1],[1582,'武田家',1],[1590,'徳川家'],[1600,'豊臣方の諸将'],[9999,'徳川家']]},
+  kai:{n:'甲斐',l:[[1582,'武田家',1],[1590,'徳川家'],[1600,'豊臣方の諸将'],[9999,'徳川家']]},
+  echigo:{n:'越後',l:[[1507,'上杉家（守護）'],[1560,'長尾家'],[1598,'上杉家'],[9999,'堀家']]},
+  sagami:{n:'相模',l:[[1516,'三浦家と扇谷上杉家',1],[1590,'北条家',1],[9999,'徳川家']]},
+  omi:{n:'近江',l:[[1525,'京極家'],[1573,'浅井家',1],[1582,'織田家'],[1600,'豊臣家'],[9999,'徳川方の諸将']]},
+  yamashiro:{n:'山城',l:[[1549,'細川家（管領）'],[1568,'三好家'],[1582,'織田家'],[1600,'豊臣家'],[9999,'徳川家']]},
+  izumi:{n:'和泉（堺）',l:[[1549,'細川家'],[1568,'三好家'],[1582,'織田家'],[1615,'豊臣家',1],[9999,'徳川家']]},
+  settsu:{n:'摂津',l:[[1549,'細川家'],[1568,'三好家'],[1582,'織田家'],[1615,'豊臣家',1],[9999,'徳川家']]},
+  kaga:{n:'加賀',l:[[1488,'富樫家',1],[1580,'一向門徒の惣国',1],[9999,'前田家']]},
+  aki:{n:'安芸',l:[[1554,'大内家'],[1600,'毛利家'],[9999,'福島家']]},
+  chikuzen:{n:'筑前',l:[[1557,'大内家',1],[1587,'大友家'],[1600,'小早川家'],[9999,'黒田家']]},
+  satsuma:{n:'薩摩',l:[[9999,'島津家']]},
+  mutsu:{n:'陸奥',l:[[9999,'伊達家']]}
+};
+const lordOf=(rk,y)=>{for(const e of REG[rk].l)if(y<=e[0])return e[1];return '—'};
+const fallOf=(rk,y)=>{for(const e of REG[rk].l)if(e[0]===y-1&&e[2])return e[1];return null};
+const WEST=['aki','satsuma','izumi','settsu','omi','yamashiro','chikuzen'];
+const EASTISH=['mikawa','suruga','kai','sagami','owari','mutsu','echigo'];
+const REGION_BY={
+  kuge:['yamashiro'],
+  cho:['yamashiro','izumi','izumi','settsu','chikuzen','omi','owari'],
+  ji:['settsu','kaga','kaga','mikawa','omi','owari','yamashiro','echigo'],
+  all:Object.keys(REG)
+};
+
+/* ===== 名前 ===== */
+const NM={
+  hyak:{m:['与作','弥助','藤吉','権兵衛','八兵衛','太郎作','五郎八','甚六','久助','源太','茂作','吉蔵'],f:['きく','とら','まつ','せん','ふく','はる','たね','さよ','いね','かめ','うめ','なつ']},
+  buke:{sur:['青木','岩城','大島','小坂','加納','北村','坂井','杉浦','高木','中条','野々村','原田','堀尾','三輪','安西','曽根'],
+        m:['新八郎','与一郎','源五郎','平四郎','又左衛門','孫七郎','勘十郎','弥太郎','権六','左近','半兵衛','忠三郎'],
+        kid:['吉丸','松寿丸','鶴丸','亀千代','国千代','菊丸','勝千代','虎若'],
+        f:['お松','お江','お福','千代','お菊','お鶴','お初','お督','お亀','お梅']},
+  cho:{ya:['茜屋','紅屋','灘屋','大黒屋','松葉屋','銭屋','油屋','木綿屋','魚屋','綿屋','扇屋'],m:['宗次','与兵衛','弥三郎','宗兵衛','善右衛門','新五郎','久左衛門','了佐'],f:['しの','さと','ゆう','ちよ','かつ','みつ','いと']},
+  ji:{m:['了慶','専念','明尊','教順','慈然','覚了','祐念','円空'],f:['すず','りん','たえ','さち','あや']},
+  kuge:{sur:['堀川','四辻','綾小路','万里小路','錦小路','櫛笥','花園'],m:['実季','公忠','季長','言国','資定','為経','基熙'],kid:['竹丸','若丸','鶴寿丸','乙丸'],f:['藤姫','菊姫','梅姫','桐姫','萩姫','椿姫']}
+};
+const HO1=['宗','道','祐','浄','慶','覚','了','妙','智','空','円','清'],HO2=['円','念','心','順','誠','安','玄','山','雲','鉄','翁','如'];
+const hoName=()=>pick(HO1)+pick(HO2);
+
+/* ===== 能力 ===== */
+const SK=[['tai','体','からだの丈夫さ'],['kok','心','こころの満ち足り'],['chi','知','読み書きと教養'],['bu','武','武芸と胆力'],['en','縁','人とのつながり'],['mei','名','世間の評判']];
+const SL={tai:'体',kok:'心',chi:'知',bu:'武',en:'縁',mei:'名',kan:'銭',koku:'石'};
+
+/* ===== 判定 ===== */
+const isBushi=S=>S.sex==='m'&&(S.job==='ashigaru'||S.job==='samurai');
+const isWar=S=>isBushi(S)||(S.sex==='m'&&S.job==='ronin');
+const isFarmer=S=>S.job==='nomin';
+const isMerch=S=>S.job==='shonin'||S.job==='chajin';
+const isMonk=S=>S.job==='so'||S.job==='ama';
+const isKuge=S=>S.job==='kuge';
+const isKid=S=>S.age<=12;
+const warLv=y=>y<1590?.38:y<1600?.16:y<1616?.1:0;
+const inR=(S,...rs)=>rs.includes(S.reg);
+
+function jobName(S){
+  if(S.age<=12||S.job==='kid'){return {hyak:'百姓の子',buke:'武家の子',cho:'商家の子',ji:'寺の子',kuge:'公家の子'}[S.cls]}
+  switch(S.job){
+    case 'nomin':return S.f.otona?'百姓（乙名）':'百姓';
+    case 'ashigaru':return '足軽';
+    case 'samurai':return S.koku>=10000?'大名':S.koku>=1000?'城持ちの武将':S.koku>=300?'侍大将':'侍';
+    case 'ronin':return '浪人';
+    case 'shonin':return S.f.decchi?(S.f.banto?'番頭':S.f.tedai?'手代':'丁稚'):S.f.egoshu?'会合衆の豪商':'商人';
+    case 'chajin':return '茶人';
+    case 'so':return S.f.gaiko?'外交僧':'僧';
+    case 'ama':return '尼';
+    case 'kuge':return '公家';
+    case 'nyobo':return '奥勤めの女';
+    case 'miko':return '歩き巫女';
+    case 'wife':return {hyak:'百姓の女房',buke:'武家の奥方',cho:'商家のおかみ',ji:'坊守',kuge:'公家の妻'}[S.cls]||'女房';
+    case 'musume':return S.age>=30?'独り身の女':({hyak:'百姓の娘',buke:'武家の姫',cho:'商家の娘',ji:'寺の娘',kuge:'公家の姫'}[S.cls]||'娘');
+    case 'goke':return '後家';
+    default:return '—';
+  }
+}
+
+/* ===== 数値の増減（記録つき） ===== */
+function ad(S,o){
+  for(const k in o){const v=Math.round(o[k]);if(!v)continue;
+    if(k==='kan'){S.kan=Math.max(0,S.kan+v)}
+    else if(k==='koku'){S.koku=Math.max(0,S.koku+v)}
+    else{S.st[k]=clamp(S.st[k]+v,0,100)}
+    S._d[k]=(S._d[k]||0)+v;}
+}
+function die(S,cause){S.dead=1;S.cause=cause}
+
+/* ===== 合戦の判定 mode:0=慎重 1=並 2=果敢 ===== */
+function battle(S,mode,name){
+  const bu=S.st.bu;
+  let p=[.035,.065,.12][mode]*(1.45-bu/100)*(S.job==='ashigaru'?1.15:1);
+  if(chance(p)){die(S,name+'で討死');ad(S,{mei:mode*4});
+    return pick(['乱戦のなか、横合いから槍を受けて倒れた。',S.y>=1550?'敵の鉄砲玉が胸を貫いた。':'敵の矢が胸を貫いた。','味方が崩れ、退く途中で囲まれた。','名乗りを上げた直後、矢が喉に立った。'])}
+  let s='';
+  if(chance([.05,.09,.14][mode])){ad(S,{tai:-rnd(8,18)});s=pick(['足に深手を負い、しばらく杖が手放せなくなった。','顔に刀傷が残った。のちのちまで語り草になる傷だ。','落馬して肩を痛めた。'])}
+  const w=[.08,.2,.38][mode]+bu/400;
+  if(chance(w)){
+    ad(S,{mei:rnd(6,12),bu:rnd(2,5),kan:rnd(3,10)});
+    let t=pick(['敵の兜首を挙げ、首実検で名を読み上げられた。','一番槍の功名を立て、主君から感状を賜った。','崩れかけた味方を立て直し、殿（しんがり）を務め上げた。','敵の旗指物を奪い取った。']);
+    if(S.job==='ashigaru'){S.f.tegara=(S.f.tegara||0)+1;
+      if(S.f.tegara>=2&&chance(.65)){S.job='samurai';S.koku=0;ad(S,{koku:50,mei:5});t+=' 度重なる功で足軽から取り立てられ、五十石の侍となった。';S.f.major=1}}
+    else{ad(S,{koku:Math.max(30,Math.round(S.koku*.2))})}
+    return t+(s?' '+s:'');
+  }
+  ad(S,{bu:rnd(1,3),tai:-rnd(0,4)});
+  return pick(['大きな手柄はなかったが、生きて戻った。','泥にまみれて走り回り、気づけば戦は終わっていた。','後詰めのまま、一度も槍を合わせずに終わった。','首はひとつも取れず、雑兵の首で手柄を誤魔化す者を横目に見た。'])+(s?' '+s:'');
+}
+/* ===== 地名・寺名 ===== */
+const VIL=['上野','下田','中島','小松','大沢','栗原','柏木','長尾','藤野','石原','荒井','清水'];
+const TOWN={yamashiro:'京の上京',izumi:'堺',settsu:'平野郷',chikuzen:'博多',omi:'坂本',owari:'津島'};
+const TEMPLE=['光明寺','願証寺','本覚寺','浄念寺','善福寺','西方寺','常楽寺','専称寺'];
+const KAKU=['名家','羽林家','半家'];
+const KIRI={m:['パウロ','ジョアン','ルイス','ドミンゴ','アゴスティーノ','ジュスト','ミゲル'],f:['マリア','ジュリア','モニカ','マグダレナ','ルチア','カタリナ']};
+const BASE={
+  hyak:{tai:[45,70],kok:[40,60],chi:[3,15],bu:[10,25],en:[25,45],mei:[0,8]},
+  buke:{tai:[40,65],kok:[40,60],chi:[20,40],bu:[25,45],en:[25,45],mei:[10,25]},
+  cho:{tai:[35,60],kok:[40,60],chi:[25,45],bu:[5,15],en:[35,55],mei:[5,15]},
+  ji:{tai:[35,60],kok:[45,65],chi:[35,55],bu:[3,12],en:[25,45],mei:[8,18]},
+  kuge:{tai:[30,55],kok:[40,60],chi:[45,65],bu:[0,8],en:[30,50],mei:[20,35]}
+};
+
+/* ===== 状態と補助 ===== */
+let S=null, AUTO=false;
+const UI={wait(){},yearStart(){},ent(){},yearEnd(){},end(){}};
+const kuni=S=>REG[S.reg].n.replace('（堺）','');
+const lord=S=>lordOf(S.reg,S.y);
+const fallAt=(rk,y)=>{for(const e of REG[rk].l)if(e[0]===y&&e[2])return e[1];return null};
+const inYr=(yr,y)=>Array.isArray(yr)?(y>=yr[0]&&y<=yr[1]):y===yr;
+const ok=p=>R()<p;
+const spn=S=>S.sp?S.sp.nm:'';
+/* 文中の親：亡くなっていれば、生きている身内に言い換える */
+const haha=S=>S.mo.alive?'母':S.fa.alive?'父':'祖母';
+const chichi=S=>S.fa.alive?'父':S.mo.alive?'母':'叔父';
+const liveKids=S=>S.kids.filter(k=>k.alive);
+const heir=S=>liveKids(S).find(k=>k.heir&&k.sex==='m'&&S.y-k.by>=14)||liveKids(S).find(k=>k.sex==='m'&&S.y-k.by>=14&&!['僧','住職','婿養子','足軽','奉公','勘当','暖簾分け'].includes(k.path));
+const married=S=>!!(S.sp&&S.sp.alive);
+const adult=S=>S.age>=15;
+const ordName=S=>(S.sex==='m'?['長男','次男','三男']:['長女','次女','三女'])[S.ord-1];
+function mj(txt){S.major.push({y:S.y,age:S.age,t:txt})}
+
+function fullName(S){
+  if(isMonk(S))return S.nm;
+  if(S.cls==='buke'||S.cls==='kuge')return S.sur+' '+S.nm;
+  if(S.cls==='cho'&&S.sex==='m'&&adult(S)&&(S.job==='shonin'||S.job==='chajin'))return S.sur+' '+S.nm;
+  return S.nm;
+}
+function babyName(S,sex){
+  for(let i=0;i<15;i++){const n=babyName0(S,sex);if(n!==S.nm&&!(S.kids||[]).some(k=>k.nm===n)&&!(S.magos||[]).some(g=>g.nm===n))return n}
+  return babyName0(S,sex);
+}
+function babyName0(S,sex){
+  const c=S.cls;
+  if(c==='buke'||c==='kuge')return sex==='m'?pick(NM[c].kid):pick(NM[c].f);
+  if(c==='cho'){if(sex==='f')return pick(NM.cho.f);const a=pick(['吉','亀','松','竹','鶴']);return a+pick(['松','若','千代','坊'].filter(x=>x!==a))}
+  if(c==='ji')return sex==='m'?pick(['竹若','乙若','亀丸','松若']):pick(NM.ji.f);
+  return pick(NM.hyak[sex]);
+}
+
+/* ===== 誕生 ===== */
+function born(mode){
+  const bushi=mode==='bushi';
+  const cls=bushi?'buke':wpick(Object.keys(CLS),k=>CLS[k].w);
+  const sex=bushi?'m':(chance(.5)?'m':'f');
+  const reg=pick(REGION_BY[cls]||REGION_BY.all);
+  const by=rnd(1467,1600);
+  S={cls,sex,reg,by,y:by,age:1,st:{},kan:0,koku:0,job:'kid',f:{},seen:{},log:[],major:[],kids:[],magos:[],sp:null,
+     dead:0,cause:'',_d:{},q:[],pending:null,lastCh:-9,ord:rnd(1,3)};
+  const b=BASE[cls];for(const [k] of SK)S.st[k]=rnd(b[k][0],b[k][1]);
+  if(sex==='m'&&S.ord===1)S.f.chonan=1;
+  S.fa={nm:'',alive:1,age:rnd(20,38)};S.mo={nm:'',alive:1,age:rnd(16,30)};
+  S.fa.nm=pick(NM[cls].m);S.mo.nm=pick(NM[cls].f);
+  S.nm=babyName(S,sex);
+  switch(cls){
+    case 'hyak':S.sur=pick(VIL)+'村';S.kan=rnd(0,3);if(chance(.2))S.f.oyaotona=1;break;
+    case 'buke':S.sur=pick(NM.buke.sur);S.f.fkoku=wpick([50,150,500,2000,15000],x=>({50:58,150:24,500:12,2000:5,15000:1})[x]);
+      S.kan=Math.round(S.f.fkoku/25)+rnd(1,5);S.st.mei+=Math.round(Math.log10(S.f.fkoku)*4);break;
+    case 'cho':S.sur=pick(NM.cho.ya);S.kan=rnd(10,60);break;
+    case 'ji':S.sur=pick(TEMPLE);S.kan=rnd(2,10);break;
+    case 'kuge':S.sur=pick(NM.kuge.sur);S.kan=rnd(1,8);S.f.kaku=pick(KAKU);break;
+  }
+  S.mode=bushi?'bushi':'normal';
+  S.lord0=lordOf(reg,by);
+  const Y={y:by,age:1,ents:[]};S.cur=Y;S.curS=null;
+  push(birthText(),'big');
+  S.log.push(Y);
+  return S;
+}
+function birthText(){
+  const k=kuni(S),o=ordName(S),pre=eraStr(S.by)+'、';
+  switch(S.cls){
+    case 'hyak':return pre+`${k}国${S.sur}の百姓、${S.fa.nm}と${S.mo.nm}の${o}として生まれた。家は${S.f.oyaotona?'村の乙名（おとな）を務める本百姓':pick(['田を三反ばかり耕す小百姓','名主から田を借りる小作','痩せた山畑を耕す百姓'])}だ。`;
+    case 'buke':return pre+`${k}の${lordOf(S.reg,S.by)}に仕える${S.sur}${S.fa.nm}の${o}として生まれた。家の知行は${S.f.fkoku}石。幼名は${S.nm}。`;
+    case 'cho':return pre+`${TOWN[S.reg]||k+'の城下'}で商いを営む「${S.sur}」の${o}として生まれた。帳場からは一日じゅう算盤の音がする。`;
+    case 'ji':return pre+`${k}の一向宗の寺、${S.sur}で、住職${S.fa.nm}と坊守${S.mo.nm}の${o}として生まれた。この宗派では僧も妻を持つ。`;
+    case 'kuge':return pre+`京の公家、${S.sur}家の${o}として生まれた。家格は${S.f.kaku}。家柄は高いが、家計は火の車だ。`;
+  }
+}
+
+/* ===== 一年の進行（季節ごとに一件ずつ） ===== */
+const SEAS=['春','夏','秋','冬'];
+const SOF={k_kaki:'秋',k_kawa:'夏',k_take:'春',h_nengu:'秋',h_mizu:'夏',h_inago:'夏',h_kikin:'冬',k_furyu:'秋',c_ise:'春',h_amagoi:'夏',h_hosaku:'秋',nanatsu:'冬',f_hata:'冬',
+  katanagari:'秋',okehazama:'夏',kawanakajima:'秋',itsukushima:'秋',honnoji:'夏',sekigahara:'秋',osaka_fuyu:'冬',osaka_natsu:'夏',
+  tensho_jishin:'冬',fushimi:'秋',hieizan:'秋',nagashino:'夏',m_rakuichi:'春',c_toji:'冬',h_shinden:'春',h_jinpu:'夏',h_rantori:'夏',
+  kanei_kikin:'夏',kitano:'秋',inkyo:'春',en:'春',m_kome:'夏',h_tokusei:'秋',h_chosan:'冬',k_ue:'冬',c_kiki:'秋'};
+const seasonOf=e=>e.s||SOF[e.id]||(e.id&&e.id.startsWith('gen_')?'春':null)||pick(SEAS);
+function startYear(){
+  if(!S||S.dead||S.pending||S.inYear)return false;
+  S.y++;S.age++;
+  for(const p of [S.fa,S.mo,S.sp])if(p&&p.alive)p.age++;
+  if(S.age>=45&&chance(.5))S.st.tai=clamp(S.st.tai-rnd(0,2),0,100);
+  else if(S.age<45&&S.st.tai<60)S.st.tai=clamp(S.st.tai+rnd(0,2),0,100);
+  const Y={y:S.y,age:S.age,ents:[]};S.cur=Y;S._d={};S.curS=null;
+  const q=[];
+  for(const h of HIST)if(inYr(h.yr,S.y)&&!(h.n&&S.age<5)&&!(h.id&&S.seen[h.id]!==undefined)&&safeC(h))q.push(h);
+  const fl=fallAt(S.reg,S.y);if(fl)q.push(fallEv(fl));
+  q.push(...familySteps());
+  for(const e of STAGE){const s=S.seen[e.id];
+    if(s!==undefined&&(!e.rep||S.y-s<e.rep))continue;
+    if(safeC(e)&&(!e.p||chance(typeof e.p==='function'?e.p(S):e.p)))q.push(e)}
+  q.push(...randomPicks(q.some(e=>e.ch)));
+  S.q=q.map((e,i)=>({e,s:SEAS.indexOf(seasonOf(e)),i})).sort((a,b)=>a.s-b.s||a.i-b.i);
+  S.inYear=1;
+  UI.yearStart(Y);
+  return true;
+}
+/* 一件だけ進める。戻り値 more=何か表示した wait=選択待ち done=年が終わった */
+function next(){
+  if(!S||!S.inYear)return 'done';
+  if(S.pending)return 'wait';
+  while(S.q.length&&!S.dead){
+    const it=S.q.shift();S.curS=SEAS[it.s];
+    const n0=S.cur.ents.length;
+    if(fire(it.e)==='wait')return 'wait';
+    if(S.cur.ents.length>n0)return 'more';
+  }
+  endYear();return 'done';
+}
+function tick(){if(!startYear())return;let g=0;while(next()==='more'&&g++<99);}
+function safeC(e){if(!e.c)return true;try{return !!e.c(S)}catch(x){return false}}
+function randomPicks(hasCh){
+  let n=S.age<=6?1+(chance(.4)?1:0):S.age<=14?2+(chance(.5)?1:0):2+(chance(.6)?1:0)+(chance(.35)?1:0)+(chance(.15)?1:0);
+  const pool=EV.filter(e=>{const s=S.seen[e.id];if(s!==undefined&&(e.once||S.y-s<(e.cd||8)))return false;return safeC(e)});
+  const out=[];
+  while(n-->0&&pool.length){
+    const e=wpick(pool,x=>{const w=typeof x.w==='function'?x.w(S):(x.w===undefined?1:x.w);
+      return w*(x.ch?(hasCh?0:(S.y-S.lastCh<=1?.5:1.8)):1)});
+    if(!e)break;out.push(e);pool.splice(pool.indexOf(e),1);if(e.ch)hasCh=true;
+  }
+  return out;
+}
+function fire(e){
+  if(e.n){push(typeof e.n==='function'?e.n(S):e.n,'news');return}
+  if(!safeC(e))return;
+  if(e.id)S.seen[e.id]=S.y;
+  if(typeof e.e0==='function')e.e0(S);
+  S._d={};
+  const t=typeof e.t==='function'?e.t(S):e.t;
+  if(e.fx)ad(S,typeof e.fx==='function'?e.fx(S):e.fx);
+  if(e.ch&&!S.dead){
+    const chs=e.ch.filter(c=>!c[2]||c[2](S));
+    if(chs.length){
+      S.lastCh=S.y;
+      if(AUTO){resolve(e,t,pick(chs));return}
+      S.pending={e,t,chs};UI.wait(S.pending);return 'wait';
+    }
+  }
+  if(t)push(t,e.k||(e.mj?'big':''),e);
+}
+function resolve(e,t,c){
+  S.pending=null;
+  const r=c[1](S);
+  push(t,e.k||(e.mj?'big':''),e,c[0],r);
+}
+function choose(i){
+  const p=S&&S.pending;if(!p)return;
+  resolve(p.e,p.t,p.chs[i]);
+}
+function push(t,k,e,pk,res){
+  if(S.dead&&k!=='news')k='death';
+  const en={t,k:k||'',d:{...S._d},s:S.curS||''};
+  if(pk){en.pick=pk;en.res=res||''}
+  S._d={};S.cur.ents.push(en);
+  if(e&&e.mj){const m=typeof e.mj==='function'?e.mj(S,pk):e.mj;if(m)mj(m)}
+  UI.ent(en);
+  return en;
+}
+function endYear(){
+  const Y=S.cur;
+  if(!S.dead){income();S.curS=SEAS[rnd(Math.max(0,SEAS.indexOf(S.curS)),3)];naturalDeath()}
+  if(!S.dead&&!Y.ents.length){S.curS=null;push(quiet(),'quiet')}
+  S.inYear=0;S.log.push(Y);UI.yearEnd(Y);
+  if(S.dead){S.dy=S.y;S.jisei=jiseiFor(S);S.kaimyo=kaimyo(S);UI.end()}
+}
+function income(){
+  let v=0;
+  switch(S.job){
+    case 'nomin':v=rnd(-1,2);break;case 'ashigaru':v=rnd(0,2);break;
+    case 'samurai':v=Math.round(S.koku*.03)+rnd(-2,2);break;case 'ronin':v=rnd(-3,0);break;
+    case 'shonin':v=S.f.decchi?0:rnd(-4,10)+(S.f.egoshu?20:0);break;case 'chajin':v=rnd(0,15);break;
+    case 'so':case 'ama':v=rnd(0,3);break;case 'kuge':v=rnd(-3,2);break;
+    case 'nyobo':v=rnd(1,3);break;case 'miko':v=rnd(0,2);break;default:v=rnd(0,1);
+  }
+  S.kan=Math.max(0,S.kan+v);
+}
+
+/* ===== 寿命 ===== */
+function mort(a){if(a<=2)return .045;if(a<=7)return .014;if(a<=15)return .006;if(a<=40)return .011;if(a<=50)return .018;if(a<=60)return .032;if(a<=70)return .065;return .11+(a-70)*.015}
+function natCause(S){
+  if(S.age<=7)return pick(['疱瘡（もがさ）','はやり病','麻疹（はしか）','ひきつけ','腹の病']);
+  if(S.age>=66&&chance(.6))return '老衰';
+  if(S.age>=55)return pick(['中風','老いの病','風邪をこじらせたこと','腫れ物']);
+  return pick(['疫病','赤痢','労咳','腫れ物','瘧（おこり）','食あたり','疱瘡']);
+}
+function naturalDeath(){
+  let p=mort(S.age)*(1.55-S.st.tai/100)*(S.st.kok<15?1.25:1);
+  if(S.st.tai<=5)p+=.2;else if(S.st.tai<=12)p+=.06;
+  if(S.age>=96)p=1;
+  if(chance(p)){const c=natCause(S);die(S,c);push(deathText(c),'death')}
+}
+function deathText(c){
+  if(S.age<=7)return `${c}にかかり、数え${S.age}つで息を引き取った。「七つまでは神のうち」と、大人たちは手を合わせた。`;
+  if(c==='老衰')return pick(['眠るように息を引き取った。','縁側で日向ぼっこをしたまま、二度と目を覚まさなかった。','朝、眠ったまま静かに旅立っていた。'])+mitori();
+  return pick([`${c}で床に就き、そのまま帰らぬ人となった。`,`${c}を患い、薬師の煎じ薬も効かなかった。`,`${c}に倒れ、数日のうちに亡くなった。`])+mitori();
+}
+
+/* ===== 家族 ===== */
+function familySteps(){
+  const out=[];
+  if(S.fa.alive&&chance(mort(S.fa.age)*1.2+(S.fa.war?.02:0)))out.push({t:S=>{S.fa.alive=0;ad(S,{kok:-8});return `父、${S.fa.nm}が亡くなった。`+inherit()},mj:'父を亡くす'});
+  if(S.mo.alive&&chance(mort(S.mo.age)*1.1))out.push({t:S=>{S.mo.alive=0;ad(S,{kok:-10});return `母、${S.mo.nm}が亡くなった。`+pick(['葬式の段取りは、気づけば自分がしていた。','形見の櫛が手元に残った。','最後まで、こちらの心配ばかりしていた。'])},mj:'母を亡くす'});
+  if(married(S)&&chance(mort(S.sp.age)*1.1))out.push((sp0=>({t:S=>{if(S.sp!==sp0||!sp0.alive)return '';S.sp.alive=0;ad(S,{kok:-15});
+    if(S.sex==='f'&&S.job==='wife')S.job='goke';
+    return `連れ合いの${S.sp.nm}に先立たれた。`+pick(['家の中が急に広くなった。','しばらくは飯の味がしなかった。','二人で植えた柿の木だけが残った。'])},mj:'連れ合いに先立たれる'}))(S.sp));
+  if(married(S)){
+    const wa=S.sex==='f'?S.age:S.sp.age;
+    if(wa>=15&&wa<=42&&S.kids.length<12&&chance(.28))out.push({t:birthKid});
+  }
+  if(S.f.soku&&S.sex==='m'&&S.age<=62&&S.kids.length<16&&chance(.22))out.push({t:S=>{S.f._sb=1;const t=birthKid(S);S.f._sb=0;return t}});
+  const sick=liveKids(S).find(k=>S.y-k.by<7&&chance(.045));
+  if(sick)out.push({t:S=>{sick.alive=0;sick.dAge=S.y-sick.by+1;sick.cause='病';ad(S,{kok:-14});return `${sick.role||'子'}の${sick.nm}が${pick(['疱瘡','はやり病','麻疹','腹の病'])}で亡くなった。まだ${S.y-sick.by+1}つだった。`},mj:S=>`${sick.role||'子'}の${sick.nm}を亡くす`});
+  kidSteps(out);
+  return out;
+}
+function birthKid(S){
+  const sex=chance(.5)?'m':'f',nm=babyName(S,sex);
+  S.kids.push({nm,sex,by:S.y,alive:1,role:(ROLE[sex][S.kids.filter(x=>x.sex===sex).length]||'子'),path:'',wed:0,mago:0});
+  const no=S.kids.length;
+  let t=`${S.f._sb?'側室との間に、':''}${no===1?'初めての子':no+'人目の子'}、${sex==='m'?'男の子':'女の子'}が生まれた。名は${nm}。`;
+  if(S.sex==='f'){
+    ad(S,{tai:-rnd(2,6),kok:4});
+    if(chance(.025+(S.age>35?.02:0))){die(S,'産後の肥立ちが悪かったこと');return t+' しかし産後の肥立ちが悪く、そのまま床から起き上がれなかった。'}
+  }else ad(S,{kok:5});
+  return t;
+}
+function inherit(){
+  if(S.sex!=='m'||!S.f.chonan||S.f.ie||isMonk(S))return '';
+  S.f.ie=1;
+  if(S.cls==='buke'){
+    if(S.age<13){S.f.ieWait=1;return ' 幼い嫡男のため、叔父が後見について家を預かることになった。'}
+    if(S.job!=='samurai'&&S.job!=='ronin')return '';
+    if(S.job==='ronin')return ' 家はすでに無い。継ぐものは父の刀だけだった。';
+    S.koku=Math.max(S.koku,S.f.fkoku);ad(S,{mei:5});mj(`家督を継ぐ（${S.koku}石）`);
+    return ` 家督を継ぎ、知行${S.koku}石の当主となった。`;
+  }
+  if(S.cls==='hyak'&&S.job==='nomin')return ' 田畑と家を継いだ。今日から自分が一家の主だ。';
+  if(S.cls==='cho'&&S.job==='shonin'){S.f.decchi=0;return ` 「${S.sur}」の暖簾を継いだ。`}
+  if(S.cls==='kuge'&&S.job==='kuge'){ad(S,{mei:4});return ` ${S.sur}家の当主となった。継いだのは家名と借金だった。`}
+  return '';
+}
+function mkSpouse(S,cls){
+  cls=cls||S.cls;const m=S.sex==='f';
+  const sp={cls,alive:1,sex:m?'m':'f',age:Math.max(14,S.age+(m?rnd(0,10):-rnd(0,8)))};
+  if(cls==='buke'||cls==='kuge'){sp.sur=pick(NM[cls].sur.filter(x=>x!==S.sur));sp.nm=m?sp.sur+pick(NM[cls].m):pick(NM[cls].f)}
+  else if(cls==='cho'){sp.sur=pick(NM.cho.ya);sp.nm=m?sp.sur+'の'+pick(NM.cho.m):pick(NM.cho.f)}
+  else sp.nm=m?pick(NM[cls].m):pick(NM[cls].f);
+  return sp;
+}
+function wed(S,sp){
+  S.sp=sp;if(S.sex==='f'&&['musume','kid','goke'].includes(S.job))S.job='wife';
+  if(S.sex==='f'&&S.job==='nyobo'){S.job='wife'}
+  ad(S,{kok:8,en:5});mj(`${sp.nm}と夫婦になる`);
+}
+
+/* ===== 名を改める・出家 ===== */
+function shukke(S,nyudo){
+  if(nyudo){S.nm=hoName()+(S.sex==='m'?'入道':'');S.f.nyudo=1;return}
+  S.job=S.sex==='m'?'so':'ama';
+  S.nm=S.sex==='m'?hoName():'妙'+pick(['心','真','貞','善','慶','秀']);
+}
+function kirishitan(S){S.f.kiri=pick(KIRI[S.sex]);return S.f.kiri}
+
+/* ===== 平穏な年 ===== */
+function quiet(){
+  const Q={
+    kid:['よく食べ、よく眠り、少し背が伸びた。','近所の子らと日が暮れるまで遊んだ。','これといって何もない一年だった。'],
+    nomin:['田の草取りに明け暮れた一年だった。','雨も日照りもほどほどで、米はそこそこ穫れた。','朝は早く、夜は早い。いつもの一年だった。'],
+    ashigaru:['槍の手入れと、組頭の小言で一年が過ぎた。','陣触れはなく、畑仕事を手伝って過ごした。'],
+    samurai:['城への出仕と、屋敷の雑事で一年が過ぎた。','大きな戦もなく、馬の世話と弓の稽古に励んだ。'],
+    ronin:['仕官の口を探して歩き回ったが、空振りの一年だった。','傘張りの内職で食いつないだ。'],
+    shonin:['帳簿をつけ、客を迎え、一年が過ぎた。','大儲けはないが、損もない一年だった。'],
+    chajin:['茶会をいくつか開き、道具を少し入れ替えた。'],
+    so:['朝夕の勤行と、檀家回りの一年だった。','経を読み、庭を掃き、一年が過ぎた。'],ama:['経を読み、庭を掃き、一年が過ぎた。'],
+    kuge:['宮中の行事に出て、日記をつけた。','借金の言い訳を考えるうちに一年が過ぎた。'],
+    nyobo:['奥の務めに追われ、気づけば一年が過ぎていた。'],miko:['一座とともに、村から村へと旅をした。'],
+    wife:['家の切り盛りに追われる一年だった。','繕い物と台所仕事で一年が過ぎた。'],goke:['一人で家を守る一年だった。'],
+    musume:['家の手伝いをして一年を過ごした。','針仕事が少しうまくなった。']
+  };
+  return pick(Q[S.job]||Q.kid);
+}
+
+/* ===== 戒名・辞世 ===== */
+const KM1=['清','義','道','覚','宗','智','妙','善','法','月','雪','松','秋','春'],KM2=['光','山','岳','心','岸','室','雲','翁','照','林','峰','泉','月','園'];
+function kaimyo(S){
+  if(S.f.kiri&&!S.f.korobi)return '洗礼名 '+S.f.kiri;
+  if(isMonk(S))return S.nm+(S.sex==='m'?' 和尚':' 法尼');
+  const a=pick(KM1)+pick(KM2),m=S.sex==='m';
+  if(S.age<=15)return a+(m?'童子':'童女');
+  if((S.cls==='buke'&&S.koku>=1000)||S.cls==='kuge')return pick(['大雄','龍光','瑞雲','桂林','長松'])+'院殿'+a+(m?'大居士':'大姉');
+  if(S.cls==='buke'||S.kan>=150||S.st.mei>=60)return a+(m?'居士':'大姉');
+  return a+(m?'信士':'信女');
+}
+const JISEI={
+  war:['討たれても　恨みはせじな　戦場の　習いと知れば　草も枕よ','槍ひとつ　振りしこの世の　夢さめて　露と消えゆく　秋野吹く風','散る花を　惜しむ心も　いまはなし　主の御馬の　先に立つ身は'],
+  buke:['名を残す　ほどの手柄も　なかりけり　ただ生き抜いた　乱れたる世を','幾年を　夢のまにまに　過ぎにけり　さても面白　戦の世かな'],
+  hyak:['耕して　耕してなお　土の上　実りを見ずに　鍬を置くなり','田の水に　映る月こそ　わが友よ　年貢の憂さも　今は軽けれ'],
+  cho:['算盤の　合わぬままにて　旅立てば　冥土の渡し　六文で足る','売り買いの　果てに残りし　ものはなし　笑うて渡る　三途の川を'],
+  kuge:['荒れはてし　都の月を　友として　言の葉ひとつ　残し行くなり'],
+  so:['来しかたも　行くかたもなし　雲ひとつ　風にまかせて　消ゆるばかりぞ','南無の声　絶えて静けき　山の寺　われも仏の　膝に眠らん'],
+  f:['子の顔を　思い浮かべて　目を閉じる　春の夢路は　短かりけり','嫁ぎ来て　幾年月の　夕餉かな　煙の果ての　空ぞ恋しき'],
+  all:['生まれては　死ぬるならいの　世の中に　あまたの露の　ひとつ散るなり']
+};
+function jiseiFor(S){
+  if(S.age<16)return null;
+  if(S.f.sudden&&!isWar(S))return null;
+  if(!chance(isWar(S)||S.cls==='kuge'||isMonk(S)?.9:.6))return null;
+  let k='all';
+  if(/討死|切腹|戦|討たれ|自害/.test(S.cause))k='war';
+  else if(isMonk(S))k='so';else if(S.sex==='f')k='f';
+  else if(isWar(S))k='buke';else if(S.job==='nomin')k='hyak';else if(isMerch(S))k='cho';else if(isKuge(S))k='kuge';
+  return pick(chance(.8)?JISEI[k]:JISEI.all);
+}
+
+/* ===== 主家滅亡 ===== */
+function fallEv(name){
+  return {id:'fall'+S.y,t:S=>{
+    if(isBushi(S)&&adult(S)&&lordOf(S.reg,S.y-1)===name)return `主家の${name}が滅びた。城には火がかけられ、${kuni(S)}は${lordOf(S.reg,S.y+1)}のものとなる。`;
+    if(isFarmer(S)&&adult(S))return `${name}の城が落ちた。村の衆と鎌や竹槍を手に、落ち武者を待ち構えることになった。`;
+    return `${kuni(S)}を治めていた${name}が滅んだ。新しい領主は${lordOf(S.reg,S.y+1)}だという。`;
+  },k:'big',
+  ch:[
+    ['城を枕に討死する',S=>{die(S,'落城の折、城を枕に討死');ad(S,{mei:20});return '最後まで主家に殉じた。その忠義は敵方にも語り継がれた。'},S=>isBushi(S)&&adult(S)],
+    ['落ち延びて浪人になる',S=>{S.job='ronin';S.koku=0;ad(S,{mei:-5,kok:-10,kan:-Math.round(S.kan/2)});mj('主家が滅び、浪人となる');return '夜陰にまぎれて城を抜け、浪人の身となった。'},S=>isBushi(S)&&adult(S)],
+    ['新しい領主に降る',S=>{ad(S,{mei:-8,koku:-Math.round(S.koku*.3)});mj('主家滅亡、新しい領主に降る');return chance(.7)?'所領を減らされたが、家は残った。「二君に仕えず」とは、余裕のある者の言葉だ。':'降ったものの、古参からは冷たい目で見られている。'},S=>isBushi(S)&&adult(S)],
+    ['落ち武者を見逃す',S=>{ad(S,{kok:5});if(chance(.3)){ad(S,{kan:rnd(3,10)});return '見逃した若武者が、礼にと小刀を置いていった。売ればいい銭になった。'}return '泣きながら逃げる若者を、黙って行かせた。'},S=>isFarmer(S)&&adult(S)],
+    ['落ち武者の具足を剥ぐ',S=>{if(chance(.2)){ad(S,{tai:-15});if(chance(.3)){die(S,'落ち武者に斬られて');return '手負いの武者に斬りつけられた。'}return '手負いの武者の反撃を受け、深い傷を負った。'}ad(S,{kan:rnd(5,15),kok:-5});return '具足と刀を剥いで売った。後味は悪いが、冬は越せる。'},S=>isFarmer(S)&&adult(S)]
+  ]};
+}
+/* ===== 人生の節目（条件を満たすと必ず起きる） ===== */
+function genpukuName(S){
+  const old=S.nm;S.nm=pick(NM.buke.m);
+  const hen=chance(.3)?`烏帽子親の${lord(S)}の重臣から一字を賜り、`:'';
+  return `元服した。前髪を落とし、${hen}幼名の${old}から${S.nm}と名を改めた。`;
+}
+function setJob(S,j){S.job=j;S.f.jobY=S.y}
+
+const STAGE=[
+{id:'nanatsu',c:S=>S.age===7,t:S=>pick(['七つまで生き延びた。氏神に詣でて、帯解きの祝いをした。',`七つの祝い。${S.cls==='hyak'?'この日の粥には小豆が入っていた。':haha(S)+'が赤飯を炊いた。'}この子は神様から人の子になった、と祖母が言った。`]),fx:{tai:3,kok:3}},
+
+/* --- 元服・身の振り方 --- */
+{id:'gen_hyak_m',c:S=>S.cls==='hyak'&&S.sex==='m'&&S.age===15&&S.job==='kid',k:'big',
+ t:S=>`十五になり、若衆組に入った。一人前の働き手として、身の振り方を決めるときが来た。${S.f.chonan?'家の田を継ぐのは自分だ。':'田は兄が継ぐ。次男坊以下は自分で食い扶持を探すしかない。'}`,
+ ch:[
+  ['家の田を耕す',S=>{setJob(S,'nomin');ad(S,{tai:3});if(!S.fa.alive)inherit();return S.f.chonan?'鍬を握って生きていくと決めた。':'兄の下で田を耕す。肩身は狭いが、飯は食える。'}],
+  ['足軽に応募する',S=>{setJob(S,'ashigaru');ad(S,{bu:5,kok:-3});S.koku=0;mj('足軽になる');return `${lord(S)}の足軽募集に名乗り出た。支給された陣笠は、前の持ち主の血の跡が残っていた。`},S=>warLv(S.y)>0],
+  ['寺に入って僧になる',S=>{shukke(S);ad(S,{chi:8,kok:3});mj('出家する');return `頭を剃り、${S.nm}という法名をもらった。寺なら少なくとも飯は出る。`}],
+  ['町へ奉公に出る',S=>{setJob(S,'shonin');S.f.decchi=1;S.f.hokou=1;S.sur=pick(NM.cho.ya);ad(S,{chi:4,en:3});mj('町の商家へ奉公に出る');return `町の商家「${S.sur}」に丁稚として住み込んだ。最初に覚えたのは、算盤より先にお辞儀の角度だった。`}]
+ ]},
+{id:'gen_hyak_f',c:S=>S.cls==='hyak'&&S.sex==='f'&&S.age===14&&S.job==='kid',k:'big',
+ t:'娘盛りになった。村に残るか、外へ出るか。',
+ ch:[
+  ['村で働き、嫁入りを待つ',S=>{setJob(S,'musume');ad(S,{tai:2});return 'これからは田植えのたびに、早乙女として苗を植えることになる。田植え歌がうまいと、もう評判だ。'}],
+  ['城下の武家へ奉公に上がる',S=>{setJob(S,'nyobo');ad(S,{chi:4,en:4});mj('城下の武家へ奉公に上がる');return '武家屋敷の下女として住み込んだ。言葉づかいを一から直された。'}],
+  ['歩き巫女の一座に加わる',S=>{setJob(S,'miko');ad(S,{en:6,kok:-4});mj('歩き巫女となる');return '諸国を巡って口寄せをする一座に入った。旅先の噂を集めるのも仕事のうちだと、後で知った。'}]
+ ]},
+{id:'gen_buke_m',c:S=>S.cls==='buke'&&S.sex==='m'&&S.age===14&&S.job==='kid',k:'big',mj:'元服',
+ t:S=>genpukuName(S)+(S.f.chonan?' 嫡男として家を継ぐ身だ。':' 部屋住みの次男坊以下に、継ぐ家はない。'),
+ ch:[
+  ['嫡男として出仕する',S=>{setJob(S,'samurai');if(S.f.ieWait||!S.fa.alive){S.koku=S.f.fkoku;S.f.ie=1;return `後見の叔父から家を返され、知行${S.koku}石の当主となった。`}return '父に連れられ、主君に目通りした。緊張で何を言われたか覚えていない。'},S=>S.f.chonan],
+  ['部屋住みのまま兄を支える',S=>{setJob(S,'samurai');ad(S,{kok:-5,bu:3});return '兄の屋敷の離れで暮らす。知行はない。手柄を立てて分家を許されるのが望みだ。'},S=>!S.f.chonan],
+  ['他家へ婿養子に入る',S=>{setJob(S,'samurai');const sp=mkSpouse(S,'buke');S.sur=sp.sur;sp.nm=pick(NM.buke.f);S.koku=rnd(50,Math.max(80,S.f.fkoku));S.f.muko=1;wed(S,sp);sp.age=rnd(13,16);return `${S.sur}家の娘、${sp.nm}の婿となった。知行${S.koku}石。舅の顔色をうかがう日々が始まる。`},S=>!S.f.chonan],
+  ['出家して寺に入る',S=>{shukke(S);ad(S,{chi:10});mj('出家する');return `菩提寺で得度し、${S.nm}と名乗った。武家の子の出家は珍しくない。`},S=>S.mode!=='bushi'],
+  ['家を出て武者修行の旅に出る',S=>{setJob(S,'ronin');S.f.shugyo=1;ad(S,{bu:8,kok:4,mei:-3});mj('武者修行の旅に出る');return '刀一本を差して家を出た。兄の「達者でな」は、どこかほっとした声だった。'},S=>!S.f.chonan]
+ ]},
+{id:'gen_buke_f',c:S=>S.cls==='buke'&&S.sex==='f'&&S.age===13&&S.job==='kid',k:'big',
+ t:'髪上げの祝いをした。武家の娘の行く末は、たいてい親と主君が決める。',
+ ch:[
+  ['嫁入りの日を待つ',S=>{setJob(S,'musume');ad(S,{chi:3});return '薙刀と和歌、それに貝合わせの稽古に励んだ。'}],
+  ['城の奥勤めに上がる',S=>{setJob(S,'nyobo');ad(S,{en:6,chi:4});mj('城の奥勤めに上がる');return `${lord(S)}の城の奥に上がった。女の世界にも、合戦はある。`}]
+ ]},
+{id:'gen_cho_m',c:S=>S.cls==='cho'&&S.sex==='m'&&S.age===15&&S.job==='kid',k:'big',
+ t:S=>S.f.chonan?`元服した。「${S.sur}」の跡取りとして、そろそろ店に立つ頃だ。`:`元服した。店は兄が継ぐ。自分はどうするか。`,
+ ch:[
+  ['跡取りとして店に立つ',S=>{setJob(S,'shonin');S.nm=pick(NM.cho.m);ad(S,{chi:3,en:3});return `${S.nm}と名を改め、帳場の横に座った。${S.fa.alive?'父':'番頭'}の算盤は、自分の三倍速い。`},S=>S.f.chonan],
+  ['よその店に丁稚奉公する',S=>{setJob(S,'shonin');S.f.decchi=1;S.f.hokou=1;S.nm=pick(NM.cho.m);ad(S,{chi:4});return '親戚筋の大店に丁稚として入った。いつか暖簾分けをしてもらうのが目標だ。'},S=>!S.f.chonan],
+  ['家業を手伝いつつ茶の湯を学ぶ',S=>{setJob(S,'shonin');S.f.chado=1;S.nm=pick(NM.cho.m);ad(S,{chi:5,en:4,kan:-5});return '町の茶人に弟子入りした。商人にとって、茶の湯は社交の場でもある。'}],
+  ['店を飛び出して足軽になる',S=>{setJob(S,'ashigaru');ad(S,{bu:5,kok:-5,en:-3});mj('家を飛び出して足軽になる');return `算盤より槍だと、${chichi(S)}と大喧嘩して家を出た。`},S=>warLv(S.y)>0]
+ ]},
+{id:'gen_cho_f',c:S=>S.cls==='cho'&&S.sex==='f'&&S.age===14&&S.job==='kid',k:'big',
+ t:'年頃になった。店の看板娘として、客の評判にもなりはじめた。',
+ ch:[
+  ['店に立って嫁入りを待つ',S=>{setJob(S,'musume');ad(S,{en:5});return '店先に立つと、なぜか若い客が増えた。'}],
+  ['武家屋敷へ行儀見習いに出る',S=>{setJob(S,'nyobo');ad(S,{chi:5,en:3});mj('武家屋敷へ行儀見習いに出る');return '商家の娘が武家に奉公すると、嫁入りの格が上がる。'+(S.mo.alive?'母':'叔母')+'の作戦だった。'}]
+ ]},
+{id:'gen_ji_m',c:S=>S.cls==='ji'&&S.sex==='m'&&S.age===15&&S.job==='kid',k:'big',
+ t:S=>`十五になった。${S.fa.alive?'父':'亡き父'}の寺を継ぐなら、得度するときだ。`,
+ ch:[
+  ['得度して僧になる',S=>{shukke(S);ad(S,{chi:6});if(S.f.chonan)S.f.ie=1;mj('得度する');return `本山で得度し、${S.nm}と名乗った。${S.f.chonan?'いずれこの寺を継ぐ。':''}`}],
+  ['寺を出て武士を目指す',S=>{setJob(S,'ashigaru');ad(S,{bu:6,kok:-4});mj('寺を出て足軽になる');return `経より槍がいい、と寺を飛び出した。${chichi(S)}は三日口をきかなかった。`},S=>warLv(S.y)>0],
+  ['寺を出て町で商いを学ぶ',S=>{setJob(S,'shonin');S.f.decchi=1;S.f.hokou=1;S.sur=pick(NM.cho.ya);S.nm=pick(NM.cho.m);ad(S,{chi:2,en:3});return `門徒の商家「${S.sur}」に奉公に出た。読み書きができるので重宝された。`}]
+ ]},
+{id:'gen_ji_f',c:S=>S.cls==='ji'&&S.sex==='f'&&S.age===14&&S.job==='kid',k:'big',
+ t:'年頃になった。寺の娘は、門徒の間でちょっとした評判だ。',
+ ch:[
+  ['嫁入りを待つ',S=>{setJob(S,'musume');return '寺の手伝いをしながら、縁談を待つことにした。'}],
+  ['尼になる',S=>{shukke(S);ad(S,{chi:5,kok:4});mj('尼となる');return `髪を下ろし、${S.nm}と名乗った。`}]
+ ]},
+{id:'gen_kuge_m',c:S=>S.cls==='kuge'&&S.sex==='m'&&S.age===13&&S.job==='kid',k:'big',mj:'元服・叙爵',
+ t:S=>{const o=S.nm;S.nm=pick(NM.kuge.m);return `元服して従五位下に叙され、${o}から${S.nm}と名を改めた。装束は祖父のお下がりを仕立て直した。`},
+ ch:[
+  ['朝廷に出仕する',S=>{setJob(S,'kuge');ad(S,{chi:3,mei:3});return '内裏に出仕を始めた。仕事の大半は、昔からのしきたりを間違えないことだ。'}],
+  ['門跡寺院に入る',S=>{shukke(S);ad(S,{chi:6,mei:4});mj('門跡寺院に入る');return `名家の子弟が入る寺に入り、${S.nm}と名乗った。口減らしでもある。`}]
+ ]},
+{id:'gen_kuge_f',c:S=>S.cls==='kuge'&&S.sex==='f'&&S.age===13&&S.job==='kid',k:'big',
+ t:'裳着の儀を済ませ、一人前の姫となった。',
+ ch:[
+  ['姫として縁談を待つ',S=>{setJob(S,'musume');ad(S,{chi:3});return '和歌と香の稽古の日々。近頃は、地方の大名から縁談が来ることもあるという。'}],
+  ['宮中に女房として出仕する',S=>{setJob(S,'nyobo');ad(S,{chi:5,mei:5,en:4});mj('宮中に女房として出仕');return '内裏の女房として出仕した。日々の出来事を記す御湯殿上日記の筆も任された。'}],
+  ['尼門跡に入る',S=>{shukke(S);ad(S,{chi:5});mj('尼門跡に入る');return `尼寺に入り、${S.nm}と名乗った。`}]
+ ]},
+
+/* --- 縁談 --- */
+{id:'en',rep:1,p:S=>(S.sex==='f'?.4:.3)+(S.sp||S.f.rien?.1:0),c:S=>!married(S)&&!(S.f.decchi&&!S.f.tedai)&&!isMonk(S)&&S.job!=='ronin'&&S.job!=='miko'&&(S.sex==='f'?S.age>=14&&S.age<=(S.sp||S.f.rien?40:30):S.age>=17&&S.age<=(S.sp?55:38)),
+ t:S=>{const re=!!S.sp||!!S.f.rien;const pre=re?(S.sex==='m'?'連れ合いを亡くして時が経った。後添えの話が来た。':'再縁の話が来た。'):'';
+   const r=s=>pre+s;
+   S.f.cand=S.cls==='kuge'&&S.sex==='f'&&chance(.4)?mkSpouse(S,'buke'):S.cls==='cho'&&S.sex==='f'&&chance(.15)?mkSpouse(S,'buke'):mkSpouse(S);
+   const c=S.f.cand;
+   if(re&&S.sex==='m')c.age=Math.max(18,S.age-rnd(5,20));
+   if(S.sex==='f'&&c.cls==='buke'&&S.cls==='kuge')return r(`地方の大名家の${c.nm}から縁談が来た。都の姫を嫁に迎えたい武家は多い。持参金はいらない、むしろ向こうが出すという。`);
+   if(S.sex==='f'&&S.cls==='buke')return r(`${lord(S)}の命で、${c.nm}との縁談が決まりかけている。${warLv(S.y)>0&&chance(.4)?'相手の家は、つい先年まで敵方だった。':'会ったことはない。'}`);
+   if(S.sex==='f')return r(`仲人が来て、${c.nm}との縁談を持ちかけた。${c.age-S.age>=8?'相手はだいぶ年上だ。':'年回りは悪くない。'}`);
+   return r(`${c.nm}という${re?'女':'娘'}との縁談が持ち込まれた。${pick(['働き者だという評判だ。','器量よしだが、気が強いらしい。','仲人いわく「会えばわかる」。'])}`)},
+ ch:[
+  ['縁談を受ける',S=>{const c=S.f.cand;wed(S,c);
+    if(S.cls==='kuge'&&c.cls==='buke'){ad(S,{kan:rnd(20,60)});return '都を離れ、武家の奥方となった。京の作法を田舎侍に教える日々の始まりだ。'}
+    return pick(['祝言を挙げた。三三九度の盃で手が震えた。',S.cls==='hyak'?'ささやかな祝言を挙げた。村じゅうが集まり、酒がなくなった。':S.cls==='cho'?'祝言を挙げた。町内の旦那衆が集まり、夜更けまで騒いだ。':'祝言を挙げた。親類一同が集まり、夜更けまで謡が続いた。','夫婦になった。最初の喧嘩は三日目だった。'])}],
+  ['断る',S=>{ad(S,{kok:-2,en:-2});return pick(['断った。仲人は露骨に嫌な顔をした。','今はまだその気になれない、と断った。'])},S=>!(S.cls==='buke'&&S.sex==='f')],
+  ['主命に背いて断る',S=>{ad(S,{en:-8,mei:-5});if(chance(.3)){ad(S,{kok:-10});return `${chichi(S)}が平謝りしてどうにか収まったが、家中の評判は落ちた。`}return `${chichi(S)}が病を理由に断ってくれた。娘の顔を見て、何も言わなかった。`},S=>S.cls==='buke'&&S.sex==='f']
+ ]},
+
+/* --- 隠居 --- */
+{id:'inkyo',rep:6,c:S=>S.age>=55&&!S.f.inkyo&&!isMonk(S)&&S.sex==='m'&&!S.f.decchi&&['samurai','shonin','nomin','kuge','chajin'].includes(S.job)&&!!heir(S),
+ t:S=>`五十の坂を越え、跡取りの${heir(S).nm}も一人前になった。そろそろ家督を譲る頃合いだ。`,
+ ch:[
+  ['隠居して頭を丸める',S=>{S.f.inkyo=1;const o=S.nm;shukke(S,true);ad(S,{kok:8,mei:2});mj('隠居して入道となる');return `家督を譲り、頭を丸めて${S.nm}と号した。${o}の名は息子が継いだ。口は出すが、責任は持たない。隠居とはいいものだ。`}],
+  ['まだまだ現役を続ける',S=>{ad(S,{kok:-3,en:-3});return '「わしの目の黒いうちは」と言い張った。息子はため息をついた。'}]
+ ]},
+
+/* --- 初陣 --- */
+{id:'uijin',c:S=>isWar(S)&&S.age>=14&&S.age<=40&&warLv(S.y)>0&&S.job!=='ronin',p:S=>.5+warLv(S.y),k:'big',
+ t:S=>`${lord(S)}の陣触れが出た。${S.job==='ashigaru'?'足軽として':'武者として'}初陣である。`,
+ ch:[
+  ['先陣を切る',S=>{const r=battle(S,2,'初陣');S.f.uijin=1;if(!S.dead)mj('初陣（先陣を切る）');return r}],
+  ['周りに合わせて戦う',S=>{const r=battle(S,1,'初陣');S.f.uijin=1;if(!S.dead)mj('初陣');return r}],
+  ['後ろのほうに隠れる',S=>{const r=battle(S,0,'初陣');S.f.uijin=1;if(S.dead)return r;ad(S,{mei:-3});return '槍を構えたまま、気づけば戦は終わっていた。'}]
+ ]}
+];
+/* ===== 子と孫の一生 ===== */
+const ROLE={m:['長男','次男','三男','四男','五男','六男','七男','八男','九男'],f:['長女','次女','三女','四女','五女','六女','七女','八女','九女']};
+const kAge=k=>S.y-k.by+1;
+/* 子の行く末や嫁ぎ先は、生まれではなく今の暮らし（と連れ合いの家）で決める */
+const famCls=S=>{const j=S.job;
+  if(j==='samurai'||j==='ronin')return 'buke';if(j==='nomin'||j==='ashigaru')return 'hyak';
+  if(j==='shonin'||j==='chajin')return 'cho';if(j==='kuge')return 'kuge';if(j==='so')return 'ji';
+  if(['wife','goke','ama'].includes(j)&&S.sp&&S.sp.cls)return S.sp.cls;return S.cls};
+const AWAY=['足軽','侍','奉公','僧','住職','尼','婿養子','嫁いだ','女房奉公','暖簾分け','勘当'];
+const eldestSon=S=>S.kids.find(k=>k.alive&&k.sex==='m'&&!['僧','婿養子','奉公','足軽','勘当'].includes(k.path));
+
+function mitori(){
+  if(S.age<=7)return '';
+  const ks=liveKids(S).filter(k=>kAge(k)>=8&&k.path!=='勘当');
+  const ms=S.magos.filter(g=>g.alive).length;
+  if(!ks.length&&!ms)return married(S)?` 連れ合いの${S.sp.nm}が、最後まで手を握っていた。`:'';
+  const names=ks.slice(0,2).map(k=>k.nm).join('や')+(ks.length>2?'たち':'');
+  return ` ${names}${ms?(ks.length?'、それに孫たち':'孫たち'):''}が枕元に集まっていた。`;
+}
+
+function kidSteps(out){
+  for(const k of S.kids){
+    if(!k.alive)continue;
+    const a=kAge(k);
+    if(!k.path&&((k.sex==='m'&&a===15)||(k.sex==='f'&&a===14))){out.push(kidPathEv(k));continue}
+    if(k.path&&!k.wed&&!['僧','住職','尼','勘当'].includes(k.path)&&(k.sex==='f'?a>=15&&a<=24:a>=18&&a<=32)&&chance(k.sex==='f'?.3:.2)){out.push(kidWedEv(k));continue}
+    if(k.wed&&a<=44&&chance(.22))out.push(magoEv(k));
+  }
+  for(const k of S.kids){
+    if(!k.alive||kAge(k)<8)continue;
+    const war=k.sex==='m'&&(['足軽','侍'].includes(k.path)||(k.heir&&S.cls==='buke'));
+    if(chance(mort(kAge(k))*.9+(war?.035*warLv(S.y):0))){out.push(kidDeathEv(k,war&&warLv(S.y)>0&&chance(.6)));break}
+  }
+  const g=S.magos.find(g=>g.alive&&S.y-g.by<7&&chance(.035));
+  if(g)out.push({t:S=>{g.alive=0;ad(S,{kok:-8});return `孫の${g.nm}が、はやり病で亡くなった。${g.of}が声を上げて泣いていた。`},mj:S=>`孫の${g.nm}を亡くす`});
+}
+
+function kidPathEv(k){
+  const m=k.sex==='m',c=famCls(S),first=m&&eldestSon(S)===k;
+  const rename=()=>{if(m&&(c==='buke'||c==='kuge')){const o=k.nm;k.nm=pick(NM[c].m);return `幼名の${o}を改め、${k.nm}と名乗らせた。`}return ''};
+  const ch=[];
+  if(m){
+    if(S.job==='so')ch.push(['寺の跡継ぎとして得度させる',S=>{k.path='僧';k.heir=1;k.nm=hoName();ad(S,{kok:5});return `頭を剃らせ、${k.nm}という法名を授けた。`}]);
+    else if(first)ch.push(['跡取りとして育てる',S=>{k.path=c==='kuge'?'公家':c==='buke'?'侍':'跡取り';k.heir=1;ad(S,{kok:6,en:2});return rename()+'家を継ぐ者として、仕事を一から教え込むことにした。'}]);
+    if(!first&&c==='buke'){
+      ch.push(['他家へ婿養子に出す',S=>{k.path='婿養子';k.wed=1;k.to=pick(NM.buke.sur)+'家';ad(S,{en:5,kan:-Math.min(S.kan,2)});return rename()+`${k.to}の婿に決まった。家どうしの縁が一つ増えた。`}]);
+      ch.push(['部屋住みとして手元に置く',S=>{k.path='侍';ad(S,{kan:-Math.min(S.kan,2)});return rename()+'兄を支える部屋住みとして、家に置くことにした。'}]);
+    }
+    if(!first&&warLv(S.y)>0&&c!=='kuge')ch.push(['足軽に出す',S=>{k.path='足軽';ad(S,{kok:-4});return `${lord(S)}の足軽に出した。陣笠をかぶった後ろ姿が、急に大人に見えた。`}]);
+    if(!first&&(c==='hyak'||c==='ji'||c==='cho'))ch.push(['町の商家へ奉公に出す',S=>{k.path='奉公';ad(S,{kok:-3,en:2});return '町の商家へ丁稚奉公に出した。盆と正月には、顔を見せに来るだろうか。'}]);
+    if(!first&&S.job!=='so')ch.push([c==='kuge'?'門跡寺院に入れる':'寺に入れる',S=>{k.path='僧';k.nm=hoName();ad(S,{kok:-2,mei:1});return `寺に入れた。${k.nm}という法名をもらった。`}]);
+    if(!ch.length)ch.push(['家の仕事を手伝わせる',S=>{k.path='跡取り';return '家の仕事を手伝わせることにした。'}]);
+  }else{
+    ch.push(['よい縁談を探す',S=>{k.path='嫁入り待ち';ad(S,{en:2});return '仲人に声をかけ、嫁ぎ先を探すことにした。'}]);
+    if(c==='buke'||c==='kuge')ch.push([c==='kuge'?'宮中に女房として出仕させる':'城の奥勤めに上げる',S=>{k.path='女房奉公';ad(S,{mei:3,en:3});return '奥勤めに上がった。いずれ、よい縁にもつながるだろう。'}]);
+    else if(c!=='hyak'||S.f.oyaotona||S.f.otona)ch.push(['武家屋敷へ奉公に出す',S=>{k.path='女房奉公';ad(S,{en:2});return '武家屋敷へ奉公に出した。行儀を覚えれば、嫁ぎ先の格も上がる。'}]);
+    else ch.push(['子守奉公に出す',S=>{k.path='女房奉公';ad(S,{kan:1,kok:-3});return 'よその家へ子守奉公に出した。口減らしでもある。'}]);
+    ch.push(['尼寺に入れる',S=>{k.path='尼';ad(S,{kok:-3});return '尼寺に入れた。'}]);
+  }
+  for(const c of ch){const tw=KTW[c[0]];if(!tw)continue;const o=c[1];
+    c[1]=S=>{const r=o(S);const x=wpick(tw,y=>y[0]);if(x[1])ad(S,x[1]);const m=typeof x[2]==='function'?x[2](k):x[2];return m?r+' '+m:r}}
+  return {t:`${k.role}の${k.nm}が${m?'元服の年を迎えた':'年頃になった'}。この子の行く末を決めなければならない。`,k:'big',ch,mj:S=>`${k.role}の${k.nm}の行く末を決める`};
+}
+
+/* 子の行く末の選択に、その後の成り行きを足す [重み, 効果, 文] */
+const KTW={
+ '跡取りとして育てる':[[2,null,''],[1,{kok:3},k=>`${k.nm}は思ったより飲み込みが早かった。`],[1,{kok:-3},k=>`${k.nm}は不満げだった。本当はほかにやりたいことがあったらしい。`]],
+ '足軽に出す':[[2,null,''],[1,{kok:-3},'出発の朝、母親は姿を見せなかった。泣いているのを見せたくなかったのだろう。'],[1,{kok:2},k=>`${k.nm}は、むしろ嬉しそうに出ていった。`]],
+ '寺に入れる':[[2,null,''],[1,{kok:2},'本人も、学問ができると喜んでいた。'],[1,{kok:-4},'最後まで嫌がって、門の前で泣いていた。']],
+ '門跡寺院に入れる':[[2,null,''],[1,{mei:2},'寺での暮らしぶりが、思いのほか評判になった。']],
+ '町の商家へ奉公に出す':[[2,null,''],[1,{kok:3},'奉公先の主人は、厳しいが情に厚い人だという。'],[1,{kok:-4},'奉公先の主人が厳しく、ひと月で一度逃げ帰ってきた。説得して送り返した。']],
+ '他家へ婿養子に出す':[[2,null,''],[1,{en:3},'婿入り先の舅に気に入られたらしい。'],[1,{kok:-3},'婿入り先の家風が合わず、苦労しているらしい。']],
+ '部屋住みとして手元に置く':[[2,null,''],[1,{en:2},'兄弟の仲はよく、家の中が明るくなった。']],
+ 'よい縁談を探す':[[2,null,''],[1,{kok:3},k=>`器量よしの評判で、${k.nm}には縁談がいくつも舞い込んだ。`],[1,{kok:-3},k=>`${k.nm}に「好いた人がいる」と打ち明けられた。どうしたものか。`]],
+ '尼寺に入れる':[[1,{kok:-3},k=>S.sex==='f'?'髪を下ろす日、目を伏せることしかできなかった。':married(S)?`髪を下ろす日、${S.sp.nm}は目を伏せていた。`:'髪を下ろす日、まともに顔を見られなかった。'],[1,{kok:2},'本人が望んだことだった。晴れやかな顔をしていた。'],[1,{kok:-5},'最後まで泣いて嫌がった。']],
+ '城の奥勤めに上げる':[[2,null,''],[1,{mei:2},'奥方に気に入られ、早くも身の回りの世話を任されたらしい。'],[1,{kok:-2},'古参の侍女たちにいびられていると、文に書いてきた。']],
+ '宮中に女房として出仕させる':[[2,null,''],[1,{mei:3},'歌の才を認められ、早くも評判になっているという。']],
+ '武家屋敷へ奉公に出す':[[2,null,''],[1,{en:2},'行儀がよくなり、帰省のたびに見違えるようだった。'],[1,{kok:-3},'奉公先で叱られてばかりだと、泣きながら帰ってきたことがある。']],
+ '子守奉公に出す':[[2,null,''],[1,{kok:-4},'まだ小さな背中に赤子をおぶって出ていった。'],[1,{kan:1},'奉公先の家が、給金のほかに米も持たせてくれた。']]
+};
+function kidWedEv(k){
+  return {t:S=>{k.wed=1;const C=famCls(S);
+    if(k.sex==='f'){
+      const cost=Math.min(S.kan,rnd(2,8)+(C==='buke'||C==='kuge'?10:0));
+      ad(S,{kan:-cost,en:4,kok:6});k.path='嫁いだ';
+      k.to=C==='hyak'?`隣村の${pick(NM.hyak.m)}の家`:C==='cho'?`「${pick(NM.cho.ya.filter(x=>x!==S.sur))}」`:C==='kuge'&&chance(.5)?'地方の大名家':C==='ji'?`門徒の寺`:`${pick(NM.buke.sur.filter(x=>x!==S.sur))}家`;
+      return `${k.role}の${k.nm}が、${k.to}へ嫁いでいった。${cost>=8?'嫁入り道具をそろえたら、蔵がだいぶ寂しくなった。':(C==='hyak'?'村はずれまで、嫁入りの行列を見送った。':C==='cho'?'店の前で、嫁入りの行列を見送った。':'門の前で、輿に乗る娘を見送った。')}`;
+    }
+    ad(S,{en:3,kok:6});k.wife=pick(NM[C].f);
+    return `${k.role}の${k.nm}が、${k.wife}という嫁を迎えた。${pick(['家がにぎやかになった。','嫁はよく働く。','嫁と姑の間が、早くもぴりぴりしている。'])}`;
+  },mj:S=>k.sex==='f'?`${k.role}の${k.nm}が嫁ぐ`:`${k.role}の${k.nm}が嫁を迎える`};
+}
+
+function magoEv(k){
+  return {t:S=>{
+    const sex=chance(.5)?'m':'f',nm=babyName(S,sex);
+    S.magos.push({nm,sex,by:S.y,alive:1,of:k.nm});k.mago=(k.mago||0)+1;
+    const first=S.magos.length===1;ad(S,{kok:first?10:5,en:1});
+    const whose=k.sex==='m'?`${k.nm}のところに`:`嫁いだ${k.nm}に`;
+    return first?`初孫が生まれた。${whose}${sex==='m'?'男の子':'女の子'}、名は${nm}。抱かせてもらうと、思ったより重かった。`:`${whose}子が生まれた。${S.magos.length}人目の孫で、名は${nm}。`;
+  },mj:S=>S.magos.length===1?'初孫が生まれる':null};
+}
+
+function kidDeathEv(k,war){
+  return {t:S=>{k.alive=0;k.dAge=kAge(k);ad(S,{kok:-18});
+    if(k.heir)k.heir=0;
+    if(war){k.cause='戦で討死';return `${k.role}の${k.nm}が、戦で討死したと知らせが届いた。${pick(['形見の刀だけが帰ってきた。','遺髪だけが届いた。','最後まで勇ましく戦ったと、組頭は言った。'])}`}
+    const c=natCause({age:k.dAge});k.cause=c.replace(/（.*?）/,'');
+    return `${k.role}の${k.nm}が${c}で亡くなった。まだ${k.dAge}歳だった。${pick(['親より先に逝く子があるか、と声を上げて泣いた。','葬式の間、ずっと手が震えていた。','あの子の好物を、しばらく作れなかった。'])}`;
+  },mj:S=>`${k.role}の${k.nm}を亡くす`};
+}
+
+/* 終幕で一人ずつの行く末を書く */
+const PATHL={'跡取り':'家を継ぐ','侍':'侍','公家':'公家','足軽':'足軽','奉公':'商家へ奉公','暖簾分け':'暖簾分けで店を持つ','僧':'僧','住職':'寺の住職','尼':'尼','婿養子':'婿養子','嫁入り待ち':'嫁入り前','嫁いだ':'嫁いだ','女房奉公':'奥勤め','出戻り':'出戻り','勘当':'勘当'};
+function kidFate(k){
+  const a=k.alive?kAge(k):k.dAge;
+  if(!k.alive&&a<=7)return `${a}歳で夭折`;
+  const p=[];
+  if(k.path==='嫁いだ'||k.path==='婿養子')p.push(`${k.to}へ${k.path==='婿養子'?'婿入り':'嫁ぐ'}`);
+  else if(k.path)p.push(PATHL[k.path]||k.path);
+  if(k.wife)p.push(`妻は${k.wife}`);
+  if(k.mago)p.push(`子${k.mago}人`);
+  p.push(k.alive?`存命（${a}歳）`:`${a}歳で${k.cause==='戦で討死'?'戦で討死':'死去'}`);
+  return p.join('・');
+}
+/* ===== あるあるイベント：子ども・共通・女性 ===== */
+const EV=[];
+const west=S=>WEST.includes(S.reg);
+/* 旅暮らし（家や村にいない）と、村で暮らす人 */
+const wander=S=>S.job==='ronin'||S.job==='miko';
+const villager=S=>vil(S)||(S.cls==='hyak'&&isKid(S));
+const city=S=>['yamashiro','izumi','settsu','chikuzen'].includes(S.reg);
+
+/* --- 子ども --- */
+EV.push(
+{id:'k_hoso',c:S=>isKid(S)&&S.age>=2,w:.8,once:1,t:S=>{if(chance(.05+(S.st.tai<40?.04:0))){die(S,'疱瘡（もがさ）');S.f.sudden=1;return '村で疱瘡がはやり、高い熱が七日続いた。'}ad(S,{tai:-rnd(5,10)});return pick(['疱瘡にかかったが、どうにか持ちこたえた。顔に痘痕（あばた）が少し残った。',`はやり病で寝込んだ。${haha(S)}が枕元で夜通し祈っていた。`])}},
+{id:'k_kaki',c:S=>isKid(S)&&S.age>=5,t:'隣の家の柿を盗んで食べているところを見つかった。',
+ ch:[['素直に謝る',S=>{ad(S,{en:3});return '拳骨を一発もらったが、帰りに柿を二つ持たされた。'}],['一目散に逃げる',S=>{if(chance(.5)){ad(S,{tai:2,mei:-2});return '逃げ切った。翌日、親にばれて倍叱られた。'}ad(S,{tai:-3});return '転んで膝をすりむき、捕まった。'}]]},
+{id:'k_kawa',c:S=>isKid(S)&&S.age>=4,t:S=>{if(chance(.025)){die(S,'水の事故');S.f.sudden=1;return '川遊びの最中に深みにはまった。'}ad(S,{tai:-2,kok:-2});return '川で遊んでいて深みにはまり、溺れかけた。通りかかった馬借に引き上げられた。'}},
+{id:'k_furyu',c:S=>isKid(S)&&S.age>=5,t:S=>pick(['祭りで風流踊りを見た。派手な衣装で踊り狂う大人たちに目を丸くした。','盆の夜、村じゅうが輪になって踊った。眠い目をこすりながら最後まで見た。']),fx:{kok:4}},
+{id:'k_maigo',c:S=>isKid(S)&&S.age>=4&&S.age<=9,t:'市の人混みで迷子になった。半刻後、飴屋の前で泣いているところを見つかった。',fx:{kok:-2}},
+{id:'k_take',c:S=>isKid(S)&&S.age>=6,t:S=>pick(['竹馬で村一番の高さまで乗れるようになった。','凧揚げで、隣村の子らの凧を落としてやった。','独楽回しで負けなしになった。']),fx:{tai:2,en:2}},
+{id:'k_inu',c:S=>isKid(S)&&S.age>=5,t:S=>pick([`近所の悪童と取っ組み合いの喧嘩をした。勝ったが、${haha(S)}に叱られた。`,'野良犬に追いかけられ、木の上で半日過ごした。']),fx:{bu:2}},
+{id:'k_kitsune',c:S=>isKid(S)&&S.age>=5&&S.cls==='hyak',t:'夕暮れ、山で道に迷った。大人たちは「狐に化かされた」と言い、神隠し騒ぎになった。',fx:{kok:-3,en:2}},
+{id:'k_ue',c:S=>isKid(S)&&S.cls==='hyak'&&S.age>=3,t:'凶作の冬。粟と菜っ葉の雑炊が一日一回だけだった。',fx:{tai:-5,kok:-3}},
+{id:'k_tera',c:S=>isKid(S)&&S.age>=8&&S.age<=12&&(S.cls==='cho'||(S.cls==='hyak'&&S.f.oyaotona)),t:'寺の和尚が、読み書きを教えてやろうと言ってくれた。',
+ ch:[['寺に通う',S=>{ad(S,{chi:rnd(6,10)});return S.cls==='cho'?'いろはと算盤を覚えた。店の帳簿が少し読めるようになった。':'いろは四十七文字を覚えた。村で字が読める子は数えるほどだ。'}],['家の手伝いを優先する',S=>{ad(S,{tai:3});return `字より鍬だ、と${chichi(S)}が言った。`}]]},
+{id:'k_komori',c:S=>isKid(S)&&S.cls==='hyak'&&S.age>=8&&S.age<=12&&!S.f.chonan,t:'口減らしのため、よその家へ子守奉公に出された。',fx:{tai:-2,en:4,kok:-4},once:1,mj:'子守奉公に出される'},
+{id:'k_hitojichi',c:S=>isKid(S)&&S.cls==='buke'&&S.age>=6&&S.f.fkoku>=500&&warLv(S.y)>0,once:1,k:'big',mj:'人質に出される',
+ t:S=>`家の忠義の証として、${lord(S)}のもとへ人質に出された。`,fx:{chi:6,en:4,kok:-6},
+ ch:[['おとなしく学問に励む',S=>{ad(S,{chi:5});return '人質の身でも学問はできる。殿の子らと机を並べた。'}],['殿の子と取っ組み合う',S=>{ad(S,{bu:4,mei:3});return '殿の嫡男と喧嘩して勝った。家臣たちは青ざめたが、殿は笑っていた。'}]]},
+{id:'k_kendo',c:S=>isKid(S)&&S.cls==='buke'&&S.sex==='m'&&S.age>=7,t:S=>pick(['木刀の素振りを毎朝千回。手の豆がつぶれた。','馬から三度落ちて、四度目に乗りこなした。','弓の稽古で、初めて的の真ん中を射抜いた。']),fx:{bu:5,tai:2}},
+{id:'k_kemari',c:S=>isKid(S)&&S.cls==='kuge'&&S.age>=6,t:'蹴鞠の稽古をした。鞠を落とすと、師匠の扇が飛んでくる。',fx:{tai:2,chi:2}},
+{id:'k_okyo',c:S=>isKid(S)&&S.cls==='ji'&&S.age>=5,t:'お経の暗記をさせられた。意味はわからないが、節回しは覚えた。',fx:{chi:4}},
+{id:'k_soroban',c:S=>isKid(S)&&S.cls==='cho'&&S.age>=6,t:S=>`算盤の稽古を始めた。${S.fa.alive?'父':'番頭'}いわく「商人の子は、箸より先に算盤を持て」。`,fx:{chi:4}},
+{id:'k_nanban',c:S=>isKid(S)&&west(S)&&S.y>=1550&&S.y<=1612&&S.age>=6,once:1,t:S=>S.cls==='hyak'?'港町で南蛮人を見た。背が高く、鼻も高く、黒い僧衣を着ていた。':'港町で南蛮人を見た。背が高く、鼻も高く、黒い僧衣を着ていた。父の知り合いの商人が、金平糖という南蛮の菓子をひと粒くれた。星の形をしていた。',fx:{kok:5,chi:2}},
+{id:'k_teppo',c:S=>isKid(S)&&S.y>=1550&&S.age>=6,once:1,t:'初めて鉄砲の音を聞いた。雷が落ちたのかと思って腰を抜かした。',fx:{kok:-1}}
+);
+
+/* --- 共通（大人） --- */
+EV.push(
+{id:'c_ise',c:S=>adult(S)&&!S.f.ise&&S.age<=60,w:.8,t:S=>wander(S)?'旅の途中で、伊勢へ向かう参詣の一行と道連れになった。':vil(S)?'村の講中で、伊勢参りに行く話がまとまった。順番に代表を送るため、皆で銭を積み立ててきたのだ。':S.cls==='cho'?'町の講中で、伊勢参りに行く話がまとまった。':'知り合いの御師が、伊勢参りを勧めに来た。',
+ ch:[['皆と参る',S=>{S.f.ise=1;ad(S,{kan:-Math.min(S.kan,rnd(3,6)),kok:10,en:5});mj('伊勢参り');return pick(['道中の宿で、御師の料理が豪勢だった。','内宮の森で、生まれて初めて海の匂いをかいだ。','帰り道、道中で知り合った者と酒を酌み交わした。'])},S=>S.kan>=3&&!(S.f.decchi&&!S.f.banto)&&S.job!=='nyobo'],
+     ['留守番をする',S=>{ad(S,{kan:1});return '土産の伊勢暦をもらった。'}],
+     ['黙って抜け参りする',S=>{S.f.ise=1;ad(S,{kok:12,en:-3,kan:-1});return '家族にも主人にも言わず、柄杓一本持って飛び出した。道々で施しを受けて、どうにかたどり着いた。'},S=>S.y>=1640&&(S.job==='shonin'&&S.f.decchi||S.job==='nyobo')]]},
+{id:'c_bakuchi',c:S=>adult(S)&&S.sex==='m'&&!isKuge(S)&&!isMonk(S)&&!(S.f.decchi&&!S.f.tedai),w:1.1,t:S=>pick(['仲間に誘われ、辻堂の裏の賭場に顔を出した。','双六の賭けに誘われた。']),
+ ch:[['有り金を張る',S=>{const b=Math.max(1,Math.round(S.kan/2));if(chance(.42)){ad(S,{kan:b,kok:4});return '丁と張って大当たり。その夜は皆に酒をおごった。'}ad(S,{kan:-b,kok:-6});return '負けた。着物まで取られそうになった。'}],
+     ['少しだけ張る',S=>{if(chance(.45)){ad(S,{kan:1});return 'ちょっと勝った。これくらいがちょうどいい。'}ad(S,{kan:-1});return 'ちょっと負けた。勉強代だ。'}],
+     ['断る',S=>{ad(S,{en:-1});return '付き合いが悪いと言われた。'}]]},
+{id:'c_kenka',c:S=>adult(S)&&S.sex==='m'&&!isKuge(S),t:S=>pick(['酒の席で、肩が触れた触れないで口論になった。','水を汲む順番をめぐって、隣家の男と言い争いになった。','往来で「どこに目をつけている」と因縁をつけられた。']),
+ ch:[['殴り返す',S=>{if(S.y>=1550&&chance(.25)){ad(S,{mei:-6,kan:-Math.min(S.kan,5)});return '大立ち回りの末、「喧嘩両成敗」で双方お咎めを受けた。'}if(chance(.5+S.st.bu/200)){ad(S,{mei:3,bu:2});return '一発で相手が伸びた。'}ad(S,{tai:-6});return '殴り合いになり、目の周りに青あざを作った。'}],
+     ['頭を下げて収める',S=>{ad(S,{en:3,mei:-1});return '「すまねえ」の一言で、その場は収まった。'}],
+     ['逃げる',S=>{ad(S,{mei:-2});return '逃げ足だけは誰にも負けない。'}]]},
+{id:'c_kaji',c:S=>adult(S),w:.7,t:S=>{const l=Math.round(S.kan*rnd(30,70)/100);ad(S,{kan:-l,kok:-6});return pick(['隣家の竈から火が出て、家が半分焼けた。','夜中に火事。家財を担いで逃げ出したが、蓄えの多くが灰になった。'])+(S.kan<=0?'':'')}},
+{id:'c_eki',c:S=>S.age>=10,w:.8,t:S=>{if(chance(.025+(S.age>55?.04:0))){die(S,'疫病');S.f.sudden=1;return '疫病が流行し、村でも町でも次々と人が倒れた。自分も高い熱を出した。'}ad(S,{tai:-rnd(5,12)});return '疫病が流行った。どうにか生き延びたが、近所で何人も亡くなった。'}},
+{id:'c_toji',c:S=>S.age>=40&&S.kan>=10&&S.job!=='nyobo'&&!(S.f.decchi&&!S.f.banto)&&(S.cls!=='hyak'||S.f.otona||S.f.oyaotona),w:.6,t:'腰が痛む。湯治に行けば治ると人は言う。',
+ ch:[['湯治に出かける',S=>{ad(S,{kan:-5,tai:rnd(5,9),kok:6});return pick(['山あいの湯で七日過ごした。湯治場で知り合った者と碁を打った。','温泉の湯で腰の痛みが少し和らいだ。'])}],['我慢する',S=>{ad(S,{tai:-2});return 'もぐさを据えて我慢した。'}]]},
+{id:'c_renga',c:S=>adult(S)&&S.st.chi>=35&&!(S.f.decchi&&!S.f.banto)&&!['ashigaru','miko'].includes(S.job)&&(S.cls!=='hyak'||isMonk(S)||S.job==='samurai'),t:'連歌の会に招かれた。前の人の句に、即座に句をつけなければならない。',
+ ch:[['気の利いた句をつける',S=>{if(chance(.3+S.st.chi/200)){ad(S,{mei:5,en:4});return '座が「おお」とどよめいた。'}ad(S,{mei:-2});return '季語を間違えて失笑された。'}],['無難な句でしのぐ',S=>{ad(S,{en:2});return '可もなく不可もなく、酒だけはしっかり飲んだ。'}]]},
+{id:'c_kabuki',c:S=>adult(S)&&S.y>=1603&&(city(S)||S.kan>=20),once:1,t:S=>S.reg==='yamashiro'?'京で評判の「かぶき踊り」を見物した。男装の女たちが派手に踊り、客は総立ちだった。':'旅芸人の一座がやって来て、京で評判の「かぶき踊り」を真似て踊った。客は総立ちだった。',fx:{kok:8},mj:'かぶき踊りを見物'},
+{id:'c_kiri',c:S=>adult(S)&&west(S)&&S.y>=1550&&S.y<=1612&&!S.f.kiri&&!isMonk(S),w:.8,t:'南蛮寺の伴天連が、デウスの教えを説いていた。病人を手当てし、貧しい者に粥を配っている。',
+ ch:[['洗礼を受ける',S=>{const n=kirishitan(S);ad(S,{kok:8,en:4});mj(`洗礼を受け、${n}となる`);return `洗礼を受け、${n}という名をもらった。首にかけたロザリオが少し重い。`}],['話だけ聞く',S=>{ad(S,{chi:3});return '天地を造った神がいるという。仏様と喧嘩にならないのだろうか。'}],['怪しんで近づかない',S=>'「南蛮の妖術だ」と言う者もいる。近寄らないことにした。']]},
+{id:'c_tozoku',c:S=>adult(S)&&S.kan>=5,w:.6,t:S=>{if(chance(.015)){die(S,'山賊に襲われて');S.f.sudden=1;return '峠道で山賊に襲われた。'}const l=Math.min(S.kan,rnd(3,10));ad(S,{kan:-l,kok:-5});return '峠道で山賊に身ぐるみはがされた。命があっただけましだ。'}},
+{id:'c_yume',c:S=>S.age>=10,w:.6,t:S=>pick(['夢枕に白い狐が立ち、何か告げた。中身は思い出せない。',(S.curS==='春'?'初夢に宝船が出てきた。縁起がいいらしい。':'夢の中で空を飛んでいた。目が覚めると、布団から落ちていた。'),'夢で死んだ祖父に叱られた。']),fx:{kok:3}},
+{id:'c_yukidaore',c:S=>adult(S),w:.6,t:'道端に行き倒れの旅人がいた。まだ息がある。',
+ ch:[['家に連れて帰って介抱する',S=>{ad(S,{kan:-1,en:5,kok:3});if(chance(.25)){ad(S,{kan:rnd(5,15)});return '回復した旅人は、実は旅の商人だった。礼にと、銭を置いていった。'}return '三日後、旅人は礼を言って去っていった。'},S=>!wander(S)&&!S.f.decchi&&S.job!=='nyobo'],
+     ['近くの寺まで背負っていく',S=>{ad(S,{tai:-2,en:4,kok:3});return chance(.6)?'寺の和尚に事情を話して預けた。数日後、旅人は元気になったと聞いた。':'寺に運び込んだが、旅人はその晩に息を引き取った。和尚と二人で経を上げた。'},S=>wander(S)||!!S.f.decchi||S.job==='nyobo'],['水だけ与える',S=>{ad(S,{kok:1});return '竹筒の水を飲ませ、先を急いだ。'}],['見なかったことにする',S=>{ad(S,{kok:-4});return 'しばらく夢に見た。'}]]},
+{id:'c_yamabushi',c:S=>S.age>=10,w:.5,t:S=>pick(['山伏が村に来て、法螺貝を吹きながら祈祷をした。ご利益があったかはわからない。','旅の琵琶法師が平家物語を語った。皆、鼻をすすっていた。']),fx:{kok:3}},
+{id:'c_sake',c:S=>adult(S)&&S.sex==='m',w:.7,t:S=>pick(['酒を飲みすぎて、翌朝まで道端で寝ていた。','祝いの席で酔いつぶれ、隣の男の膳を平らげてしまった。']),fx:{tai:-2,mei:-2,kok:3}},
+{id:'c_fufu',c:S=>married(S),w:.9,t:S=>pick([`連れ合いの${spn(S)}と大喧嘩した。原因は誰も覚えていない。`,`${spn(S)}と二人で月を見た。何も話さなかったが、悪くない夜だった。`,`${spn(S)}が寝込み、慣れない看病をした。`]),fx:S=>({kok:rnd(-3,4),en:1})},
+{id:'c_mago',c:S=>S.age>=42&&S.kids.some(k=>k.alive&&S.y-k.by>=17),w:1.2,cd:4,t:S=>{const k=S.kids.find(k=>k.alive&&S.y-k.by>=17);return `${k.nm}に子が生まれた。孫の顔を見て、${S.sex==='m'?'じじ':'ばば'}になったことを知った。`},fx:{kok:8,en:2}},
+{id:'c_kodomo',c:S=>S.kids.some(k=>k.alive&&S.y-k.by===14),t:S=>{const k=S.kids.find(k=>k.alive&&S.y-k.by===14);return k.sex==='m'?`息子の${k.nm}が元服した。いつの間にか背を越されていた。`:`娘の${k.nm}が年頃になった。縁談の話がちらほら来る。`},fx:{kok:5}},
+{id:'c_ha',c:S=>S.age>=50,w:.7,t:S=>pick(['奥歯が抜けた。固い干し飯が噛めなくなった。',`${S.magos.some(g=>g.alive)?'孫':'子'}の名前を三度言い間違えた。`,'目が遠くなり、針の穴が見えなくなった。']),fx:{tai:-2}},
+{id:'c_teppoya',c:S=>adult(S)&&S.y>=1555&&S.y<=1600&&!isMonk(S),w:.5,t:'鉄砲の試し撃ちを見物した。百歩先の板が粉々になった。これからの戦は変わる、と誰もが思った。',fx:{chi:2}},
+{id:'c_rakusho',c:S=>adult(S)&&S.reg==='yamashiro',w:.6,t:S=>pick(['二条河原に落書（らくしょ）が立った。お偉方への悪口が、うまい歌になっていた。','都の辻で、天下人を茶化す落首が評判になっている。']),fx:{kok:2}},
+{id:'c_kinpei',c:S=>adult(S)&&west(S)&&S.y>=1570&&S.y<=1640&&!isMonk(S)&&(S.job==='kuge'||(S.cls==='kuge'&&['wife','musume','nyobo','goke'].includes(S.job))||(S.job==='samurai'&&S.koku>=300)||(isMerch(S)&&!S.f.decchi&&S.kan>=60)||!!S.f.goyo),once:1,t:'贅沢な席で、南蛮渡来の「かすていら」が出された。卵と砂糖の味がした。砂糖は薬として売られるほど高価な品だ。この世にこんな甘いものがあるとは。',fx:{kok:6}},
+{id:'c_sekiri',c:S=>S.age>=30,w:.5,t:'腹を下して十日寝込んだ。',fx:{tai:-6}},
+{id:'c_kiki',c:S=>adult(S),w:.6,t:'大雨で川があふれた。床上まで水が来た。',fx:S=>({kan:-Math.round(S.kan*.2),kok:-4})}
+);
+
+/* --- 女性 --- */
+const isWife=S=>S.sex==='f'&&(S.job==='wife'||S.job==='goke');
+EV.push(
+{id:'f_ohaguro',c:S=>S.sex==='f'&&S.age>=15&&S.age<=19&&!isMonk(S)&&S.cls!=='hyak',once:1,t:'初めてお歯黒をつけた。鉄くさい味がする。鏡の中の自分が、急に大人に見えた。',fx:{mei:2}},
+{id:'f_shuto',c:S=>S.job==='wife'&&S.age<=35,t:S=>pick(['姑に味噌汁の味が薄いと言われた。三日連続で。','姑に「うちの家風では」と言われた。家風とは何なのか、誰も教えてくれない。','姑が寝込んだ。看病していたら、初めて「ありがとう」と言われた。']),fx:S=>({kok:rnd(-5,3)})},
+{id:'f_hata',c:S=>S.sex==='f'&&vil(S),t:S=>pick(['夜なべして機（はた）を織った。布は市で売れた。','木綿の種をまいた。近ごろは麻より木綿がよく売れる。']),fx:{kan:2,tai:-1}},
+{id:'f_rokujo',c:S=>S.cls==='buke'&&S.sex==='f'&&married(S)&&warLv(S.y)>0,w:.5,once:1,k:'big',t:S=>`嫁ぎ先の家と、実家の主家が手切れとなった。夫の${spn(S)}は黙っている。`,
+ ch:[['実家に戻る',S=>{S.sp=null;S.f.rien=1;S.job='musume';ad(S,{kok:-12,mei:2});mj('離縁して実家へ戻る');return '輿に乗って実家へ戻った。子は置いてくるしかなかった。'}],['嫁ぎ先に残る',S=>{ad(S,{en:5,kok:-6});mj('離縁を拒み、嫁ぎ先に残る');return '「わたしはもう、この家の者です」と言い切った。実家の父からの文は、燃やした。'}]]},
+{id:'f_kubi',c:S=>S.cls==='buke'&&S.sex==='f'&&adult(S)&&warLv(S.y)>.1,once:1,t:'籠城中、城の女たちと一緒に、討ち取った首にお歯黒をつけて化粧をした。首実検で手柄を見栄えよくするためだ。夜は首と同じ部屋で寝た。',fx:{kok:-8,bu:3}},
+{id:'f_rojo',c:S=>S.cls==='buke'&&S.sex==='f'&&adult(S)&&warLv(S.y)>.1,w:.7,t:S=>pick([S.y>=1555?'籠城に備えて、女たちで鉄砲玉を鋳た。':'籠城に備えて、女たちで投げる石を櫓に運び上げた。','籠城戦。握り飯を作って、塀ぎわの兵に配って回った。']),fx:{bu:2,tai:-2}},
+{id:'f_onnajoshu',c:S=>S.cls==='buke'&&isWife(S)&&warLv(S.y)>0&&S.age>=25,w:S=>S.job==='goke'?1.5:.35,once:1,k:'big',
+ t:S=>S.job==='goke'?'夫亡きあと、跡取りはまだ幼い。家臣たちは、奥方が城を預かるべきだと言う。':'夫が出陣中に、敵の一隊が城に迫った。城に残る男は老人ばかりだ。',
+ ch:[['女城主として城を守る',S=>{if(chance(.6+S.st.chi/300)){ad(S,{mei:15,bu:5});mj('女城主として城を守り抜く');return '薙刀を手に櫓に立ち、采配を振るった。敵は城を落とせず引き上げた。「おんな城主」の名は近隣に響いた。'}if(chance(.4)){die(S,'落城の折に自害');return '奮戦むなしく城は落ち、炎の中で自ら命を絶った。'}ad(S,{mei:6,kok:-10});return '城は落ちたが、子を連れて落ち延びた。'}],
+     ['城を明け渡して子を守る',S=>{ad(S,{mei:-3,kok:-6});return '降伏して城を明け渡した。子の命は助けるという約束を、敵は守った。'}]]},
+{id:'f_goke',c:S=>S.job==='goke'&&S.age<=40,k:'big',t:'後家となって一年が過ぎた。再縁の話が持ち込まれた。',
+ ch:[['再縁する',S=>{const sp=mkSpouse(S);wed(S,sp);return `${sp.nm}のもとへ嫁いだ。連れ子のいる者同士の祝言だった。`}],['亡き夫の家を守る',S=>{ad(S,{mei:5,kok:-3});return '家を守ると決めた。近所の者は「しっかりした後家さん」と呼ぶ。'}],['尼になって菩提を弔う',S=>{shukke(S);ad(S,{kok:6});mj('夫の菩提を弔うため尼となる');return `髪を下ろし、${S.nm}と名乗った。`}]]},
+{id:'f_tsubone',c:S=>S.job==='nyobo',t:S=>pick(['奥の局同士の争いに巻き込まれた。どちらにつくかで、この先が決まる。','御台所の機嫌を損ねた古参の侍女が、急に暇を出された。明日は我が身だ。','奥方様の文の代筆を任されるようになった。']),fx:{en:3,chi:2}},
+{id:'f_miko',c:S=>S.job==='miko'&&warLv(S.y)>0,t:'口寄せをした村で、「この先の峠に軍勢が集まっている」という話を聞いた。一座の頭は、それを誰かに書き送っていた。',
+ ch:[['見て見ぬふりをする',S=>{ad(S,{kan:3});return '知らない方がいいこともある。'}],['一座を抜ける',S=>{S.job='musume';ad(S,{kok:-3,en:-3});return '怖くなって一座を抜けた。村に戻ると、変わった娘として扱われた。'}]]},
+{id:'f_naishoku',c:S=>isWife(S)&&S.cls!=='kuge',t:S=>pick(['内職の糸紡ぎで、少し蓄えができた。','子どもを背負ったまま、畑と台所を行ったり来たりの一年だった。']),fx:{kan:2}}
+);
+/* ===== 季節と暮らしの小さな出来事（一年を埋める） ===== */
+const notMonk=S=>!isMonk(S);
+EV.push(
+/* --- 春 --- */
+{id:'s_shogatsu',s:'春',cd:2,c:S=>S.age>=3,w:1.2,t:S=>wander(S)?pick(['旅の空で正月を迎えた。故郷の雑煮の味を思い出した。','木賃宿で、見知らぬ旅人たちと正月を迎えた。']):pick(villager(S)&&S.kan<5?['正月。この日ばかりは白い餅を食べた。','新しい年が来た。家の者そろって氏神に初詣をした。']:['正月。雑煮の餅を三つ食べた。','新しい年が来た。家の者そろって氏神に初詣をした。','正月の挨拶回りで、どこへ行っても酒を勧められた。',...(S.cls==='hyak'?[]:['正月の羽根つきで負けて、顔に墨を塗られた。'])]),fx:{kok:2}},
+{id:'s_nanakusa',s:'春',cd:4,c:S=>S.age>=4,t:'七草粥を炊いた。正月の食べすぎで疲れた腹にしみた。',fx:{tai:1}},
+{id:'s_hanami',s:'春',cd:3,c:S=>S.age>=6,t:S=>wander(S)?'旅の道すがら、峠の山桜が満開だった。しばらく腰を下ろして眺めた。':villager(S)?pick(['山桜が満開になった。畑仕事の手を止めて、しばらく眺めた。','山桜の下で握り飯を食べた。']):pick(['山桜が満開になった。桜の下で握り飯を食べた。','散る桜を見て、柄にもなく物思いにふけった。',S.cls==='kuge'||S.job==='samurai'?'花見の宴に招かれた。歌を詠めと言われて冷や汗をかいた。':'寺の境内の桜を見に出かけた。']),fx:{kok:3}},
+{id:'s_higan',s:'春',cd:4,c:S=>S.age>=8,t:'彼岸の墓参りに行った。先祖の墓の草をむしった。',fx:{kok:1,en:1}},
+{id:'s_koeokumi',s:'春',cd:3,c:S=>vil(S)||(S.cls==='hyak'&&isKid(S)&&S.age>=8),t:'田に肥（こえ）を入れた。においがしばらく鼻から取れなかった。',fx:{tai:-1}},
+{id:'s_utakai',s:'春',cd:3,c:S=>S.job==='kuge'||(S.cls==='kuge'&&S.sex==='f'&&adult(S)),t:S=>pick(['宮中の歌会に出た。題は「春の夜の月」。三晩考えた歌は、可もなく不可もなかった。','歌会で詠んだ歌が、ほんの少しだけ褒められた。']),fx:{chi:2,mei:1}},
+{id:'s_hatsuni',s:'春',cd:3,c:S=>isMerch(S),t:'初荷の日。荷車に旗を立てて、得意先を回った。',fx:{kan:1,en:1}},
+/* --- 夏 --- */
+{id:'s_taue',s:'夏',cd:2,c:S=>vil(S)||(S.cls==='hyak'&&S.age>=8&&isKid(S)),w:1.3,t:S=>pick(['田植え。腰が伸びなくなるまで苗を植えた。','田植え歌に合わせて、村じゅうで苗を植えた。','田植えの最中、足に蛭が吸いついていた。']),fx:{tai:-1,en:1}},
+{id:'s_tango',s:'夏',cd:3,c:S=>isKid(S)&&S.sex==='m'&&S.age>=5,t:S=>pick(['端午の節句。菖蒲の葉で地面を叩き合って遊んだ。','端午の日、川原で子どもらが石を投げ合う印地打ちがあった。額にこぶができた。']),fx:{bu:1}},
+{id:'s_yudachi',s:'夏',cd:3,c:S=>S.age>=4,t:S=>pick(['夕立にあい、ずぶ濡れで帰った。','雷が近くの杉に落ちた。家じゅうで桑原桑原と唱えた。']),fx:{}},
+{id:'s_ka',s:'夏',cd:3,c:S=>S.age>=3,t:S=>pick(['蚊がひどい夏だった。蚊遣りの煙で目が痛い。','暑さで食が細り、少し痩せた。']),fx:{tai:-1}},
+{id:'s_hotaru',s:'夏',cd:4,c:S=>S.age>=5&&S.age<=40,t:'田のあぜで蛍が舞っていた。しばらく見とれた。',fx:{kok:2}},
+{id:'s_kusatori',s:'夏',cd:2,c:S=>isFarmer(S),t:'炎天下の草取り。抜いても抜いても生えてくる。',fx:{tai:-1}},
+{id:'s_mushiboshi',s:'夏',cd:4,c:S=>S.job==='samurai',t:S=>S.y<1616?'具足の虫干しをした。兜の中から、去年の戦のときの干し飯が出てきた。':'具足の虫干しをした。もう何年も袖を通していない。',fx:{}},
+{id:'s_geango',s:'夏',cd:3,c:S=>isMonk(S),t:'夏安居。寺にこもって、ひと夏の修行をした。',fx:{chi:2,tai:-1}},
+/* --- 秋 --- */
+{id:'s_tanabata',s:'秋',cd:4,c:S=>S.age>=6,t:S=>S.cls==='kuge'||S.cls==='buke'?pick(['七夕。梶の葉に願いの歌を書いた。','七夕の夜、天の川がよく見えた。']):'七夕の夜、天の川がよく見えた。',fx:{kok:1}},
+{id:'s_bon',s:'秋',cd:2,c:S=>S.age>=4,w:1.2,t:S=>wander(S)?pick(['旅先の村で盆踊りを見た。故郷の盆を思い出した。','盆。旅の空の下で、亡き人たちに手を合わせた。']):pick(['盆。迎え火を焚いて、先祖の霊を迎えた。','盆踊りで夜通し踊った。',villager(S)?'盆に、遠くへ奉公に出ていた者たちが帰ってきた。村がにぎやかになった。':'盆に、親類が集まった。']),fx:{kok:2,en:1}},
+{id:'s_tsukimi',s:'秋',cd:3,c:S=>S.age>=6,t:S=>S.cls==='hyak'||S.cls==='ji'?'十五夜。芋を供えて月を見た。':pick(['十五夜。芋を供えて月を見た。','月見の宴で、和歌の一つも詠めと言われて困った。']),fx:{kok:2}},
+{id:'s_inekari',s:'秋',cd:2,c:S=>vil(S)||(S.cls==='hyak'&&S.age>=8&&isKid(S)),w:1.3,t:S=>pick(['稲刈り。家族総出で刈って、はさに掛けた。','稲刈りが終わり、新米を炊いた。この味のために一年働く。']),fx:{kan:1,kok:2}},
+{id:'s_nowaki',s:'秋',cd:4,c:S=>S.age>=4,t:S=>pick(['野分が来た。屋根の板が一枚飛んでいった。','大風で、柿の実が全部落ちた。']),fx:{kan:-1}},
+{id:'s_inoshishi',s:'秋',cd:3,c:S=>isFarmer(S),t:'猪が出て、芋畑を荒らしていった。鳴子を増やした。',fx:{kan:-1}},
+{id:'s_sumo',s:'秋',cd:3,c:S=>S.sex==='m'&&S.age>=10&&S.age<=45&&notMonk(S)&&S.cls!=='kuge'&&S.job!=='kuge',t:'秋祭りの奉納相撲に出た。',ch:[['本気で取る',S=>{if(chance(.4+S.st.tai/250)){ad(S,{mei:3,tai:1});return '三人抜きした。祭りのあと、娘たちの視線が違った。'}ad(S,{tai:-2});return '一回戦で投げ飛ばされた。'}],['見物に回る',S=>'見ているほうが楽しい。']]},
+{id:'s_kinoko',s:'秋',cd:3,c:S=>S.age>=6&&S.cls!=='kuge',t:S=>pick(['山で茸を採った。見慣れないものは捨てた。','栗拾いに行った。いがが指に刺さった。']),fx:{kok:1}},
+/* --- 冬 --- */
+{id:'s_yuki',s:'冬',cd:3,c:S=>S.age>=3,t:S=>['satsuma','chikuzen','aki','izumi','settsu'].includes(S.reg)?pick(['珍しく雪がちらついた。子どもらが大はしゃぎしていた。','冷え込みの厳しい冬だった。']):pick(['大雪が降った。屋根の雪下ろしで一日が終わった。','初雪が降った。子どもらが雪玉を投げ合っていた。','雪で道がふさがり、三日間家から出られなかった。']),fx:{}},
+{id:'s_kaze',s:'冬',cd:2,c:S=>S.age>=2,t:S=>pick(['風邪をひいて三日寝込んだ。','咳が止まらず、葛湯ばかり飲んでいた。']),fx:{tai:-2}},
+{id:'s_irori',s:'冬',cd:3,c:S=>S.age>=4&&S.cls!=='kuge',t:S=>isKid(S)?pick(['囲炉裏端で、祖父の昔の戦の自慢話を聞いた。三度目だ。','囲炉裏端で、山姥の話を聞いて眠れなくなった。']):wander(S)?'木賃宿の囲炉裏端で、旅人たちと諸国の噂話をした。':S.age>=50?pick(['囲炉裏端で、昔の話をした。若い者は半分聞いていなかった。','長い冬の夜、囲炉裏の火を見ながら過ごした。']):pick(['囲炉裏端で、年寄りの昔話を聞かされた。同じ話は三度目だ。','長い冬の夜、囲炉裏の火を見ながら過ごした。','囲炉裏端で、草鞋を編みながら夜を過ごした。']),fx:{en:1}},
+{id:'s_mochi',s:'冬',cd:2,c:S=>S.age>=4,t:S=>wander(S)?'大晦日。旅の宿で、今年もどうにか生き延びたことを思った。':pick(['年の暮れ、餅をついた。','煤払いをした。天井裏から、なくしたと思っていた櫛が出てきた。','大晦日。今年もどうにか生き延びた。']),fx:{kok:2}},
+{id:'s_waraji',s:'冬',cd:2,c:S=>vil(S),t:S=>pick(['冬の夜なべに、草鞋と俵を編んだ。','冬の間、炭焼きを手伝った。']),fx:{kan:1}},
+{id:'s_kangyo',s:'冬',cd:3,c:S=>isMonk(S),t:'寒行。夜明け前に冷たい水をかぶって経を読んだ。',fx:{tai:-2,kok:2,mei:1}},
+{id:'s_kaketori',s:'冬',cd:2,c:S=>isMerch(S)&&!S.f.decchi,t:'年の暮れ、ツケの取り立てに回った。居留守を三軒使われた。',fx:{kan:2,en:-1}},
+/* --- 季節を問わない暮らし --- */
+{id:'d_kid_asobi',cd:2,c:S=>isKid(S)&&S.age>=4,w:1.3,t:S=>pick(['鬼ごっこで日が暮れた。',(S.curS==='夏'?`蝉を十匹捕まえて、${haha(S)}に逃がされた。`:'かくれんぼで、誰にも見つけてもらえなかった。'),'木登りで、村一番高い枝まで登った。','近所の赤子の子守をした。',(S.curS==='夏'||S.curS==='秋'?'川で小魚をすくった。':'近所の子らと、竹とんぼを飛ばして遊んだ。'),`泥団子を作って、${chichi(S)}に投げつけて叱られた。`]),fx:S=>({tai:1})},
+{id:'d_kid_shikarare',cd:3,c:S=>isKid(S)&&S.age>=5,t:S=>pick(['仏壇のお供えをつまみ食いして叱られた。','障子に指で穴をあけて回って叱られた。','兄弟喧嘩をして、二人そろって外に出された。']),fx:{}},
+{id:'d_kid_benkyo',cd:2,c:S=>isKid(S)&&S.age>=7&&S.cls!=='hyak',t:S=>pick(['手習いで、いろはの「ゑ」がどうしても書けない。','読み書きの稽古。師匠の机の前で舟を漕いで、扇で頭を叩かれた。','『庭訓往来』を写した。']),fx:{chi:2}},
+{id:'d_hyak',cd:2,c:S=>isFarmer(S),t:S=>pick(['隣の家と畦の境で少し揉めた。','鍬の柄が折れた。鍛冶屋に直してもらった。','牛が言うことを聞かず、半日つぶれた。','村の寄合で、また同じ話を三刻聞かされた。']),fx:{}},
+{id:'d_ashigaru',cd:2,c:S=>S.job==='ashigaru',t:S=>pick(['長槍の稽古で、隣の者の頭を叩いてしまった。','組頭に怒鳴られた。理由はよくわからない。','陣笠を鍋代わりに飯を炊く方法を教わった。','支給の具足が小さすぎて、脇が締まらない。']),fx:{bu:1}},
+{id:'d_samurai',cd:2,c:S=>S.job==='samurai',t:S=>pick(['登城の刻限に遅れかけて、走った。','同輩と酒を飲んで、殿の悪口を少しだけ言った。','謡の稽古をした。殿の前で披露する日が来ないことを祈る。','馬が病気になり、夜通し看病した。','家来の給金の工面に頭を抱えた。']),fx:S=>({en:1})},
+{id:'d_ronin',cd:2,c:S=>S.job==='ronin',t:S=>pick(['傘張りの内職をした。','刀を質に入れるかどうか、一晩悩んだ。','かつての同輩と道ですれ違い、目をそらされた。']),fx:{kan:1,kok:-1}},
+{id:'d_shonin',cd:2,c:S=>S.job==='shonin',t:S=>S.f.decchi?(S.f.banto?pick(['店の鍵を預かり、奉公人たちの差配に追われた。','若い手代のしくじりの尻ぬぐいをした。','主人の名代として、得意先の法事に顔を出した。']):S.f.tedai?pick(['得意先回りで、新しい客を一軒つかんだ。','帳場を任される日が増えた。','丁稚たちに、昔の自分を見るようだと思った。']):pick(['朝一番に店の前を掃いた。','番頭に算盤の玉をはじく音が遅いと言われた。','使いの途中で団子を買い食いしたのがばれた。'])):pick(['市の日。店先がごった返した。','夜中に蔵へ盗っ人が入ろうとした。犬が吠えて逃げていった。','得意先の大名家の勘定方が、支払いを来年にしてくれと言ってきた。','新しい品を仕入れた。売れるかどうかは賭けだ。']),fx:S=>({kan:rnd(-1,2)})},
+{id:'d_kuge',cd:2,c:S=>S.job==='kuge',t:S=>pick(['方角が悪いというので、方違えのために一晩よその屋敷に泊まった。','物忌みの日。誰にも会わずに屋敷にこもった。','装束の衣替え。祖父の代からの装束を、また繕った。','武家から届いた贈り物の目録を、何度も読み返した。']),fx:{}},
+{id:'d_so',cd:2,c:S=>isMonk(S),t:S=>pick(['写経をした。','小僧が勤行中に居眠りしていた。自分もかつてそうだった。','檀家の法事で経を上げた。お布施は少なめだった。','寺の鐘をついた。今日は少し音がよかった。']),fx:{kok:1}},
+{id:'d_wife',cd:2,c:S=>isWife(S)||S.job==='musume',t:S=>pick(['井戸端で、近所の女たちと噂話に花が咲いた。','繕い物が山のようにたまっている。','髪を洗った。乾くまでに半日かかった。','味噌を仕込んだ。']),fx:{en:1}},
+{id:'d_yonaki',cd:2,c:S=>S.kids.some(k=>k.alive&&S.y-k.by<=2),t:S=>{const k=S.kids.filter(k=>k.alive&&S.y-k.by<=2).pop();return `${k.nm}の夜泣きがひどい。${S.sex==='m'?(married(S)?'女房がほとんど寝ていない。':'乳をもらいに、近所の家を回る日々だ。'):'自分もほとんど寝ていない。'}`},fx:{tai:-1,kok:1}},
+{id:'d_kodomo',cd:2,c:S=>S.kids.some(k=>k.alive&&S.y-k.by>=3&&S.y-k.by<=12),t:S=>{const k=pick(S.kids.filter(k=>k.alive&&S.y-k.by>=3&&S.y-k.by<=12));return pick([`${k.nm}が、近所の子と喧嘩して泣いて帰ってきた。`,`${k.nm}が、初めて字を書いて見せてくれた。`,`${k.nm}が熱を出した。一晩中そばにいた。`,`${k.nm}が、拾ってきた子犬を飼いたいと言って聞かない。`])},fx:{kok:2}},
+{id:'d_oyako',cd:3,c:S=>adult(S)&&S.age<=40&&(S.fa.alive||S.mo.alive),t:S=>wander(S)||S.job==='nyobo'||(S.job==='shonin'&&S.f.decchi)?`故郷の${S.mo.alive?'母':'父'}から、体を大事にしろと便りが届いた。`:S.mo.alive?pick([`母の${S.mo.nm}に「まだ所帯を持たないのか」と言われた。`,`母の${S.mo.nm}が、腰が痛いとこぼしていた。`,`母が好物を作って待っていた。`]):pick([`父の${S.fa.nm}と口論した。どちらも頑固だ。`,`父の${S.fa.nm}が、若い頃の手柄話をまた始めた。`]),fx:{}},
+{id:'d_rojin',cd:2,c:S=>S.age>=60,t:S=>pick(['若い者に昔話をしたら、露骨に嫌な顔をされた。','日向ぼっこをしていたら、一日が終わった。','膝が痛む。雨が近いのがわかる。','「近頃の若い者は」と言いかけて、自分も昔言われたのを思い出した。']),fx:{}},
+{id:'d_uwasa',cd:2,c:S=>S.age>=8,t:S=>pick([`${lord(S)}の殿様が、新しい側室を迎えたらしい。`,'隣村に狐憑きが出たという。','街道を、見たこともない数の荷駄が通っていった。','旅の商人が、都では妙な着物が流行っていると話していた。','どこかの寺の和尚が、ため込んだ銭を盗まれたらしい。']),fx:{}},
+{id:'d_tabi',cd:4,c:S=>adult(S)&&S.age<=60,w:.8,t:S=>pick(['所用で隣国まで出かけた。関所で半日待たされた。','親戚の祝言に呼ばれ、峠を越えて出かけた。','知り合いの葬式に出た。']),fx:{en:1}}
+);
+/* ===== あるあるイベント：子と孫 ===== */
+/* 古い仮の孫・子イベントは、きちんと記録する仕組みに置き換えたので止める */
+for(const id of ['c_mago','c_kodomo']){const e=EV.find(x=>x.id===id);if(e)e.c=()=>false}
+const kidsW=(S,f)=>liveKids(S).filter(f);
+const kidAt=S=>S.kids[S.f.ki];
+const magoAt=S=>S.magos[S.f.gi];
+const pickKid=(S,f)=>{const k=pick(kidsW(S,f));S.f.ki=S.kids.indexOf(k);return k};
+const liveMagos=S=>S.magos.filter(g=>g.alive);
+const jiji=S=>S.sex==='m'?'じじ':'ばば';
+
+EV.push(
+/* --- 幼い子 --- */
+{id:'kc_aruki',cd:2,c:S=>kidsW(S,k=>kAge(k)===2).length>0,w:1.5,t:S=>{const k=pickKid(S,k=>kAge(k)===2);return `${k.nm}が、よちよちと初めて歩いた。家じゅうで手を叩いた。`},fx:{kok:5}},
+{id:'kc_nanatsu',cd:1,c:S=>kidsW(S,k=>kAge(k)===7).length>0,w:2,s:'冬',t:S=>{const k=pickKid(S,k=>kAge(k)===7);return `${k.nm}が七つになった。氏神に連れて行き、ここまで無事に育ったことを感謝した。`},fx:{kok:5,en:1}},
+{id:'kc_byoki',cd:3,c:S=>kidsW(S,k=>kAge(k)>=2&&kAge(k)<=10).length>0,w:1.1,
+ t:S=>{const k=pickKid(S,k=>kAge(k)>=2&&kAge(k)<=10);return `${k.nm}が高い熱を出してうなされている。`},
+ ch:[['薬師を呼ぶ',S=>{if(S.kan<3){ad(S,{kok:-3,tai:-2});return '薬師を呼ぶ銭がなかった。一晩中、額を冷やし続けた。熱は三日目に下がった。'}ad(S,{kan:-3});return '薬師の煎じ薬で、翌朝には熱が下がった。'}],
+     ['寺に祈祷を頼む',S=>{ad(S,{kan:-Math.min(S.kan,1),kok:2});return '祈祷のおかげか、五日目に熱が下がった。'}],
+     ['寝ずに看病する',S=>{ad(S,{tai:-3,kok:3});return `夜通し看病した。朝、${kidAt(S).nm}が「腹が減った」と言った。`}]]},
+{id:'kc_tenarai',cd:4,c:S=>S.st.chi>=25&&kidsW(S,k=>kAge(k)>=6&&kAge(k)<=12).length>0,
+ t:S=>{const k=pickKid(S,k=>kAge(k)>=6&&kAge(k)<=12);return `${k.nm}に、読み書きを教えてほしいとせがまれた。`},
+ ch:[['夜に手ほどきする',S=>{ad(S,{kok:4,en:1});kidAt(S).yomi=1;return 'いろはの「い」から教えた。筋がいい、かもしれない。'}],['忙しいと断る',S=>{ad(S,{kok:-2});return '「また今度な」と言った。その今度は、なかなか来ない。'}]]},
+{id:'kc_kyodai',cd:3,c:S=>kidsW(S,k=>kAge(k)>=4&&kAge(k)<=14).length>=2,t:S=>{const [a,b]=kidsW(S,k=>kAge(k)>=4&&kAge(k)<=14);return pick([`${a.nm}と${b.nm}が、干し柿の取り合いで大喧嘩した。`,(S.curS==='夏'?`${a.nm}が${b.nm}を連れて川へ遊びに行き、二人ともずぶ濡れで帰ってきた。`:`${a.nm}が${b.nm}を連れて山へ遊びに行き、二人とも泥だらけで帰ってきた。`),`${a.nm}と${b.nm}が、二人して障子を破った。`,`${a.nm}が、熱を出した${b.nm}の枕元から離れなかった。`])},fx:{kok:2}},
+{id:'kc_tetsudai',cd:3,c:S=>['nomin','shonin','wife','goke','ashigaru'].includes(S.job)&&kidsW(S,k=>kAge(k)>=7&&kAge(k)<=14).length>0,
+ t:S=>{const k=pickKid(S,k=>kAge(k)>=7&&kAge(k)<=14);return S.job==='shonin'?`${k.nm}が店番を手伝ってくれた。釣り銭を一枚多く渡していた。`:S.cls==='hyak'?`${k.nm}が田の仕事を手伝ってくれた。小さな手で、苗を一本ずつ植えていた。`:`${k.nm}が水汲みを手伝ってくれた。桶を半分こぼしていた。`},fx:{kok:3}},
+{id:'kc_itazura',cd:3,c:S=>kidsW(S,k=>kAge(k)>=4&&kAge(k)<=12).length>0,
+ t:S=>{const k=pickKid(S,k=>kAge(k)>=4&&kAge(k)<=12);return `${k.nm}が、${pick([S.curS==='秋'?'隣の家の柿を盗んで':'隣の家の畑の大根を引っこ抜いて','仏壇の供え物をつまみ食いして','近所の子を泣かせて'])}、謝りに行くことになった。`},
+ ch:[['一緒に頭を下げに行く',S=>{ad(S,{en:2,kok:-1});return '並んで頭を下げた。帰り道、手をつないで帰った。'}],['拳骨を落とす',S=>{ad(S,{kok:-2});return '拳骨を一発。泣きながら謝りに行った。'}]]},
+
+/* --- 大きくなった子 --- */
+{id:'kc_tegami',cd:3,w:1.2,c:S=>kidsW(S,k=>AWAY.includes(k.path)&&k.path!=='勘当').length>0,
+ t:S=>{const k=pickKid(S,k=>AWAY.includes(k.path)&&k.path!=='勘当');
+   const via=(S.cls==='hyak'&&!S.f.oyaotona)?`${k.nm}の便りを、村に来た行商人が伝えてくれた。`:`${k.nm}から文が届いた。`;
+   if(k.path==='嫁いだ')return via+pick(['姑は厳しいが、元気でやっているという。','子どもが熱を出したが治った、とあった。','実家の味噌の味が恋しい、とあった。']);
+   if(k.path==='足軽'||k.path==='侍')return via+(warLv(S.y)>0?pick(['陣中で元気にしているという。','初めて手柄を立てた、と得意げだった。','戦が近いらしい。くれぐれも体に気をつけて、と返した。']):pick(['城の門番の勤めにも慣れたという。','上役に、字がきれいだと褒められたという。',S.y>=1635?'殿の参勤のお供で、江戸に上ったという。':'城の普請に駆り出されて、日に焼けたという。']));
+   if(k.path==='奉公')return `奉公に出た${k.nm}が、${S.curS==='秋'?'盆の休みに':S.curS==='春'?'正月の休みに':'休みをもらって'}顔を見せに帰ってきた。少し背が伸びて、言葉づかいが丁寧になっていた。`;
+   return via+pick(['変わりなく過ごしている、とあった。','父母の健康を祈っている、とあった。'])},fx:{kok:5}},
+{id:'kc_tegara',cd:5,w:.9,c:S=>warLv(S.y)>0&&kidsW(S,k=>k.sex==='m'&&['足軽','侍'].includes(k.path)&&kAge(k)>=16).length>0,
+ t:S=>{const k=pickKid(S,k=>k.sex==='m'&&['足軽','侍'].includes(k.path)&&kAge(k)>=16);
+   if(k.path==='足軽'&&chance(.5)){k.path='侍';mj(`${k.role}の${k.nm}が侍に取り立てられる`);return `足軽の${k.nm}が戦で手柄を立て、侍に取り立てられたと聞いた。鼻が高い。`}
+   return `${k.nm}が戦で手柄を立て、感状をもらったそうだ。`},fx:{mei:5,kok:6}},
+{id:'kc_noren',cd:6,c:S=>kidsW(S,k=>k.path==='奉公'&&k.sex==='m'&&kAge(k)>=26).length>0,t:S=>{const k=pickKid(S,k=>k.path==='奉公'&&k.sex==='m'&&kAge(k)>=26);k.path='暖簾分け';mj(`${k.role}の${k.nm}が暖簾分けで店を持つ`);return `奉公に出していた${k.nm}が暖簾分けを許され、自分の店を持った。開店の日、こっそり見に行った。`},fx:{mei:4,kok:8,en:2}},
+{id:'kc_jushoku',cd:6,w:.6,c:S=>kidsW(S,k=>k.path==='僧'&&kAge(k)>=30).length>0,t:S=>{const k=pickKid(S,k=>k.path==='僧'&&kAge(k)>=30);k.path='住職';return `僧になった${k.nm}が、寺の住職になったと聞いた。`},fx:{mei:3,kok:6}},
+{id:'kc_kando',cd:6,w:.7,k:'big',c:S=>kidsW(S,k=>k.sex==='m'&&kAge(k)>=16&&kAge(k)<=32&&!['僧','住職','勘当'].includes(k.path)).length>0,
+ t:S=>{const k=pickKid(S,k=>k.sex==='m'&&kAge(k)>=16&&kAge(k)<=32&&!['僧','住職','勘当'].includes(k.path));return `${k.role}の${k.nm}が、${pick(['博打で大きな借りを作ってきた','酒の席で喧嘩をして、相手に怪我をさせた','家の銭を持ち出して遊び歩いていた'])}。`},
+ ch:[['尻ぬぐいをして許す',S=>{ad(S,{kan:-Math.min(S.kan,rnd(3,10)),en:2});return '銭を出して話をつけた。「二度とするな」と言うと、黙ってうなずいた。'}],
+     ['勘当する',S=>{const k=kidAt(S);k.path='勘当';k.heir=0;ad(S,{mei:2,kok:-10});mj(`${k.role}の${k.nm}を勘当する`);return S.sex==='f'&&married(S)?`夫の${S.sp.nm}と話し合い、勘当することに決めた。「もう親でも子でもない」と夫が言い渡した。`:'「もう親でも子でもない」と言い渡し、家から追い出した。'}]]},
+{id:'kc_kando_back',cd:8,w:.6,c:S=>kidsW(S,k=>k.path==='勘当').length>0,k:'big',
+ t:S=>{const k=pickKid(S,k=>k.path==='勘当');return `勘当した${k.nm}が、やつれた顔で戸口に立っていた。`},
+ ch:[['勘当を解く',S=>{const k=kidAt(S);k.path='跡取り';ad(S,{kok:10,en:3});mj(`${k.nm}の勘当を解く`);return '何も言わずに、家に上げた。飯を三杯食べた。'}],['追い返す',S=>{ad(S,{kok:-8});return '戸を閉めた。その夜は眠れなかった。'}]]},
+{id:'kc_demodori',cd:10,w:.4,k:'big',c:S=>kidsW(S,k=>k.path==='嫁いだ'&&kAge(k)<=35).length>0,
+ t:S=>{const k=pickKid(S,k=>k.path==='嫁いだ'&&kAge(k)<=35);return `嫁いだ${k.nm}が、泣きながら帰ってきた。もう嫁ぎ先には戻らないという。`},
+ ch:[['家に迎え入れる',S=>{kidAt(S).path='出戻り';ad(S,{en:-1,kok:2});return '「よく帰ってきた」とだけ言った。'}],['説得して嫁ぎ先へ帰す',S=>{ad(S,{en:3,kok:-5});return '向こうの家に頭を下げ、娘を送り返した。帰り道、ずっと黙っていた。'}]]},
+{id:'kc_oyakoko',cd:4,w:1.2,c:S=>S.age>=48&&kidsW(S,k=>kAge(k)>=18&&k.path!=='勘当').length>0,
+ t:S=>{const k=pickKid(S,k=>kAge(k)>=18&&k.path!=='勘当');return pick([`${k.nm}が、肩をもんでくれた。`,`${k.nm}が、好物を持って顔を見せに来た。`,`${k.nm}に「長生きしてくれ」と言われた。照れくさくて、聞こえないふりをした。`,`${k.nm}が、${S.kan>=20?'湯治に連れて行ってくれた':'冬の薪を割っておいてくれた'}。`])},fx:{kok:6,tai:1}},
+{id:'kc_atotori',cd:5,w:.8,c:S=>S.age>=45&&(S.sex==='m'||!married(S))&&kidsW(S,k=>k.heir&&kAge(k)>=18).length>0,
+ t:S=>{const k=pickKid(S,k=>k.heir&&kAge(k)>=18);return `跡取りの${k.nm}と、家のやり方をめぐって言い争いになった。`},
+ ch:[['自分のやり方を通す',S=>{ad(S,{en:-3,kok:-2});return '「まだお前には早い」と言い切った。'}],
+     ['任せてみる',S=>{if(chance(.6)){ad(S,{kan:rnd(1,5),kok:3});return '任せてみると、意外とうまくいった。少し寂しい。'}ad(S,{kan:-Math.min(S.kan,rnd(1,4))});return '任せてみたら、案の定しくじった。口は出さずに、尻ぬぐいだけした。'}]]},
+
+/* --- 孫 --- */
+{id:'mg_asobi',cd:2,w:1.4,c:S=>liveMagos(S).some(g=>S.y-g.by>=2&&S.y-g.by<=12),
+ t:S=>{const g=pick(liveMagos(S).filter(g=>S.y-g.by>=2&&S.y-g.by<=12));
+   return pick([`孫の${g.nm}に昔話をせがまれた。${isWar(S)||S.cls==='buke'?'若い頃の戦の話をしたら、目を輝かせて聞いていた。':'山姥の話をしたら、怖がって布団にもぐった。'}`,`孫の${g.nm}と凧揚げをした。走ったら、息が切れた。`,`孫の${g.nm}に、${S.kan>=10?'小遣いの銭をやった':'干し柿をやった'}。母親には内緒だ。`,`孫の${g.nm}が、${jiji(S)}の顔を地面に描いてくれた。だいぶ皺が多い。`,`孫の${g.nm}を背負って、村の外れまで散歩した。`])},fx:{kok:5}},
+{id:'mg_nazuke',cd:3,w:1,c:S=>liveMagos(S).some(g=>g.by===S.y),k:'big',
+ t:S=>{const g=liveMagos(S).find(g=>g.by===S.y);S.f.gi=S.magos.indexOf(g);return `生まれたばかりの孫に、${jiji(S)}が名をつけてほしいと頼まれた。`},
+ ch:[['自分の名から一字を与える',S=>{const g=magoAt(S),o=g.nm;g.nm=g.sex==='m'?S.nm.replace(/入道$/,'').slice(0,1)+pick(['吉','松','丸','太郎']):pick(NM[S.cls].f);ad(S,{kok:6,en:2});return `${g.sex==='m'?`自分の名から一字を取って`:'よい名を考えて'}、${g.nm}と名づけた。`}],
+     ['親に任せる',S=>{ad(S,{en:1});return `「親がつけるのがいちばんだ」と言った。名は${magoAt(S).nm}に決まった。`}]]},
+{id:'mg_eboshi',once:1,k:'big',c:S=>S.cls==='buke'&&S.sex==='m'&&(S.job==='samurai')&&liveMagos(S).some(g=>g.sex==='m'&&S.y-g.by+1===14),
+ t:S=>{const g=liveMagos(S).find(g=>g.sex==='m'&&S.y-g.by+1===14);S.f.gi=S.magos.indexOf(g);return `孫の${g.nm}が元服する。烏帽子親を務めてほしいと頼まれた。`},
+ ch:[['自分の名から一字を与える',S=>{const g=magoAt(S),o=g.nm;g.nm=S.nm.replace(/入道$/,'').slice(0,1)+pick(['之助','右衛門','三郎','兵衛']);ad(S,{mei:3,kok:8});mj('孫の烏帽子親を務める');return `${o}は、自分の一字を取って${g.nm}と名乗ることになった。`}],
+     ['よい名を考えてやる',S=>{const g=magoAt(S);g.nm=pick(NM.buke.m);ad(S,{kok:6});mj('孫の烏帽子親を務める');return `三晩考えて、${g.nm}という名を贈った。`}]]},
+{id:'kc_kodakusan',cd:4,w:1.3,c:S=>liveKids(S).filter(k=>kAge(k)<=15).length>=5,t:S=>`子が${liveKids(S).filter(k=>kAge(k)<=15).length}人もいる。${pick(['飯の支度が毎日、戦のようだ。','上の子が下の子の面倒を見てくれるので助かる。','着物のお下がりが三代続いている。','夜、川の字ならぬ、川が三本の字で寝ている。'])}`,fx:{kok:3,kan:-1}},
+{id:'mg_shogatsu',cd:3,w:1.2,s:'春',c:S=>liveMagos(S).length>=3,t:S=>`正月、子や孫が${liveKids(S).filter(k=>kAge(k)>=15).length+liveMagos(S).length}人も集まった。家に入りきらず、縁側まで人があふれた。`,fx:{kok:8,en:2}},
+{id:'mg_himago',once:1,c:S=>S.age>=68&&liveMagos(S).some(g=>S.y-g.by>=18),w:.8,t:S=>`孫に子が生まれた。曾孫だ。長生きはするものだ。`,fx:{kok:10},mj:'曾孫が生まれる'}
+);
+/* ===== あるあるイベント：百姓 ===== */
+const vil=S=>S.cls==='hyak'&&adult(S)&&['nomin','wife','goke','musume'].includes(S.job);
+EV.push(
+{id:'h_nengu',c:S=>isFarmer(S),w:1.3,cd:3,t:S=>`秋、${lord(S)}の代官が年貢の取り立てに来た。${pick(['今年は四公六民だという。','「五公五民」と言われ、村じゅうがざわついた。','去年より一俵多い。'])}`,
+ ch:[['正直に納める',S=>{ad(S,{kan:-1,kok:-2});return '蔵の米が半分になった。'}],
+     ['枡の底をちょっとごまかす',S=>{if(chance(.75)){ad(S,{kan:2});return '代官は気づかなかった。村じゅうがやっている手だ。'}ad(S,{kan:-3,mei:-6});return 'ばれた。罰として倍の量を納めさせられた。'}],
+     ['隠し田のことは黙っておく',S=>{S.f.kakushida=1;ad(S,{kan:3});return '山の奥の隠し田は、帳面に載っていない。'}]]},
+{id:'h_mizu',c:S=>isFarmer(S),w:.9,k:'big',t:'日照りの夏。上流の村が川を堰き止めた。このままでは田が干上がる。',
+ ch:[['村総出で堰を壊しに行く',S=>{if(chance(.12)){die(S,'水争いの乱闘');S.f.sudden=1;return '鍬と竹槍を持った両村の衆が河原で乱闘になり、石が頭に当たった。'}ad(S,{tai:-5,bu:4,en:4});return '河原で両村の大乱闘。どうにか水は取り戻した。'}],
+     ['寄合で話し合う',S=>{ad(S,{en:5,chi:2});return '三日三晩の寄合のすえ、一日おきに水を分けることで手を打った。'}],
+     ['鉄火起請で決着をつける',S=>{ad(S,{tai:-12});if(chance(.5+S.st.bu/300)){ad(S,{mei:20,en:8});mj('鉄火起請で村を救う');return '神前で真っ赤に焼けた鉄を素手で握り、三歩運んだ。相手方の男は鉄を落とした。水は村のものになった。手のひらの火傷は一生消えなかった。'}ad(S,{mei:-5});return '焼けた鉄を握ったが、あまりの熱さに落としてしまった。水争いは負け。手の火傷だけが残った。'}]]},
+{id:'h_inago',c:S=>vil(S),w:.8,t:'いなごの大群が来た。稲が見る見る食われていく。',
+ ch:[['虫送りの祭りをする',S=>{ad(S,{kan:-1,kok:3,en:3});return '松明を灯し、鉦と太鼓を鳴らして、村境まで虫を送った。半分くらいは効いた気がする。'}],['夜通し手で払う',S=>{ad(S,{tai:-4,kan:1});return '家族総出で一晩中払った。翌朝、腕が上がらなかった。'}]]},
+{id:'h_kikin',c:S=>vil(S),w:.7,t:'凶作で、村の米が尽きかけている。',
+ ch:[['種籾に手をつける',S=>{ad(S,{tai:2,kan:-2});return '来年の種籾まで食べた。来年のことは来年考える。'}],['山で葛の根やわらびを掘る',S=>{ad(S,{tai:-4,kok:-2});return 'わらびの根を叩いて粉にした。腹はふくれるが、力は出ない。'}],['名主に頭を下げて米を借りる',S=>{ad(S,{tai:1,en:-3});S.f.shakkin=(S.f.shakkin||0)+5;return '利息は五割。来年の秋が怖い。'}]]},
+{id:'h_jinpu',c:S=>isFarmer(S)&&S.sex==='m'&&warLv(S.y)>0,w:S=>warLv(S.y)*3,t:S=>`${lord(S)}の戦に、陣夫として兵糧を運べと村に命じられた。`,
+ ch:[['自分が行く',S=>{if(chance(.06)){die(S,'陣夫として従軍中に流れ矢を受けて');return '荷車を引いていたところ、流れ矢が当たった。'}ad(S,{tai:-4,bu:2,kan:1});return '米俵を担いで山道を三日歩いた。戦は見なかったが、死体はたくさん見た。'}],['銭を払って代わりを立てる',S=>{if(S.kan<3){ad(S,{en:-3});return '銭が足りず、結局自分で行った。'+ (ad(S,{tai:-4}),'')}ad(S,{kan:-3});return '代わりの者を雇った。村の若い衆は喜んで行った。'}]]},
+{id:'h_rantori',c:S=>vil(S)&&warLv(S.y)>.1,w:S=>warLv(S.y)*2.2,k:'big',t:'敵の軍勢が村に迫っているという知らせが来た。乱取りが始まるのは時間の問題だ。',
+ ch:[['山の隠れ小屋に逃げる',S=>{ad(S,{kan:-Math.round(S.kan*.3),kok:-5});return '村の衆と家財を担いで山へ逃げた。戻ると家は荒らされていたが、皆無事だった。'}],
+     ['銭を出して禁制を買う',S=>{if(S.kan<5)return (ad(S,{kan:-S.kan,kok:-8}),'村で銭を出し合ったが足りなかった。軍勢は容赦なく村を荒らしていった。');ad(S,{kan:-5,en:3});return '村の乙名が敵の陣へ銭を届け、「乱妨狼藉を禁ず」の禁制の札をもらってきた。札の効き目はあった。'}],
+     ['家に残って守る',S=>{if(chance(.15)){die(S,'乱取りの軍勢に襲われて');S.f.sudden=1;return '家に押し入ってきた雑兵に斬られた。'}if(chance(.3)){ad(S,{kan:-Math.round(S.kan*.6),tai:-8});return '米も鍋も持っていかれた。'}ad(S,{mei:4});return '軍勢は村を素通りしていった。拍子抜けした。'}]]},
+{id:'h_hitokai',c:S=>vil(S)&&warLv(S.y)>.1&&S.y<1590,w:.5,t:'戦で連れ去られた隣村の子が、人買い商人の手で市に並べられていると聞いた。',
+ ch:[['銭を出して買い戻す',S=>{if(S.kan<4){ad(S,{kok:-5});return '銭が足りなかった。'}ad(S,{kan:-4,en:8,kok:4});return '有り金をはたいて買い戻した。その子の母は、地面に額をつけて泣いた。'}],['どうにもできない',S=>{ad(S,{kok:-6});return '乱世とはこういうものだ、と自分に言い聞かせた。'}]]},
+{id:'h_tokusei',c:S=>vil(S)&&S.y<1590,w:S=>S.f.shakkin?1.4:.5,t:'近郷の村々で「徳政だ」の声が上がった。借金を帳消しにせよと、土倉や酒屋に押しかけるという。',
+ ch:[['一揆に加わる',S=>{if(chance(.15)){die(S,'土一揆に加わって討たれ');return '土倉に雇われた侍たちに追い散らされ、逃げ遅れた。'}S.f.shakkin=0;ad(S,{kan:2,en:4,mei:-2});return '土倉の前で鬨の声を上げた。証文が焼かれ、借金は消えた。'}],['関わらない',S=>{ad(S,{en:-2});return '村八分にならない程度に、遠巻きに見ていた。'}]]},
+{id:'h_chosan',c:S=>vil(S)&&S.y<1600,w:.4,k:'big',t:'年貢が重すぎる。村の寄合で、田畑を捨てて村ごと逃げる「逃散」の話が出た。',
+ ch:[['逃散に加わる',S=>{if(chance(.6)){ad(S,{kan:-2,en:6,kok:-4});mj('村ごと逃散する');return '一村こぞって隣国の山へ逃げた。困った領主が年貢を下げると約束し、ひと月後に村へ戻った。'}ad(S,{kan:-4,tai:-6});return '逃げた先でも年貢を取られた。結局村へ戻った。'}],['村に残る',S=>{ad(S,{en:-4});return '残った者として、代官の怒りを一身に浴びた。'}]]},
+{id:'h_kame',c:S=>isFarmer(S),w:.35,once:1,t:'畑を深く耕していたら、鍬の先に何か当たった。掘り出すと、古い銭がぎっしり詰まった甕だった。昔の誰かが戦の前に埋めたのだろう。',fx:S=>({kan:rnd(15,40),kok:8}),mj:'畑から銭の甕を掘り当てる'},
+{id:'h_hosaku',c:S=>vil(S),t:S=>pick(['豊作だった。稲穂が重くて、刈るのが楽しかった。','今年の稲は出来がいい。秋祭りの神楽が一段とにぎやかだった。']),fx:{kan:3,kok:5}},
+{id:'h_ushi',c:S=>isFarmer(S),w:.6,t:S=>S.f.oyaotona||S.f.otona||S.kan>=15?pick(['牛が子を産んだ。家族が一人増えたようなものだ。','馬を買った。田起こしが半分の時間で済むようになった。']):'隣の家の牛を借りて田を起こした。礼に三日、その家の田を手伝った。',fx:{kan:-1,kok:4}},
+{id:'h_amagoi',c:S=>vil(S),w:.5,t:'ひと月雨が降らない。村の衆が山の上で火を焚き、雨乞いをした。三日後に降った。',fx:{kok:2,en:2}},
+{id:'h_yoriai',c:S=>isFarmer(S)&&S.st.en>=45,w:.7,t:'村の寄合で、新しい村掟を決めることになった。',
+ ch:[['山の入会の決まりを提案する',S=>{ad(S,{mei:5,en:3});if(S.st.mei>=40&&!S.f.otona){S.f.otona=1;mj('村の乙名に選ばれる');return '提案が通った。この一件で、村の乙名（おとな）の一人に加えられた。'}return '提案が通った。'}],['黙って聞いている',S=>'寄合は夜更けまで続き、決まったのは次の寄合の日取りだけだった。']]},
+{id:'h_shinden',c:S=>isFarmer(S)&&S.y>=1600,w:.8,once:1,t:'戦がなくなり、荒れ地を切り開く新田開発が盛んになった。',
+ ch:[['開墾に加わる',S=>{ad(S,{tai:-5,kan:rnd(6,14),mei:4});mj('新田開発に加わる');return '三年かけて沼地を田に変えた。新しい村の名には、自分の名の一字が入った。'}],['今の田で十分だ',S=>'今の田で手一杯だ。']]},
+{id:'h_ichi',c:S=>vil(S)&&S.y>=1567,w:.6,t:'城下の楽市へ、野菜を売りに行った。座の許しがなくても商いができる。',fx:{kan:2,en:2}},
+{id:'h_ochimusha',c:S=>isFarmer(S)&&S.sex==='m'&&warLv(S.y)>.1,w:.5,t:'戦のあと、村の外れに傷ついた落ち武者が一人倒れていた。立派な具足を着けている。',
+ ch:[['匿って手当てする',S=>{ad(S,{en:4});if(chance(.3)){ad(S,{kan:rnd(10,25),mei:5});mj('落ち武者を匿い、のちに礼を受ける');return '数年後、その武者は出世して村に礼に来た。米十俵と、名を記した書状を置いていった。'}return '傷が癒えると、武者は何も言わずに去っていった。'}],['首を取って褒美をもらう',S=>{if(chance(.25)){ad(S,{tai:-10});return '相手は手負いでも武者だった。返り討ちに遭いかけた。'}ad(S,{kan:rnd(5,12),kok:-6});return '首を差し出すと褒美の銭が出た。夜、眠れなかった。'}],['見なかったことにする',S=>'見なかったことにした。']]},
+{id:'h_miyaza',c:S=>isFarmer(S)&&S.sex==='m',w:.6,t:'祭りの宮座で、上座に座るのは誰かをめぐって言い争いになった。毎年のことだ。',fx:{en:-1,kok:-1}}
+);
+
+/* ===== あるあるイベント：武士・足軽・浪人 ===== */
+EV.push(
+{id:'b_ikusa',c:S=>isBushi(S)&&S.f.uijin&&warLv(S.y)>0&&S.age<=60,w:S=>warLv(S.y)*4,cd:1,k:'big',
+ t:S=>`${lord(S)}が出陣する。${pick(['国境の砦をめぐる戦だ。','敵方の城を攻める。','寄せてきた敵を迎え撃つ。','隣国の一揆勢を鎮めに行く。'])}`,
+ ch:[['一番槍を狙う',S=>{const r=battle(S,2,'合戦');if(!S.dead&&S._d.mei>=6)mj('合戦で功名を立てる');return r}],['手堅く戦う',S=>battle(S,1,'合戦')],['命あっての物種と心得る',S=>battle(S,0,'合戦')]]},
+{id:'b_sankon',c:S=>isBushi(S)&&warLv(S.y)>0&&S.f.uijin,w:.5,once:1,t:'出陣の朝、打ち鮑・勝ち栗・昆布の三献の儀を受けた。「打って、勝って、喜ぶ」の縁起だ。',fx:{kok:3,bu:1}},
+{id:'b_kabuto',c:S=>S.job==='samurai'&&S.koku>=150&&warLv(S.y)>0,w:.4,once:1,t:'新しい兜の前立てを何にするか悩んだ。',
+ ch:[['兎の耳',S=>{ad(S,{mei:3});return '兎は前にしか進まない。縁起がいい。'}],['大きな三日月',S=>{ad(S,{mei:4});return '敵からよく目立つ。それはつまり、よく狙われるということだ。'}],['百足（むかで）',S=>{ad(S,{mei:3,bu:1});return '百足は後ろに退かない。毘沙門天の使いでもある。'}]]},
+{id:'b_onsho',c:S=>S.job==='samurai'&&S.st.mei>=35&&warLv(S.y)>0,w:.7,t:'戦の恩賞が言い渡された。手柄のわりに、加増が少ない。同輩は殿のお気に入りというだけで倍もらった。',
+ ch:[['黙って受ける',S=>{ad(S,{kok:-3,en:2});return '不満は腹にしまった。'}],['重臣を通じて訴える',S=>{if(chance(.4)){ad(S,{koku:Math.max(20,Math.round(S.koku*.15)),en:-2});return '訴えが通り、少しだけ加増された。'}ad(S,{mei:-4,en:-5});return '「欲深い」と陰口を叩かれた。'}]]},
+{id:'b_choryaku',c:S=>S.job==='samurai'&&S.koku>=150&&warLv(S.y)>0,w:.6,k:'big',t:'夜更け、敵方の使者がひそかに屋敷を訪ねてきた。「こちらにつけば、知行は倍に」。',
+ ch:[['使者を追い返す',S=>{ad(S,{mei:4,en:2});return '使者を追い返し、そのことを殿に報告した。忠義を褒められた。'}],
+     ['寝返りに応じる',S=>{if(chance(.55)){ad(S,{koku:S.koku,mei:-10,en:-8});mj('寝返って知行が倍に');return '戦のさなかに旗を翻した。約束どおり知行は倍になった。だが「裏切り者」の名は一生ついて回る。'}if(chance(.6)){die(S,'寝返りが露見して切腹');return '内通が露見した。殿の前に引き出され、腹を切ることになった。'}S.job='ronin';S.koku=0;ad(S,{mei:-15});mj('寝返りが露見し出奔');return '内通がばれ、夜陰にまぎれて国を出奔した。'}],
+     ['返事を濁して両方に保険をかける',S=>{ad(S,{en:-3,chi:2});return 'どちらにも取れる返事をした。戦国の世では、これも生き残り方のひとつだ。'}]]},
+{id:'b_zangen',c:S=>S.job==='samurai'&&adult(S),w:.6,t:S=>S.y<1616?`同輩が殿に讒言したらしい。「${S.nm}は敵方と通じている」と。殿の目が冷たい。`:`同輩が殿に讒言したらしい。「${S.nm}は陰で殿の悪口を言っている」と。殿の目が冷たい。`,
+ ch:[['身の潔白を弁明する',S=>{if(chance(.45+S.st.chi/250)){ad(S,{mei:4});return '起請文を書いて身の潔白を誓い、疑いは晴れた。'}ad(S,{koku:-Math.round(S.koku*.2),mei:-5});return '弁明は聞き入れられず、知行を減らされた。'}],['じっと耐える',S=>{ad(S,{kok:-8});return '黙って耐えた。一年後、讒言した男のほうが別の件で失脚した。'}],['国を出奔する',S=>{S.job='ronin';S.koku=0;ad(S,{mei:-6,kok:-6});mj('讒言にあい出奔');return 'こんな家に未練はない、と国を出た。'}]]},
+{id:'b_rojo',c:S=>isBushi(S)&&warLv(S.y)>.1,w:S=>warLv(S.y)*1.5,k:'big',t:'城が敵に囲まれた。兵糧は持ってふた月だという。',
+ ch:[['夜討ちに加わる',S=>{const r=battle(S,2,'籠城戦の夜討ち');return r}],['城に籠もって耐える',S=>{ad(S,{tai:-8,kok:-6});if(chance(.5))return '壁の土を煮て食い、馬を潰して食った。三月目に、ようやく援軍が来た。';return '城兵の命と引き換えに城主が腹を切り、城は開かれた。生き延びた。'}]]},
+{id:'b_takagari',c:S=>S.job==='samurai'&&S.koku>=100,w:.6,t:S=>pick(['殿の鷹狩りのお供をした。獲物を追って泥田に突っ込み、殿に大笑いされた。','宿直の夜、うっかり居眠りした。同輩が肘でつついてくれなかったら危なかった。','殿の碁の相手をした。勝ちすぎてはいけないし、負けすぎてもいけない。']),fx:{en:3}},
+{id:'b_shinobi',c:S=>S.job==='samurai'&&S.koku>=200&&warLv(S.y)>0,w:.4,once:1,t:'夜、屋敷の天井裏で物音がした。',
+ ch:[['槍で天井を突く',S=>{if(chance(.4)){ad(S,{mei:8,bu:3});mj('屋敷に忍び込んだ間者を討つ');return '手応えがあった。翌朝、庭に血の跡が点々と残っていた。敵方の忍びだったらしい。'}ad(S,{mei:-1});return '出てきたのは大きな鼠だった。'}],['寝たふりをする',S=>{ad(S,{chi:2});return '翌朝、文箱の中の書状が一通なくなっていた。'}]]},
+{id:'b_kabuki',c:S=>isWar(S)&&S.y>=1590&&S.y<=1615&&S.age<=35,w:.6,once:1,t:'仲間内で、派手な着物に長刀を差して練り歩く「かぶき者」が流行っている。',
+ ch:[['かぶいてみる',S=>{ad(S,{mei:rnd(-4,6),en:4,kan:-3});return '朱鞘の大刀に、女物の小袖を羽織って町を歩いた。年寄りは眉をひそめ、若い衆は喝采した。'}],['真面目に過ごす',S=>'奉公一筋で過ごした。']]},
+{id:'b_fushin',c:S=>isBushi(S)&&S.y>=1576,w:.7,t:S=>pick(['城の石垣普請に駆り出された。巨石を何百人で引いた。','新しい城の堀を掘る普請の割り当てが来た。']),fx:{tai:-3,en:2}},
+{id:'b_kengyo',c:S=>isBushi(S),w:.6,t:S=>pick(['剣の師匠から、ついに目録を授けられた。','槍の稽古で、道場の誰にも負けなくなった。','弓の稽古で、遠矢の腕が上がった。']),fx:{bu:5}},
+{id:'b_kumigashira',c:S=>S.job==='ashigaru'&&S.st.bu>=40&&!S.f.kumi,w:1,once:1,t:'足軽組頭に取り立てられた。部下が十人できた。',fx:{mei:5,kan:2},mj:'足軽組頭になる',e0:1},
+{id:'b_ashigaru_rantori',c:S=>S.job==='ashigaru'&&warLv(S.y)>.1,w:.8,t:'勝ち戦のあと、足軽たちが敵地の村で乱取りを始めた。',
+ ch:[['加わる',S=>{ad(S,{kan:rnd(3,8),kok:-6,mei:-2});return '鍋と米と着物を担いで帰った。足軽の給金だけでは食えないのだ。'}],['加わらない',S=>{ad(S,{kok:2});return '故郷の村が同じ目に遭ったことを思い出した。'}]]},
+{id:'b_bunke',c:S=>S.job==='samurai'&&S.koku===0&&S.st.mei>=30,w:1.2,once:1,t:'これまでの手柄が認められ、分家を許された。知行八十石。ようやく自分の屋敷が持てる。',fx:{koku:80,mei:4},mj:'分家を許される（80石）'},
+{id:'b_kazo',c:S=>S.job==='samurai'&&S.koku>=30&&S.st.mei>=55,w:.8,cd:6,t:S=>{const add=Math.max(50,Math.round(S.koku*rnd(40,90)/100));ad(S,{koku:add,mei:3});return `長年の功により、${add}石の加増を受けた。`+(S.koku>=1000&&!S.f.shiro?(S.f.shiro=1,` ついに城をひとつ預かる身となった。知行${S.koku}石。`):'')},mj:S=>`加増（${S.koku}石）`},
+{id:'b_daimyo',c:S=>S.job==='samurai'&&S.koku>=3000&&S.st.mei>=75&&warLv(S.y)>0,w:.4,once:1,k:'big',t:S=>`主家の${lord(S)}が揺らいでいる。家中の多くが自分を頼りにしている。今なら……。`,
+ ch:[['主家を倒して下剋上する',S=>{if(chance(.4+S.st.bu/400)){S.koku=S.koku*4;ad(S,{mei:20,en:-10});mj(`下剋上を果たし、大名となる（${S.koku}石）`);return `兵を挙げ、主君を追放した。${kuni(S)}の新たな主として、${S.koku}石の大名となった。下剋上の世だ。`}die(S,'謀反に失敗して討たれ');return '謀反は事前に漏れた。屋敷を囲まれ、火の中で果てた。'}],['あくまで忠義を尽くす',S=>{ad(S,{mei:8,en:6});return '主家を支え続けた。家中の者は「あの方こそ忠臣」と言った。'}]]},
+{id:'b_seppuku',c:S=>S.job==='samurai'&&S.koku>=100&&adult(S)&&warLv(S.y)>0,w:.18,once:1,k:'big',t:'預かっていた砦が、自分の留守中に敵に奪われた。責任は重い。',
+ ch:[['腹を切って詫びる',S=>{die(S,'砦を失った責めを負い切腹');ad(S,{mei:15});return '家督を子に継がせることを条件に、潔く腹を切った。家は残った。'}],['奪い返して汚名をすすぐ',S=>{const r=battle(S,2,'砦の奪還戦');if(!S.dead){ad(S,{mei:4});return r+' 砦は取り返した。'}return r}],['恥を忍んで生きる',S=>{ad(S,{mei:-12,koku:-Math.round(S.koku*.4)});return '知行を大きく削られた。それでも生きている。'}]]},
+{id:'b_katoku',c:S=>S.job==='samurai'&&S.f.chonan&&!S.fa.alive&&S.age<=35,w:.4,once:1,t:'弟が家中の一部を味方につけ、「兄より自分の方が当主にふさわしい」と言い出した。',
+ ch:[['弟と話し合う',S=>{if(chance(.6)){ad(S,{en:5});return '酒を酌み交わして腹を割って話した。弟は分家として兄を支えることになった。'}ad(S,{en:-6,koku:-Math.round(S.koku*.2)});return '話し合いは決裂した。家中は二つに割れ、所領の一部を弟に譲ることになった。'}],['先手を打って弟を寺に入れる',S=>{ad(S,{en:-8,mei:2,kok:-6});return '弟を寺に押し込めた。家は守ったが、'+(S.mo.alive?'母は口をきいてくれなくなった。':'家中の古参たちは、しばらく目を合わせてくれなかった。')+''}]]},
+{id:'b_sokushitsu',once:1,k:'big',c:S=>S.job==='samurai'&&S.sex==='m'&&S.koku>=1000&&S.age>=25&&S.age<=55,w:1.2,t:'家を絶やさぬよう、側室を迎えてはどうかと重臣たちが勧めてきた。',
+ ch:[['側室を迎える',S=>{S.f.soku=pick(NM.buke.f);ad(S,{en:-2,mei:2});mj('側室を迎える');return `${S.f.soku}を側室に迎えた。正室${married(S)?'の'+S.sp.nm:''}の機嫌は、しばらく直らなかった。`}],['正室だけで十分だ',S=>{ad(S,{en:3});return '「子は授かりものだ」と断った。'}]]},
+{id:'b_chakai',c:S=>S.job==='samurai'&&S.koku>=500,w:.6,t:S=>S.y>=1560?'主君の茶会に招かれた。茶碗ひとつに城ひとつ分の値がつく、と言われる時代だ。':'主君の茶会に招かれた。近ごろは、狭い部屋で静かに茶を点てる「侘び茶」が流行り始めているらしい。',
+ ch:[['作法どおりに飲む',S=>{ad(S,{en:4,chi:2});return '緊張で味はわからなかったが、粗相はしなかった。'}],['茶碗を大げさに褒める',S=>{if(chance(.5)){ad(S,{en:6,mei:3});return '殿が上機嫌になり、茶入をひとつ下された。家宝にする。'}ad(S,{mei:-3});return '褒めた茶碗が、実は殿の嫌いな者からの贈り物だった。'}]]},
+{id:'b_taihei',c:S=>S.job==='samurai'&&S.y>=1616,w:.8,t:S=>pick(['戦がなくなり、武芸よりも算盤のできる侍が重宝されるようになった。','槍の手入れをしても、使う日はもう来ない。','藩の勘定方に回された。帳面の数字と格闘する毎日だ。']),fx:S=>({chi:3,bu:-2,kok:S.st.chi<30?-3:1})},
+{id:'b_ronin_shikan',c:S=>S.job==='ronin'&&S.age<=55,w:1.6,cd:2,k:'big',t:'仕官の口を探している。',
+ ch:[['大名家の新規召し抱えに応募する',S=>{if(chance(.25+S.st.mei/250+S.st.bu/400)){S.job='samurai';S.koku=rnd(50,200);ad(S,{mei:5,kok:8});mj(`仕官がかなう（${S.koku}石）`);return `${pick(['槍の腕前を見せ','以前の主家での手柄が知られており','知人の口利きで'])}、知行${S.koku}石で召し抱えられた。`}ad(S,{kok:-5,kan:-2});return '門前払いだった。浪人はどこにでもいる。'}],
+     ['刀を捨てて百姓になる',S=>{S.job='nomin';S.cls='hyak';S.sur=pick(VIL)+'村';ad(S,{kok:4,mei:-4});mj('刀を置き、帰農する');return '刀を鍬に持ち替えた。村の者は最初、元侍を遠巻きにしていた。'}],
+     ['町の子らに読み書きを教えて食いつなぐ',S=>{ad(S,{kan:3,chi:2,en:4});return '町の子らに読み書きを教えた。思ったより向いているかもしれない。'},S=>S.st.chi>=30]]},
+{id:'b_shugyo',c:S=>S.job==='ronin'&&S.f.shugyo,w:1,t:S=>pick(['諸国を巡り、各地の道場で立ち合いを挑んだ。','山中で山賊三人を追い払った。','宿場町で、高名な剣客の噂を聞いた。']),fx:{bu:4,tai:-1,en:2}}
+);
+/* ===== あるあるイベント：商人・茶人 ===== */
+const port=S=>['izumi','settsu','chikuzen'].includes(S.reg);
+EV.push(
+{id:'m_tedai',c:S=>S.job==='shonin'&&S.f.decchi&&!S.f.tedai&&S.age>=19,w:2,once:1,t:'丁稚から手代に取り立てられた。前掛けが新しくなり、客の前に出られるようになった。',fx:{mei:4,en:3},mj:'手代になる',
+ e0:S=>{S.f.tedai=1}},
+{id:'m_noren',c:S=>S.job==='shonin'&&S.f.tedai&&S.f.decchi&&S.age>=27,w:1.4,once:1,k:'big',t:'長年の奉公が認められ、主人から暖簾分けの話が出た。',
+ ch:[['暖簾分けを受けて独り立ちする',S=>{S.f.decchi=0;const o=S.sur;S.sur=o.replace('屋','')+pick(['松屋','新屋','丸屋']);ad(S,{kan:rnd(15,30),mei:6});mj(`暖簾分けで「${S.sur}」を開く`);return `「${o}」の暖簾を分けてもらい、自分の店「${S.sur}」を構えた。看板の字は主人が書いてくれた。`}],
+     ['番頭として店に残る',S=>{S.f.banto=1;ad(S,{kan:8,en:5});return '番頭として主家を支えることにした。店の鍵を預かる身だ。'}]]},
+{id:'m_rakuichi',c:S=>isMerch(S)&&!S.f.decchi&&S.y>=1567&&S.y<=1590,w:.8,once:1,t:S=>`${lord(S)}が城下に楽市楽座の令を出した。座に入っていなくても、誰でも商いができる。座の特権は終わりだ。`,
+ ch:[['新しい市に店を出す',S=>{ad(S,{kan:rnd(5,20),en:4});return '市には各地から商人が集まった。売り上げは倍になった。'}],['古いなじみの座に義理を立てる',S=>{ad(S,{kan:-4,en:3});return '座の仲間と一緒に、しばらく様子を見た。客は新しい市へ流れていった。'}]]},
+{id:'m_dosou',c:S=>isMerch(S)&&!S.f.decchi&&S.kan>=40&&!S.f.dosou,w:.9,once:1,t:'蓄えができた。土倉を始めないかと勧められた。',
+ ch:[['土倉を開く',S=>{S.f.dosou=1;ad(S,{kan:rnd(5,15),mei:2,kok:-2});mj('土倉（金貸し）を開く');return '質草を預かり、銭を貸す。利息は月に一割。儲かるが、恨みも買う。'}],['本業に専念する',S=>'金貸しは性に合わない。']]},
+{id:'m_toritate',c:S=>S.f.dosou,w:1.2,t:'銭を貸した百姓が、期日を過ぎても返しに来ない。',
+ ch:[['厳しく取り立てる',S=>{ad(S,{kan:rnd(4,10),en:-5,kok:-2});if(S.y<1590&&chance(.2)){const l=Math.round(S.kan*.5);ad(S,{kan:-l});return '取り立ては成功した。だがその秋、徳政一揆が蔵を襲い、証文がすべて焼かれた。'}return '家の鍋まで質に取った。'}],['待ってやる',S=>{ad(S,{en:5});if(chance(.5)){ad(S,{kan:3});return '翌年、その百姓は利息まで揃えて持ってきた。'}return '結局返ってこなかった。'}]]},
+{id:'m_meibutsu',c:S=>isMerch(S)&&!S.f.decchi&&S.kan>=30&&S.y>=1500,w:.8,cd:10,k:'big',t:'名物と名高い茶入が、売りに出ていると聞いた。値は銭三十貫。',
+ ch:[['買う',S=>{ad(S,{kan:-30});if(chance(.25)){ad(S,{mei:-4});return '大枚をはたいて買ったが、目利きに見せると「よくできた写し」だった。'}S.f.meibutsu=1;ad(S,{mei:8,chi:2});mj('名物の茶入を手に入れる');return '手に入れた。茶会で披露すると、皆が身を乗り出した。'}],['見送る',S=>'三十貫あれば、蔵がひとつ建つ。']]},
+{id:'m_meibutsu_sell',c:S=>S.f.meibutsu,w:1.5,once:1,k:'big',t:S=>`${lord(S)}の家臣が来て、例の名物の茶入を殿が所望している、と言った。`,
+ ch:[['献上する',S=>{S.f.meibutsu=0;ad(S,{mei:12,en:8});S.f.goyo=1;mj('名物を献上し、御用商人となる');return '茶入を献上した。代わりに、城の御用商人の札を賜った。'}],['高値で売る',S=>{S.f.meibutsu=0;ad(S,{kan:rnd(80,200),en:-3});mj('名物を高値で売る');return `${rnd(3,8)}倍の値で売れた。茶の湯は、ある意味で最高の商売だ。`}],['家宝だと断る',S=>{if(chance(.3)){ad(S,{mei:-10,kan:-Math.round(S.kan*.4)});return '断った翌月、店に無理難題の御用金が課せられた。'}ad(S,{mei:4});return '「さすがは数寄者」と、かえって評判になった。'}]]},
+{id:'m_kome',c:S=>isMerch(S)&&!S.f.decchi&&S.kan>=15,w:.7,t:'今年は凶作になりそうだ、という噂が流れている。',
+ ch:[['米を買い占める',S=>{if(chance(.55)){ad(S,{kan:Math.round(S.kan*.6),en:-6});return '米の値は三倍になった。蔵は銭であふれたが、店の前に石が投げ込まれた。'}ad(S,{kan:-Math.round(S.kan*.35)});return '秋は意外な豊作だった。蔵に米が余り、値は下がる一方だ。'}],['いつもどおり商う',S=>{ad(S,{en:3});return '欲を出さずに商った。'}]]},
+{id:'m_nanban',c:S=>isMerch(S)&&!S.f.decchi&&port(S)&&S.y>=1470&&S.y<=1639&&S.kan>=20,w:1.1,cd:5,k:'big',t:S=>S.y<1550?'明（みん）へ渡る遣明船に荷を積む話がある。持ち帰る生糸や銅銭、薬は、当たれば大きい。':S.y<1616?'南蛮船や明（みん）への船に荷を積む話がある。生糸、鉄砲、硝石。当たれば大きい。':'南蛮船や唐船に荷を積む話がある。生糸、薬種、砂糖。当たれば大きい。',
+ ch:[['大きく出資する',S=>{const b=Math.round(S.kan*.6);if(chance(.6)){ad(S,{kan:b*2,mei:5});mj('南蛮貿易で大儲け');return '船は無事に戻った。生糸が飛ぶように売れ、元手は三倍になった。'}ad(S,{kan:-b,kok:-8});return '船は嵐で沈んだ。'}],['少しだけ出資する',S=>{if(chance(.6)){ad(S,{kan:rnd(5,15)});return '少しだけ儲かった。'}ad(S,{kan:-5});return '船は戻らなかった。少額でよかった。'}],['見送る',S=>'港から出ていく船を、ただ見送った。']]},
+{id:'m_hobetsu',c:S=>isMerch(S)&&!S.f.decchi&&(west(S)||port(S)),w:.6,t:'瀬戸内を通る荷船が、海賊衆に止められた。帆別銭を払えば、旗を渡して道中を守ってくれるという。',
+ ch:[['帆別銭を払う',S=>{ad(S,{kan:-3,en:2});return '海賊衆の旗を掲げると、他の海賊は手を出してこなかった。払うものを払えば、彼らは律儀だ。'}],['払わずに別の航路を行く',S=>{if(chance(.4)){ad(S,{kan:-Math.round(S.kan*.3)});return '別の海賊に荷を丸ごと奪われた。'}ad(S,{kan:2});return '運よく何事もなく着いた。'}]]},
+{id:'m_yasen',c:S=>isMerch(S)&&!S.f.decchi&&S.kan>=20&&warLv(S.y)>0,w:.7,t:S=>`${lord(S)}から、軍資金として矢銭を差し出せという命が来た。`,
+ ch:[['素直に差し出す',S=>{ad(S,{kan:-Math.round(S.kan*.25),en:4,mei:2});return '差し出した。これで戦のあいだ、店は守られる。'}],['値切る',S=>{if(chance(.5)){ad(S,{kan:-Math.round(S.kan*.1)});return '交渉の末、半額で済んだ。'}ad(S,{kan:-Math.round(S.kan*.35),mei:-4});return '「町を焼かれたいか」と脅され、結局多めに払うことになった。'}]]},
+{id:'m_egoshu',c:S=>S.job==='shonin'&&['izumi','chikuzen'].includes(S.reg)&&S.kan>=100&&S.st.mei>=30&&!S.f.egoshu,w:1.5,once:1,t:S=>`${S.reg==='izumi'?'堺':'博多'}の町を治める会合衆の一人に加えられた。町の自治は、豪商たちの寄合で決まる。`,fx:{mei:10,en:6},mj:'会合衆に加わる',e0:S=>{S.f.egoshu=1}},
+{id:'m_chajin',c:S=>S.job==='shonin'&&S.f.chado&&S.st.chi>=50&&S.age>=30,w:1,once:1,k:'big',t:'茶の湯の腕前が評判になり、大名家から茶頭として招きたいという話が来た。',
+ ch:[['茶人として生きる',S=>{S.job='chajin';ad(S,{mei:10,en:6});mj('茶頭として大名家に召し抱えられる');return '店を弟に任せ、茶の道ひとすじで生きることにした。'}],['商人のまま茶を楽しむ',S=>{ad(S,{en:4});return '茶は道楽でいい。'}]]},
+{id:'m_chajin_ev',c:S=>S.job==='chajin',w:1.2,t:S=>pick(['大名同士の茶会を取り持った。茶室の中では、敵も味方も同じ畳に座る。','茶碗ひとつの目利きを頼まれた。「これは良い」の一言で、値が十倍になった。','侘びた二畳の茶室を設計した。狭すぎると武将に文句を言われた。']),fx:{mei:3,en:3,kan:3}},
+{id:'m_rikyu',c:S=>S.job==='chajin'&&S.y>=1591,once:1,k:'big',t:'天下人の茶頭が、主の怒りを買って腹を切らされたと聞いた。茶人も、刃の上を歩いている。',
+ ch:[['静かに身を引く',S=>{S.job='shonin';ad(S,{kok:5,mei:-3});return '茶頭の座を辞し、町に戻った。'}],['自分の茶を貫く',S=>{ad(S,{mei:5});if(chance(.15)){die(S,'権力者の不興を買い切腹');return '数年後、自分も同じ道をたどった。'}return '茶の道を貫いた。'}]]},
+{id:'m_nise',c:S=>isMerch(S),w:.7,t:S=>pick(['質の悪い鐚銭を掴まされた。欠けた銭は、勘定のときに嫌がられる。','客と値引きで半刻やりあった。最後は「おまけ」をつけて手を打った。','帳簿の付け間違いで、三日間計算をやり直した。','大口の客が代金を払わずに国を出た。']),fx:S=>({kan:-rnd(1,4),chi:1})},
+{id:'m_seki',c:S=>isMerch(S)&&S.y<1580,w:.6,t:'荷を運ぶ道中に関所が七つもあり、そのたびに関銭を取られた。',fx:{kan:-3}},
+{id:'m_goyo',c:S=>S.f.goyo,w:1,t:S=>S.y<1616?'城の御用商人として、陣中の兵糧を一手に請け負った。':'城の御用商人として、普請の材木を一手に請け負った。',fx:S=>({kan:rnd(5,20),mei:2})}
+);
+
+/* ===== あるあるイベント：公家 ===== */
+EV.push(
+{id:'g_binbo',c:S=>adult(S)&&(S.job==='kuge'||(S.cls==='kuge'&&S.job==='musume')),w:1.4,t:S=>pick(['地方の家領からの年貢が、今年も届かない。武家に押領されたらしい。','装束が質に入ったままで、節会に出られなかった。','朝廷の儀式が、費用が足りずにまた中止になった。','屋敷の築地塀が崩れたが、直す銭がない。']),fx:S=>({kan:-rnd(1,3),kok:-3})},
+{id:'g_gekou',c:S=>S.job==='kuge'&&S.y<1590&&!S.f.gekou,w:1,once:1,k:'big',t:'都は戦火で荒れ、暮らしが立たない。地方の大名を頼って下向する公家も多い。',
+ ch:[['周防の大内家を頼る',S=>{S.f.gekou='suo';ad(S,{kan:rnd(15,30),kok:6});mj('周防の大内家へ下向');return '山口は「西の京」と呼ばれるほど栄えていた。大内殿は和歌や有職故実の話を喜んで聞いてくれた。'},S=>S.y<1551],
+     ['駿河の今川家を頼る',S=>{S.f.gekou='suruga';ad(S,{kan:rnd(10,25),kok:5});mj('駿河の今川家へ下向');return '駿府の館では、都の公家の作法がもてはやされた。今川の殿はお歯黒までつけていた。'},S=>S.y<1568],
+     ['越前の朝倉家を頼る',S=>{S.f.gekou='echizen';ad(S,{kan:rnd(10,25),kok:5});mj('越前の朝倉家へ下向');return '一乗谷は山あいの小さな都だった。'},S=>S.y<1573],
+     ['都に残る',S=>{ad(S,{mei:4,kan:-2});return '都の公家は都にいてこそ値打ちがある。痩せ我慢も公家の務めだ。'}]]},
+{id:'g_menkyo',c:S=>S.job==='kuge'&&adult(S),w:1,t:'地方の武家から、和歌や蹴鞠の免許状を出してほしいという依頼が来た。礼金は弾むという。',
+ ch:[['免許状を出す',S=>{ad(S,{kan:rnd(5,15),mei:-1});return '紙一枚で銭が入った。家伝の技も、売れるうちが花だ。'}],['まだ腕が足りぬと断る',S=>{ad(S,{mei:3});return '家の名を安売りはしない。'}]]},
+{id:'g_shinan',c:S=>S.job==='kuge'&&S.st.chi>=50,w:.8,t:'大名に招かれ、源氏物語の講釈と和歌の指南をした。',
+ ch:[['丁寧に教える',S=>{ad(S,{kan:rnd(5,10),en:5});return '殿は熱心な弟子だった。帰りに砂金の包みを渡された。'}],['少しもったいぶる',S=>{if(chance(.5)){ad(S,{kan:rnd(10,20),mei:3});return '「続きはまた来年」と言うと、礼金が倍になった。'}ad(S,{en:-4});return '殿の機嫌を損ねた。武家は気が短い。'}]]},
+{id:'g_kani',c:S=>S.job==='kuge'&&S.st.en>=40,w:.8,k:'big',t:'ある大名が、「受領名の官位がほしい」と口利きを頼んできた。',
+ ch:[['朝廷に取り次ぐ',S=>{if(chance(.7)){ad(S,{kan:rnd(20,50),en:6});mj('大名の官位を斡旋する');return '話がまとまり、礼として銭と太刀が届いた。官位の斡旋は、公家のいちばんの稼ぎだ。'}ad(S,{mei:-5});return '別の公家に先を越された。'}],['筋が悪いと断る',S=>{ad(S,{mei:2});return '出自の怪しい家に官位を回すのは、さすがに気が引けた。'}]]},
+{id:'g_nikki',c:S=>S.job==='kuge',w:.8,t:S=>pick(['日記に、今日の儀式の次第と天気と、誰が遅刻したかを書きつけた。','源氏物語の写本を作って、地方の武家に売った。','扇に歌を書いて売った。','蹴鞠の会に武将が加わった。鞠を思いきり蹴り上げて屋根に乗せてしまった。']),fx:{chi:2,kan:1}},
+{id:'g_dairi',c:S=>S.job==='kuge'&&S.y>=1569&&S.y<=1590,w:.6,once:1,t:'天下人の銭で、荒れていた内裏の修理が始まった。久しぶりに、宮中に槌の音が響く。',fx:{kok:6,mei:2}},
+{id:'g_kanpaku',c:S=>S.job==='kuge'&&S.y>=1585&&S.y<=1592,once:1,t:'百姓の出の者が関白になった。前代未聞だ。近衛家の猶子になるという荒業を使ったらしい。公家たちは陰で何とも言えない顔をしている。',fx:{chi:2}}
+);
+
+/* ===== あるあるイベント：僧・尼 ===== */
+EV.push(
+{id:'j_takuhatsu',c:S=>isMonk(S),w:1,t:S=>pick(['托鉢に出た。米をくれる家もあれば、水をかけてくる家もある。','檀家の葬式で経を上げた。','説法をしたら、村の年寄りたちが泣いていた。半分は寝ていた。']),fx:{kok:2,en:2}},
+{id:'j_gakumon',c:S=>isMonk(S)&&S.age<=40,w:.9,t:'本山で学問の修行をした。',ch:[['寝る間も惜しんで経典を学ぶ',S=>{ad(S,{chi:rnd(6,10),tai:-3});return '経典の講釈を任されるまでになった。'}],['ほどほどに学ぶ',S=>{ad(S,{chi:3});return '問答で一度だけ兄弟子を言い負かした。'}]]},
+{id:'j_hannya',c:S=>S.job==='so',w:.8,t:'檀家の祝いの席で、「般若湯」をすすめられた。寺では酒をそう呼ぶ。',
+ ch:[['ありがたくいただく',S=>{ad(S,{kok:5,mei:-2});return '般若湯は、たいへん智慧の湧く湯だった。'}],['戒を守って断る',S=>{ad(S,{mei:3});return '「拙僧は下戸でして」と断った。'}]]},
+{id:'j_gaiko',c:S=>S.job==='so'&&S.st.chi>=55&&!S.f.gaiko,w:1.2,once:1,k:'big',t:'学識を見込まれ、大名から外交僧として他国との交渉役を頼まれた。',
+ ch:[['引き受ける',S=>{S.f.gaiko=1;ad(S,{mei:10,en:6});mj('外交僧として大名に仕える');return '僧は敵国にも入りやすい。袈裟の下に、和議の書状を忍ばせて国境を越えた。'}],['仏道に専念する',S=>'政には関わらないことにした。']]},
+{id:'j_gaiko_ev',c:S=>S.f.gaiko&&S.job==='so',w:1.2,t:S=>S.y<1616?pick(['敵方の陣へ和睦の使いに出た。首を斬られずに戻れた。','大名同士の縁組を取り持った。','交渉の席で、相手方の僧と漢詩の応酬になった。']):pick(['朝鮮や琉球へ送る外交の書状の下書きを任された。','大名同士の縁組を取り持った。','公儀の寺社の取り決めについて、相談を受けた。']),fx:{mei:4,en:3}},
+{id:'j_genzoku',c:S=>S.job==='so'&&S.sex==='m'&&S.age<=35&&S.cls!=='ji'&&warLv(S.y)>0,w:.5,once:1,k:'big',t:S=>S.cls==='buke'?'兄が戦で討たれ、家を継ぐ者がいなくなった。家臣たちが寺に来て、還俗してほしいと頭を下げた。':'寺の暮らしに飽きた。世の中では、百姓の出でも槍一本で出世できるという。',
+ ch:[['還俗する',S=>{if(S.cls==='buke'){S.job='samurai';S.nm=pick(NM.buke.m);S.koku=S.f.fkoku||100;S.f.chonan=1;S.f.ie=1;ad(S,{mei:5});mj(`還俗して家督を継ぐ（${S.koku}石）`);return `経を捨てて刀を取り、${S.nm}と名乗って家督を継いだ。`}S.job='ashigaru';S.nm=pick(NM.hyak.m);ad(S,{bu:4,mei:-3});mj('還俗して足軽となる');return '袈裟を脱ぎ、足軽になった。'}],['仏門に留まる',S=>{ad(S,{kok:3});return '仏の道を選んだ。'}]]},
+{id:'j_jushoku',c:S=>S.cls==='ji'&&S.job==='so'&&!S.fa.alive&&S.f.chonan&&!S.f.jushoku,w:3,once:1,t:S=>`父の跡を継ぎ、${S.sur}の住職となった。`,fx:{mei:8,en:4},mj:'寺の住職となる',e0:S=>{S.f.jushoku=1}},
+{id:'j_soron',c:S=>isMonk(S)&&S.st.chi>=40,w:.6,t:'他宗の僧と宗論になった。',
+ ch:[['正面から論破しにいく',S=>{if(chance(.45+S.st.chi/300)){ad(S,{mei:6});return '相手が言葉に詰まった。門徒たちは大喜びだった。'}ad(S,{mei:-6});return '言い負かされ、袈裟を剥がされそうになった。'}],['穏やかに受け流す',S=>{ad(S,{en:3});return '「どちらの教えも、救いは救い」と言ったら、両方から睨まれた。'}]]},
+{id:'j_danka',c:S=>isMonk(S),w:.6,t:S=>pick(['檀家どうしの墓地の境目争いを仲裁した。','寺の屋根の修理代を檀家に頼んだら、渋い顔をされた。','寺に駆け込んできた女を匿った。寺は、世俗の手が届かない場所でもある。']),fx:{en:3}},
+{id:'j_amadera',c:S=>S.job==='ama',w:1,t:S=>pick(['尼寺の庭に、季節の花を植えた。','戦で夫を亡くした女たちが、尼寺を訪ねてくる。話を聞くことしかできない。','写経をした。千字を書いて、一字だけ間違えた。']),fx:{kok:4,chi:2}},
+{id:'j_kiri',c:S=>isMonk(S)&&west(S)&&S.y>=1550&&S.y<=1612,w:.7,once:1,t:'南蛮の伴天連と問答をした。「この世を造った神がいる」と言う。',
+ ch:[['仏法の理で論じ返す',S=>{ad(S,{chi:4,mei:2});return '議論は平行線のまま日が暮れた。向こうも、こちらの教えをよく勉強していた。'}],['教えに惹かれる',S=>{const n=kirishitan(S);ad(S,{kok:6,mei:-6});mj(`ひそかに洗礼を受ける（${n}）`);return `袈裟の下で、ひそかに洗礼を受けた。名は${n}。寺の者には言えない。`}]]}
+);
+/* ===== 史実イベントと噂 ===== */
+const bw=S=>isBushi(S)&&adult(S)&&S.age<=62;
+const HIST=[
+/* --- 噂（全員に流れる） --- */
+{yr:1467,n:'京で、管領の細川勝元と山名宗全が東西に分かれて戦を始めたという。諸国の大名も兵を率いて上っているそうだ。'},
+{yr:1468,n:'京では「足軽」という身軽な雑兵が、寺や屋敷に火をつけて略奪しているそうだ。'},
+{yr:1473,n:'山名宗全と細川勝元が、相次いで亡くなったという。それでも戦は終わらない。'},
+{yr:1477,n:'十一年続いた京の大乱が、ようやく終わったという。都はほとんど焼け野原らしい。大名たちは自分の国へ帰っていった。'},
+{yr:1485,n:'南山城で、国人と百姓が集まって、居座る畠山の両軍を国から追い出したという。'},
+{yr:1488,n:'加賀で一向宗の門徒が守護の富樫政親を攻め滅ぼしたそうだ。「百姓の持ちたる国」になったと噂されている。'},
+{yr:1493,n:'管領の細川政元が、将軍を勝手に取り替えたという。伊豆では、伊勢宗瑞（北条早雲）という者が国を奪ったそうだ。'},
+{yr:1498,n:'東海の国々で大地震があり、浜には大津波が押し寄せたという。'},
+{yr:1500,n:'京で、三十三年ぶりに祇園会の山鉾が巡行したそうだ。'},
+{yr:1507,n:'管領の細川政元が、家臣に殺されたという。都はまた乱れるだろう。'},
+{yr:1516,n:'伊勢宗瑞（北条早雲）が三浦氏を滅ぼし、相模一国を手に入れたそうだ。'},
+{yr:1523,n:'明の寧波（ニンポー）で、大内と細川の遣明船の者たちが争いを起こしたという。'},
+{yr:1527,n:'石見の山で、銀がたくさん採れるようになったそうだ。博多の商人が見つけたらしい。'},
+{yr:1536,n:'比叡山の僧兵が、京の法華宗の寺を焼き払ったという。'},
+{yr:1543,n:'種子島に南蛮船が流れ着き、「鉄砲」という武器を伝えたという。'},
+{yr:1549,n:'南蛮の僧ザビエルが薩摩に上陸し、天竺とは別の教えを説いているそうだ。'},
+{yr:1551,n:'周防の大内義隆が、家臣の陶隆房に攻められて自害したらしい。山口に下っていた公家衆も巻き込まれたという。'},
+{yr:1555,n:'安芸の毛利元就が、厳島で陶晴賢の大軍を破ったそうだ。'},
+{yr:1560,n:'駿河の今川義元が、尾張の桶狭間で織田信長に討たれたという。大軍が小勢に敗れたと、誰もが驚いている。'},
+{yr:1561,n:'信濃の川中島で、武田と上杉が大合戦をしたそうだ。両軍とも多くの死者を出したという。'},
+{yr:1565,n:'京で将軍足利義輝が三好勢に襲われ、討たれたという。将軍が殺される世になった。'},
+{yr:1568,n:'織田信長が足利義昭を奉じて上洛したそうだ。'},
+{yr:1570,n:'近江の姉川で、織田・徳川勢が浅井・朝倉勢と戦ったという。大坂では本願寺が織田と手切れになった。'},
+{yr:1571,n:'織田信長が比叡山を焼き討ちにしたという。僧も女子供も容赦なかったそうだ。'},
+{yr:1573,n:'将軍足利義昭が京から追われたそうだ。室町の御代も終わりか。甲斐の武田信玄が死んだという噂もあるが、武田家は認めていない。'},
+{yr:1575,n:'三河の長篠で、織田・徳川の鉄砲隊が武田の騎馬武者を打ち破ったという。'},
+{yr:1576,n:'織田信長が近江の安土に、天守のそびえる城を築いているそうだ。'},
+{yr:1580,n:'十年にわたって織田と戦った大坂の本願寺が、ついに石山を退いたという。'},
+{yr:1582,n:'京の本能寺で、織田信長が家臣の明智光秀に討たれた。光秀もまもなく山崎で羽柴秀吉に敗れたという。'},
+{yr:1583,n:'羽柴秀吉が、賤ヶ岳で柴田勝家を破ったそうだ。'},
+{yr:1585,n:'羽柴秀吉が関白になったという。'},
+{yr:1587,n:'関白が九州を平らげたそうだ。伴天連は国外へ去れというお触れも出たらしい。京の北野では、身分を問わず誰でも参加できる大茶会が開かれた。'},
+{yr:1588,n:'百姓から刀や槍、鉄砲を取り上げる「刀狩」のお触れが出たという。'},
+{yr:1590,n:'小田原の北条家が降った。長い評定で何も決まらなかったと噂されている。これで天下は関白のもとにひとつになった。'},
+{yr:1591,n:'武士が百姓や町人になることも、百姓が商いに移ることも禁じられたそうだ。天下の茶頭、千利休が腹を切らされたという噂も聞いた。'},
+{yr:1592,n:'太閤が朝鮮へ大軍を送ったという。'},
+{yr:1597,n:'長崎で、キリシタン二十六人が処刑されたという。'},
+{yr:1598,n:'太閤秀吉が伏見で亡くなったそうだ。朝鮮の兵も引き揚げてくるという。'},
+{yr:1600,n:'美濃の関ヶ原で、東西の大軍がぶつかった。半日で決着し、東軍の徳川家康が勝ったという。'},
+{yr:1603,n:'徳川家康が征夷大将軍になり、江戸に幕府を開いたそうだ。京では出雲の阿国という女の踊りが評判らしい。'},
+{yr:1614,n:'幕府が全国でキリシタンを禁じた。徳川と豊臣の間がきな臭い。'},
+{yr:1615,n:'大坂城が落ち、豊臣家が滅んだ。もう戦はない、と人々は言う。「元和偃武」だ。城は一国にひとつと定められた。'},
+{yr:1616,n:'大御所の徳川家康が駿府で亡くなったそうだ。'},
+{yr:1635,n:'大名は一年おきに江戸に住まねばならなくなったそうだ。参勤交代というらしい。'},
+{yr:1637,n:'九州の島原と天草で、キリシタンの百姓たちが一揆を起こしたという。'},
+{yr:1639,n:'ポルトガルの船は、もう日本に来られなくなったそうだ。'},
+{yr:1642,n:'諸国で大飢饉。道に餓えた人があふれているという。'},
+{yr:1657,n:'江戸で大火があり、城の天守まで焼けたという。'},
+
+/* --- 選択つきの史実 --- */
+{id:'onin',yr:[1469,1476],c:S=>S.reg==='yamashiro'&&S.age>=3,k:'big',mj:'応仁の乱の戦火の中で育つ',
+ t:S=>{ad(S,{kok:-6,tai:-3});if(chance(.04)){die(S,'応仁の乱の戦火');S.f.sudden=1;return '夜、隣の屋敷に放たれた火が燃え移った。'}
+   return pick([S.cls==='kuge'?'物心ついたころから、京は戦場だった。家族と牛車も使えずに歩いて奈良へ逃れ、親類の寺に身を寄せた。':`物心ついたころから、京は戦場だった。焼け落ちる町を、${haha(S)}に手を引かれて逃げた。`,'足軽たちが蔵を破って米を担ぎ出すのを、物陰から息をひそめて見ていた。','東軍と西軍の陣の間で、焼け残った寺に家族そろって身を寄せた。'])}},
+{id:'onin_after',yr:[1478,1500],c:S=>S.reg==='yamashiro'&&adult(S)&&!isBushi(S)&&!isMonk(S)&&!wander(S),k:'big',
+ t:'大乱が終わり、焼け跡の京に町衆が家を建て直し始めている。町内で集まって、自分たちの町は自分たちで守ろうという話が出た。',
+ ch:[['町の寄合に加わる',S=>{ad(S,{en:6,mei:3,kan:-Math.min(S.kan,2)});mj('焼け跡の京で町衆の寄合に加わる');return '木戸を作り、夜回りの順番を決めた。武士に頼らない町の始まりだった。'}],['自分の家のことで手一杯だ',S=>{ad(S,{kan:2});return '他人の家より、まず自分の家の屋根だ。'}]]},
+{id:'eisho_echigo',yr:[1507,1510],c:S=>S.reg==='echigo'&&bw(S),k:'big',
+ t:'守護代の長尾為景が、守護の上杉房能を討った。越後の武士は、長尾方と上杉方に割れている。',
+ ch:[['長尾方につく',S=>{const r=battle(S,1,'永正の乱');if(!S.dead&&S.job==='samurai')ad(S,{koku:Math.max(20,Math.round(S.koku*.2))});return r}],
+     ['上杉方につく',S=>{const r=battle(S,1,'永正の乱');if(S.dead)return r;if(chance(.5)){S.job='ronin';S.koku=0;mj('永正の乱で上杉方につき、所領を失う');return r+' 上杉方は敗れ、所領を失った。'}return r+' 負け戦だったが、どうにか許されて家は残った。'}]]},
+{id:'aki_amago',yr:[1523,1540],c:S=>S.reg==='aki'&&bw(S)&&S.job==='samurai',k:'big',
+ t:'安芸の国人たちは、出雲の尼子と周防の大内の間で揺れている。殿は、どちらにつくべきか家臣に意見を求めた。',
+ ch:[['大内方につくべきだ',S=>{ad(S,{chi:2,mei:3});return '殿は大内方につくと決めた。後から見れば、それが家を大きくする一歩だった。'}],
+     ['尼子方につくべきだ',S=>{ad(S,{mei:-2});return '意見は退けられた。殿は大内方を選んだ。'}],
+     ['どちらにも使いを出しておくべきだ',S=>{ad(S,{chi:3,en:-2});return '「それが国人の生き方よ」と、殿は笑った。'}]]},
+{id:'tenbun_hokke',yr:1536,c:S=>S.reg==='yamashiro'&&adult(S)&&(isMerch(S)||(S.cls==='cho'&&['wife','musume','goke'].includes(S.job))),k:'big',
+ t:'比叡山の僧兵が、法華宗の寺を焼くと攻め寄せてきた。町衆の多くは法華宗の門徒だ。',
+ ch:[['寺を守って戦う',S=>{if(chance(.12)){die(S,'天文法華の乱');return '寺の門で僧兵に囲まれた。'}ad(S,{mei:5,tai:-6,kan:-Math.round(S.kan*.3)});return '寺は焼け落ちたが、生き延びた。下京は大きく焼けた。'}],
+     ['店を閉めて逃げる',S=>{ad(S,{kan:-Math.round(S.kan*.2),kok:-4});return '堺の取引先を頼って逃げた。戻ると、町の半分が焼けていた。'}]]},
+{id:'yamashiro_ikki',yr:1485,c:S=>S.reg==='yamashiro'&&adult(S)&&(isFarmer(S)||isBushi(S)),k:'big',
+ t:'南山城の国人と百姓が宇治の平等院に集まり、居座る畠山の両軍に国から出ていけと迫るという。',
+ ch:[['寄合に加わる',S=>{ad(S,{mei:6,en:6});mj('山城国一揆に加わる');return '国人も百姓も同じ座で話し合い、掟を定めた。その後八年、南山城は自分たちで治めた。'}],['関わらない',S=>{ad(S,{en:-3});return '遠巻きに見ていた。'}]]},
+{id:'kaga_ikki',yr:1488,c:S=>S.reg==='kaga'&&adult(S)&&!isKuge(S),k:'big',
+ t:'加賀の門徒たちが、守護の富樫政親の城を取り囲むという。寺から、加わるようにと声がかかった。',
+ ch:[['門徒として加わる',S=>{if(isBushi(S)&&lordOf('kaga',1487)==='富樫家'&&chance(.3)){const r=battle(S,1,'加賀一向一揆');if(S.dead)return r}ad(S,{mei:5,en:6,kok:4});mj('加賀一向一揆に加わる');return '数え切れない門徒が城を囲み、富樫政親は自害した。加賀は、門徒が治める国になった。'},S=>!isBushi(S)||chance(.5)],
+     ['関わらない',S=>{ad(S,{en:-4});return '家にこもって念仏だけ唱えた。'}]]},
+{id:'meio_jishin',yr:1498,c:S=>inR(S,'suruga','mikawa','owari')&&S.age>=3,k:'big',
+ t:S=>{if(chance(.06)){die(S,'明応の大地震と津波');S.f.sudden=1;return '大地が激しく揺れ、しばらくして海から大きな波が押し寄せた。'}ad(S,{kan:-Math.round(S.kan*.3),kok:-8});return '大地が激しく揺れた。海沿いの村は、津波で跡形もなくなったという。'}},
+{id:'gion',yr:1500,c:S=>S.reg==='yamashiro'&&S.age>=5,once:1,t:'戦で途絶えていた祇園会が、三十三年ぶりに行われた。山鉾が町を練り歩き、見物人で通りが埋まった。',fx:{kok:8,en:2}},
+{id:'okehazama',yr:1560,c:S=>bw(S)&&inR(S,'owari','mikawa','suruga'),k:'big',mj:'桶狭間の戦い',
+ t:S=>S.reg==='owari'?'今川の大軍が尾張に攻め込んできた。殿は、雨に紛れて本陣を突くという。':'今川の殿の上洛軍に加わった。尾張の小勢など、ひと揉みのはずだった。',
+ ch:[['本陣に斬り込む',S=>{const r=battle(S,2,'桶狭間の戦い');if(!S.dead){ad(S,{mei:8,koku:S.job==='samurai'?Math.max(30,Math.round(S.koku*.2)):0});return '豪雨の中、敵本陣に躍り込んだ。総大将が討たれた。'+r}return r},S=>S.reg==='owari'],
+     ['味方とともに戦う',S=>battle(S,1,'桶狭間の戦い'),S=>S.reg==='owari'],
+     ['本陣を守って踏みとどまる',S=>{const r=battle(S,2,'桶狭間の戦い');if(!S.dead)return '本陣は崩れ、殿は討たれた。必死に戦い、どうにか生き延びた。'+r;return r},S=>S.reg!=='owari'],
+     ['総崩れの中を退く',S=>{if(chance(.12)){die(S,'桶狭間からの退却中に討たれ');return '退く途中で追手に討たれた。'}ad(S,{mei:-4,kok:-8});return '泥だらけで駿河へ逃げ帰った。殿が討たれたなど、まだ信じられない。'},S=>S.reg!=='owari']]},
+{id:'kawanakajima',yr:1561,c:S=>bw(S)&&inR(S,'kai','echigo'),k:'big',mj:'川中島の戦い',
+ t:S=>`信濃の川中島で、${S.reg==='kai'?'越後の上杉':'甲斐の武田'}勢と向かい合った。霧が濃い。`,
+ ch:[['霧の中へ打って出る',S=>battle(S,2,'川中島の戦い')],['陣を固めて待つ',S=>battle(S,1,'川中島の戦い')]]},
+{id:'itsukushima',yr:1555,c:S=>bw(S)&&S.reg==='aki',k:'big',mj:'厳島の戦い',t:'嵐の夜、殿の命で舟に乗り、厳島へ渡ることになった。敵の大軍が島に陣取っている。',
+ ch:[['夜明けとともに敵陣へ突っ込む',S=>{const r=battle(S,2,'厳島の戦い');if(!S.dead)ad(S,{koku:S.job==='samurai'?Math.max(20,Math.round(S.koku*.2)):0});return r}],['舟を守る',S=>battle(S,0,'厳島の戦い')]]},
+{id:'mikawa_ikko',yr:1563,c:S=>adult(S)&&S.reg==='mikawa'&&(isBushi(S)||S.cls==='ji'||isFarmer(S)),k:'big',
+ t:'三河で一向一揆が起きた。殿の家臣の中にも、門徒として一揆につく者がいる。',
+ ch:[['殿につく',S=>{ad(S,{mei:4,en:-3});if(isBushi(S))return battle(S,1,'三河一向一揆');return '門徒の仲間から裏切り者と呼ばれた。'},S=>isBushi(S)||isFarmer(S)||isMerch(S)],
+     ['寺に籠もる門徒たちに米を運ぶ',S=>{ad(S,{kok:4,en:3,kan:-Math.min(S.kan,2)});return '夜陰にまぎれて、寺へ米を運んだ。'},S=>!isBushi(S)],['門徒としての信仰につく',S=>{if(chance(.12)){die(S,'三河一向一揆で討たれ');return '寺に籠もって戦い、討たれた。'}ad(S,{kok:5,mei:-5});return '一揆は翌年、和議で終わった。一揆についた家臣の多くは国を追われ、何年かのちにまた帰参を許された。'}]]},
+{id:'ishiyama',yr:[1570,1576],c:S=>adult(S)&&S.reg==='settsu'&&(S.cls==='ji'||isFarmer(S)||isMerch(S))&&!S.f.kiri,k:'big',mj:'石山合戦に加わる',
+ t:'大坂の本願寺から檄文が届いた。「進まば往生極楽、退かば無間地獄」。門徒は石山へ集まれという。',
+ ch:[['石山に籠もる',S=>{S.f.ishiyama=1;if(chance(.15)){die(S,'石山合戦で討たれ');return '寺を囲む織田方との戦いで、鉄砲に撃たれた。'}ad(S,{bu:4,kok:6,tai:-6});return '寺の塀の内側で、鉄砲の玉を込め続けた。雑賀の鉄砲衆の腕前に驚いた。'}],['米や銭を送って支える',S=>{ad(S,{kan:-Math.min(S.kan,5),kok:4});return '戦えない分、蓄えを送った。'}],['静かに念仏だけ唱える',S=>{ad(S,{kok:-3});return '家で念仏を唱えた。'}]]},
+{id:'hieizan',yr:1571,c:S=>isMonk(S)&&inR(S,'omi','yamashiro'),k:'big',mj:'比叡山焼き討ちに遭う',
+ t:'比叡山が織田の軍勢に囲まれた。山の上の堂塔に火がかけられ始めた。',
+ ch:[['経典を抱えて山を下る',S=>{if(chance(.35)){die(S,'比叡山焼き討ち');return '坂本へ下る道で兵に見つかった。'}ad(S,{tai:-8,kok:-12,mei:4});return '燃える堂の中から経典を抱え出し、夜の山道を転げるように下りた。'}],['堂にとどまって経を読む',S=>{if(chance(.7)){die(S,'比叡山焼き討ち');ad(S,{mei:10});return '炎の中で経を読み続けた。'}ad(S,{mei:12,tai:-10});return '火が回る直前に、兵の一人がこっそり裏口を教えてくれた。'}]]},
+{id:'nagashino',yr:1575,c:S=>bw(S)&&inR(S,'kai','mikawa','owari','mino'),k:'big',mj:'長篠の戦い',
+ t:S=>S.reg==='kai'?'設楽原。敵は柵を三重に巡らせ、その向こうに鉄砲がずらりと並んでいる。殿は突撃を命じた。':'設楽原。馬防柵の内側で、鉄砲を構えて武田の騎馬武者を待つ。',
+ ch:[['命令どおり柵へ突っ込む',S=>{const r=battle(S,2,'長篠の戦い');if(!S.dead&&chance(.25)){die(S,'長篠の戦いで鉄砲に撃たれ');return '柵の手前で鉄砲の一斉射撃を浴びた。'}return r},S=>S.reg==='kai'],
+     ['馬を降りて回り込む',S=>{if(chance(.12)){die(S,'長篠の戦いで討たれ');return '回り込んだ先にも敵がいた。'}ad(S,{chi:3,mei:-2});return '迂回しているうちに本隊は崩れていた。命からがら甲斐へ戻った。'},S=>S.reg==='kai'],
+     ['柵の内から撃ち続ける',S=>{ad(S,{mei:5,bu:3,kan:3});return '撃っては下がり、また撃った。煙で何も見えなかったが、気づけば敵はいなかった。'},S=>S.reg!=='kai']]},
+{id:'honnoji',yr:1582,c:S=>bw(S)&&inR(S,'yamashiro','omi','mino','owari'),k:'big',mj:S=>'本能寺の変',
+ t:'京から早馬が来た。「上様、本能寺にて御生害。明智日向守の謀反」。家中は騒然となった。',
+ ch:[['明智方に馳せ参じる',S=>{if(chance(.6)){const r=battle(S,1,'山崎の戦い');if(S.dead)return r;S.job='ronin';S.koku=0;ad(S,{mei:-10});mj('明智方につき浪人となる');return '山崎で羽柴勢に敗れた。天下は十一日で終わった。浪人の身となった。'}ad(S,{mei:-4});return '馳せ参じる前に、明智が敗れたという知らせが届いた。危ないところだった。'}],
+     ['羽柴方につく',S=>{const r=battle(S,1,'山崎の戦い');if(!S.dead)ad(S,{mei:5,koku:S.job==='samurai'?Math.max(30,Math.round(S.koku*.25)):0});return r}],
+     ['様子を見る',S=>{ad(S,{chi:2,mei:-2});return '城に籠もって様子を見た。勝ち馬に乗るのも戦国の知恵だ。'}]]},
+{id:'tensho_jishin',yr:1586,c:S=>inR(S,'owari','mino','omi','echigo')&&S.age>=3,k:'big',
+ t:S=>{if(chance(.06)){die(S,'天正の大地震');S.f.sudden=1;return '冬の夜、大地が激しく揺れた。家の梁が落ちてきた。'}ad(S,{kan:-Math.round(S.kan*.3),kok:-8});return '冬の夜、大地が激しく揺れた。家は傾き、近くの城が崩れたという。'}},
+{id:'katanagari',yr:1588,c:S=>isFarmer(S)&&S.sex==='m'&&adult(S),k:'big',
+ t:'代官が来て、村の刀・脇差・槍・鉄砲を残らず差し出せという。「大仏殿の釘にする」そうだ。',
+ ch:[['差し出す',S=>{ad(S,{bu:-5,kok:-2});return '先祖伝来の刀を差し出した。これで百姓は、本当に百姓になった。'}],['一振りだけ床下に隠す',S=>{if(chance(.2)){ad(S,{mei:-8,kan:-3});return 'ばれて、村の乙名ともども叱責を受けた。'}S.f.kakushiken=1;return '床下に一振り隠した。使うことはないだろうが。'}]]},
+{id:'kunda',yr:1592,c:S=>bw(S)&&(west(S)||S.koku>=500),k:'big',mj:'朝鮮へ渡る',
+ t:'太閤の命で、朝鮮へ渡ることになった。肥前の名護屋に、全国の大名が集まっている。',
+ ch:[['海を渡って戦う',S=>{const r=battle(S,1,'朝鮮での戦い');if(S.dead)return r;if(chance(.12)){die(S,'朝鮮の陣中で病');return '冬の寒さと飢えで陣中に病が広がり、帰国を前に倒れた。'}ad(S,{tai:-8,kok:-6});return '異国の冬は、聞いていたよりずっと寒かった。'+r}],['名護屋に残る役を願い出る',S=>{ad(S,{mei:-4,en:3});return '名護屋の陣で留守を守った。陣中の茶会と能が、妙ににぎやかだった。'}]]},
+{id:'fushimi',yr:1596,c:S=>S.reg==='yamashiro'&&S.age>=3,k:'big',
+ t:S=>{if(chance(.04)){die(S,'慶長伏見の大地震');S.f.sudden=1;return '夜中に京が大きく揺れた。'}ad(S,{kan:-Math.round(S.kan*.25),kok:-6});return '夜中に京が大きく揺れた。伏見の城の天守が崩れたという。'}},
+{id:'sekigahara',yr:1600,c:S=>bw(S)&&!inR(S,'mutsu'),k:'big',mj:S=>`関ヶ原の戦い（${S.f.seki||''}）`,
+ t:'天下分け目の戦が始まる。徳川の東軍につくか、石田らの西軍につくか。',
+ ch:[['東軍につく',S=>{S.f.seki='東軍';const r=battle(S,1,'関ヶ原の戦い');if(!S.dead&&S.job==='samurai')ad(S,{koku:Math.max(30,Math.round(S.koku*.3))});return r+(S.dead?'':' 東軍は半日で勝った。戦後、加増の沙汰があった。')}],
+     ['西軍につく',S=>{S.f.seki='西軍';const r=battle(S,1,'関ヶ原の戦い');if(S.dead)return r;if(S.reg==='satsuma'){ad(S,{mei:8});return r+' 西軍は総崩れになった。島津勢は敵中を正面突破して薩摩へ帰り、領地を守り抜いた。'}S.job='ronin';S.koku=0;ad(S,{mei:-5});mj('西軍につき、主家が改易される');return r+' 西軍は総崩れになった。主家は改易され、浪人となった。'}],
+     ['戦いの最中に寝返る',S=>{S.f.seki='寝返り';ad(S,{mei:-8});if(S.job==='samurai')ad(S,{koku:Math.round(S.koku*.2)});return '西軍の陣にいたが、合図とともに旗を翻して味方に襲いかかった。勝敗はそれで決まった。'}]]},
+{id:'osaka_fuyu',yr:1614,c:S=>isWar(S)&&adult(S)&&S.age<=62,k:'big',
+ t:S=>S.job==='ronin'?'豊臣家が全国の浪人を大坂城に集めている。支度金も出るという。':'大坂の豊臣家を攻めるため、徳川方として出陣することになった。',
+ ch:[['大坂城に入る',S=>{S.f.osaka=1;ad(S,{kan:rnd(5,10),mei:5});const r=battle(S,1,'大坂冬の陣');return S.dead?r:'大坂城に入った。城の南の出丸から、押し寄せる徳川勢を撃ち払った。冬のうちに和議となったが、外堀は埋められた。'},S=>S.job==='ronin'],
+     ['大坂には行かない',S=>{ad(S,{kok:3});return '勝ち目のない戦だ。行かなかった。'},S=>S.job==='ronin'],
+     ['徳川方として戦う',S=>battle(S,1,'大坂冬の陣'),S=>S.job!=='ronin']]},
+{id:'osaka_natsu',yr:1615,c:S=>S.f.osaka&&!S.dead,k:'big',mj:'大坂夏の陣',
+ t:'外堀を失った大坂城に、再び徳川の大軍が押し寄せた。城の中の浪人たちは、討って出ると決めた。',
+ ch:[['家康の本陣へ突撃する',S=>{if(chance(.7)){die(S,'大坂夏の陣で討死');ad(S,{mei:15});return '赤備えの一隊とともに家康の本陣へ突っ込んだ。旗本が逃げ散るのが見えた。そこで記憶が途切れた。'}ad(S,{mei:12,tai:-15});return '本陣まであと一歩まで迫ったが、押し返された。乱戦の中、どうにか生き延びた。'}],
+     ['城を抜けて落ち延びる',S=>{if(chance(.2)){die(S,'大坂落城後の残党狩りで');return '落ち延びた先で残党狩りにあった。'}ad(S,{mei:-6,kok:-8});mj('大坂城から落ち延びる');return '燃える城を背に、町人に化けて逃げた。名を変えて、どこかで生きていくしかない。'}]]},
+{id:'kinkyo',yr:[1612,1630],c:S=>S.f.kiri&&!S.f.korobi&&!S.f.kakure,k:'big',
+ t:'キリシタンの取り締まりが厳しくなった。役人が「踏絵」を持って村々を回っている。',
+ ch:[['教えを捨てる',S=>{S.f.korobi=1;ad(S,{kok:-12});mj('棄教する');return '絵を踏んだ。足の裏に、いつまでも感触が残った。'}],['ひそかに信仰を守る',S=>{S.f.kakure=1;if(chance(.15)){die(S,'キリシタンとして処刑され');return '信仰が露見し、処刑された。'}ad(S,{kok:4,en:4});mj('隠れキリシタンとして生きる');return '表向きは寺の檀家となり、納戸の奥でひそかに祈り続けることにした。観音像の裏に、小さな十字が刻んである。'}]]},
+{id:'shimabara',yr:1637,c:S=>S.f.kakure&&adult(S)&&west(S),k:'big',
+ t:'島原でキリシタンの一揆が起き、原城に籠もったという。信徒の仲間から誘いが来た。',
+ ch:[['原城に加わる',S=>{die(S,'島原の乱で原城に籠もり討死');return '年が明け、城は落ちた。籠もった者は、ほとんど生きて出られなかった。'}],['祈るだけにとどめる',S=>{ad(S,{kok:-8});return '遠くから祈ることしかできなかった。'}]]},
+{id:'ouchi',yr:1551,c:S=>S.f.gekou==='suo',k:'big',t:'山口で、陶隆房の軍勢が大内殿の館を襲った。館に身を寄せていた公家衆にも刃が向けられている。',
+ ch:[['山を越えて逃げる',S=>{if(chance(.35)){die(S,'大寧寺の変に巻き込まれ');return '逃げる途中で追手に捕まった。'}ad(S,{kan:-Math.round(S.kan*.6),kok:-15});mj('大寧寺の変から逃れる');return '装束を脱ぎ捨て、百姓の格好で山を越えた。都に戻ったときには、一文無しだった。'}],['寺に駆け込む',S=>{if(chance(.5)){die(S,'大寧寺の変に巻き込まれ');return '寺にも兵が踏み込んできた。'}ad(S,{kok:-10});return '寺の僧が床下に匿ってくれた。'}]]},
+{id:'yasen_sakai',yr:1568,c:S=>isMerch(S)&&!S.f.decchi&&S.reg==='izumi'&&adult(S),k:'big',t:'上洛した織田信長が、堺に矢銭二万貫を出せと言ってきた。会合衆は堀を深くして抵抗すべきか揉めている。',
+ ch:[['払うべきだと主張する',S=>{ad(S,{kan:-Math.round(S.kan*.2),en:3,chi:2});return '堺は結局、矢銭を払って織田に従った。逆らった町がどうなったかを、皆知っていた。'}],['抵抗すべきだと主張する',S=>{ad(S,{mei:4,kan:-Math.round(S.kan*.3)});return '堀を深くし、浪人を雇ったが、翌年には屈した。払う額は変わらなかった。'}]]},
+{id:'kitano',yr:1587,c:S=>adult(S)&&(S.reg==='yamashiro'||isMerch(S)||S.job==='chajin'),k:'big',
+ t:'京の北野天満宮で、関白が大茶会を開く。茶の湯の心得がある者なら、身分を問わず誰でも参加してよいという。',
+ ch:[['茶道具を持って参加する',S=>{ad(S,{kok:8,en:5,mei:3});mj('北野大茶湯に参加');return '松原に茶席が並んでいた。関白自ら茶を点てている席もあった。'}],['見物だけする',S=>{ad(S,{kok:4});return '人の多さに圧倒された。'}]]},
+{id:'kanei_kikin',yr:1641,c:S=>S.cls==='hyak'||S.age>=60,k:'big',t:S=>{if(chance(.06+(S.age>60?.05:0))){die(S,'寛永の大飢饉');return '冷夏と長雨で、村の米が尽きた。'}ad(S,{tai:-10,kan:-Math.round(S.kan*.4),kok:-8});return '冷夏と長雨で米が穫れない。村では草の根まで食べた。'}}
+];
+/* ===== 選択の結果に幅を持たせる =====
+   set：結果をまるごと置き換える（運と能力でいくつかに分かれる）
+   add：元の結果のあとに、その後の成り行きを一つ足す */
+const out=(...opts)=>S=>{
+  const o=wpick(opts,x=>typeof x[0]==='function'?x[0](S):x[0]);
+  if(o[1])ad(S,typeof o[1]==='function'?o[1](S):o[1]);
+  return typeof o[2]==='function'?o[2](S):o[2];
+};
+const kidSick=S=>{const k=kidAt(S);if(!k||!k.alive)return null;k.alive=0;k.dAge=kAge(k);k.cause='病';ad(S,{kok:-14});mj(`${k.role}の${k.nm}を亡くす`);return k};
+
+const VAR={
+'k_kaki/素直に謝る':['set',out(
+  [S=>.5+S.st.en/200,{en:3},'拳骨を一発もらったが、帰りに柿を二つ持たされた。'],
+  [1,{kok:-3},'その家の婆さまにこっぴどく叱られ、親にも言いつけられた。二重に叱られた。'],
+  [.6,{en:4,kok:2},'「正直でよろしい」と褒められ、なぜか干し柿までもらった。'])],
+'s_sumo/見物に回る':['set',out(
+  [2,null,'見ているほうが楽しい。'],
+  [1,{tai:-2,kok:1},'土俵のすぐそばで見ていたら、投げ飛ばされた力士の下敷きになった。'],
+  [1,S=>chance(.5)?{kan:1}:{kan:-1},S=>S._d.kan>0?'勝ちそうな方に銭を張って、少し儲けた。':'勝ちそうな方に銭を張ったが、外れた。'])],
+'c_ise/留守番をする':['set',out(
+  [2,{kan:1},'土産の伊勢暦をもらった。'],
+  [1,{tai:-1},'留守番の間に、家の仕事が倍になった。'],
+  [1,{kok:3,en:1},'帰ってきた者たちの土産話を、夜通し聞かされた。いつか自分も行きたい。'])],
+'c_yukidaore/見なかったことにする':['set',out(
+  [2,{kok:-4},'しばらく夢に見た。'],
+  [1,{kok:-1},'振り返ると、別の旅人が介抱していた。少しほっとした。'],
+  [1,{kok:-7},'翌日、同じ場所に小さな土饅頭ができていた。'])],
+'c_yukidaore/水だけ与える':['set',out(
+  [2,null,'竹筒の水を飲ませ、先を急いだ。'],
+  [1,{en:3},'水を飲むと旅人は息を吹き返し、何度も頭を下げた。'],
+  [1,{kok:-3},'水を飲ませたが、旅人はそのまま動かなくなった。手を合わせてから立ち去った。'])],
+'kc_itazura/拳骨を落とす':['set',out(
+  [2,{kok:-1},'拳骨を一発。泣きながら謝りに行った。'],
+  [1,{kok:-4},'拳骨を落とすと、ふてくされて三日口をきかなかった。'],
+  [1,{kok:3},'拳骨のあと、その子がこっそり自分から謝りに行っていたと、あとで知った。'])],
+'kc_itazura/一緒に頭を下げに行く':['set',out(
+  [2,{en:2},'並んで頭を下げた。帰り道、手をつないで帰った。'],
+  [1,{en:-2,kok:-2},'相手の親に嫌味を言われ、こちらまで頭に血が上った。'],
+  [1,{en:4},'「子どもの喧嘩はお互いさま」と笑ってもらえた。それから家同士の付き合いが始まった。'])],
+'c_kenka/逃げる':['set',out(
+  [2,{mei:-2},'逃げ足だけは誰にも負けない。'],
+  [S=>1.2-S.st.tai/100,{tai:-5,mei:-3},'逃げ切れずに追いつかれ、さんざん殴られた。'],
+  [.7,{tai:-2},'逃げ込んだ先で、別の喧嘩に巻き込まれた。'])],
+'c_kenka/頭を下げて収める':['set',out(
+  [2,{en:3,mei:-1},'「すまねえ」の一言で、その場は収まった。'],
+  [1,{mei:-4},'頭を下げたら、かえって相手がつけ上がった。'],
+  [S=>S.st.en/60,{en:6},'頭を下げたのが効いて、のちに酒を酌み交わす仲になった。'])],
+'c_bakuchi/断る':['set',out(
+  [2,{en:-1},'付き合いが悪いと言われた。'],
+  [1,{kok:3},'その夜、賭場に役人の手入れがあったと後で聞いた。断ってよかった。'],
+  [1,null,'断ったら、誘った男はすぐ別の者に声をかけていた。'])],
+'c_renga/無難な句でしのぐ':['set',out(
+  [2,{en:2},'可もなく不可もなく、酒だけはしっかり飲んだ。'],
+  [1,null,'無難すぎて、誰の記憶にも残らなかった。'],
+  [S=>S.st.chi/60,{mei:3,en:2},'無難な句が、たまたま座の流れにぴたりとはまった。'])],
+'kc_byoki/寺に祈祷を頼む':['set',out(
+  [3,S=>({kan:-Math.min(S.kan,1),kok:2}),'祈祷のおかげか、五日目に熱が下がった。'],
+  [1,S=>({kan:-Math.min(S.kan,1),tai:-2,kok:-3}),'祈祷のかいなく熱は続いた。十日目に、ようやく下がった。'],
+  [.25,null,S=>{const k=kidSick(S);return k?`祈祷のかいなく、${k.nm}は息を引き取った。`:'祈祷のおかげか、熱は下がった。'}])],
+'kc_byoki/薬師を呼ぶ':['add',out(
+  [4,null,''],[.2,null,S=>{const k=kidSick(S);return k?`しかし数日後、${k.nm}はぶり返した熱で息を引き取った。`:''}])],
+'kc_byoki/寝ずに看病する':['add',out(
+  [4,null,''],[.25,null,S=>{const k=kidSick(S);return k?`それでも、${k.nm}は明け方に息を引き取った。`:''}])],
+'h_inago/虫送りの祭りをする':['set',out(
+  [2,{kan:-1,kok:3,en:3},'松明を灯し、鉦と太鼓を鳴らして、村境まで虫を送った。半分くらいは効いた気がする。'],
+  [1,{kan:1,kok:5,en:3},'虫送りの翌朝、いなごはきれいにいなくなっていた。村じゅうで手を合わせた。'],
+  [1,{kan:-3,kok:-4,en:2},'祭りのかいなく、田はほとんど食い尽くされた。'])],
+'h_inago/夜通し手で払う':['set',out(
+  [2,{tai:-4,kan:1},'家族総出で一晩中払った。翌朝、腕が上がらなかった。'],
+  [1,{tai:-4,kan:-2},'払っても払っても湧いてくる。結局、田の半分をやられた。'],
+  [1,{tai:-3,kan:2,mei:2},'自分の田だけは守り切った。隣の家から、払い方を教えてくれと頼まれた。'])],
+'kc_tenarai/夜に手ほどきする':['set',out(
+  [2,{kok:4,en:1},'いろはの「い」から教えた。筋がいい、かもしれない。'],
+  [1,{kok:2},'三日で飽きて、筆を放り出して遊びに行った。'],
+  [S=>S.st.chi/80,{kok:6,chi:1},S=>{const k=kidAt(S);if(k)k.yomi=2;return 'みるみる覚え、ひと月で簡単な文が書けるようになった。この子は学問に向いているのかもしれない。'}])],
+'kc_tenarai/忙しいと断る':['set',out(
+  [2,{kok:-2},'「また今度な」と言った。その今度は、なかなか来ない。'],
+  [1,{kok:2},'その子は、近所の寺に通って勝手に字を覚えてきた。'],
+  [1,{kok:-5},'その子は、それから二度とせがまなかった。'])],
+'h_kikin/種籾に手をつける':['set',out(
+  [2,{tai:2,kan:-2},'来年の種籾まで食べた。来年のことは来年考える。'],
+  [1,{tai:2,kan:-4,kok:-4},'種籾を食べたせいで、翌年の田植えは半分しかできなかった。'],
+  [1,{tai:2,kan:-1},'種籾に手をつけたが、親戚が種を分けてくれた。持つべきものは親類だ。'])],
+'h_kikin/山で葛の根やわらびを掘る':['set',out(
+  [2,{tai:-4,kok:-2},'わらびの根を叩いて粉にした。腹はふくれるが、力は出ない。'],
+  [1,{tai:-1,kan:1},'山奥で、手つかずの葛の群生を見つけた。家族で冬を越せた。'],
+  [S=>S.age>50?1:.4,{tai:-8},'山道で足を滑らせ、崖から落ちかけた。'])],
+'h_kikin/名主に頭を下げて米を借りる':['set',out(
+  [2,{tai:1,en:-3},S=>{S.f.shakkin=(S.f.shakkin||0)+5;return '利息は五割。来年の秋が怖い。'}],
+  [1,{tai:1,en:2},'名主は「返すのは豊作の年でいい」と言ってくれた。'],
+  [1,{en:-5,kok:-4},'名主は首を横に振った。「どこも同じだ」と言われた。'])],
+'inkyo/まだまだ現役を続ける':['set',out(
+  [2,{kok:-3,en:-3},'「わしの目の黒いうちは」と言い張った。息子はため息をついた。'],
+  [1,{tai:-4},'張り切りすぎて、腰を痛めた。'],
+  [1,{mei:3,kok:2},'その年の働きぶりに、周りから「さすが」と言われた。'])],
+'kc_kando/勘当する':['add',out(
+  [2,null,''],[1,{kok:-3},'あとで聞くと、あの子は遠くの町で日雇いをしているらしい。'],[1,{kok:2},'あの子が、遠い寺で下働きを始めたと人づてに聞いた。少しほっとした。'])],
+'kc_kando/尻ぬぐいをして許す':['add',out(
+  [2,null,''],[1,{kok:4,en:2},'それ以来、あの子は人が変わったように真面目に働き出した。'],[1,{kan:-2,kok:-4},'半年後、あの子はまた同じことをした。'])],
+'kc_atotori/自分のやり方を通す':['set',out(
+  [2,{en:-3,kok:-2},'「まだお前には早い」と言い切った。'],
+  [1,{en:-5,kok:-5},'言い合いのあと、跡取りは三日家に帰ってこなかった。'],
+  [1,{en:1},'言い合いのあと、二人で酒を飲んだ。結局、半分ずつ取り入れることにした。'])],
+'c_kiri/怪しんで近づかない':['set',out(
+  [2,null,'「南蛮の妖術だ」と言う者もいる。近寄らないことにした。'],
+  [1,{kok:-2},'近寄らずにいたが、近所の者が次々と洗礼を受けていく。少し落ち着かない。'],
+  [1,{chi:1},'遠巻きに見ていたら、伴天連が病人の傷を手当てしていた。妖術には見えなかった。'])],
+'c_kiri/話だけ聞く':['set',out(
+  [2,{chi:3},'天地を造った神がいるという。仏様と喧嘩にならないのだろうか。'],
+  [1,{chi:2,kok:2},'帰りに、南蛮の薬をもらった。よく効いた。'],
+  [1,{chi:2,en:-2},'話を聞いていたところを寺の和尚に見られ、渋い顔をされた。'])],
+'j_hannya/戒を守って断る':['set',out(
+  [2,{mei:3},'「拙僧は下戸でして」と断った。'],
+  [1,{mei:4,en:-2},'断ったら座がしらけた。檀家の主人は少し不機嫌だった。'],
+  [1,{mei:5,en:2},'断ると、檀家の主人は「さすが和尚さま」と、お布施を上乗せしてくれた。'])],
+'j_hannya/ありがたくいただく':['set',out(
+  [2,{kok:5,mei:-2},'般若湯は、たいへん智慧の湧く湯だった。'],
+  [1,{kok:3,mei:-6},'般若湯をいただきすぎて、法事の経を一行飛ばした。'],
+  [1,{kok:5,en:3},'酔った勢いで説法をしたら、なぜか一番評判がよかった。'])],
+'h_tokusei/関わらない':['set',out(
+  [2,{en:-2},'村八分にならない程度に、遠巻きに見ていた。'],
+  [1,{en:-5},'あとで「臆病者」と陰口を叩かれた。'],
+  [1,{kok:3},'一揆に加わった者の何人かが捕らえられたと聞いた。関わらなくてよかった。'])],
+'h_rantori/山の隠れ小屋に逃げる':['set',out(
+  [2,S=>({kan:-Math.round(S.kan*.3),kok:-5}),'村の衆と家財を担いで山へ逃げた。戻ると家は荒らされていたが、皆無事だった。'],
+  [1,{kok:-2},'山へ逃げた。軍勢は村を素通りしていき、家は無事だった。'],
+  [1,S=>({kan:-Math.round(S.kan*.5),kok:-8}),'山へ逃げたが、戻ると家は焼かれていた。'])],
+'j_gakumon/寝る間も惜しんで経典を学ぶ':['set',out(
+  [2,{chi:7,tai:-3},'経典の講釈を任されるまでになった。'],
+  [1,{chi:4,tai:-7},'無理がたたって、体を壊した。'],
+  [S=>S.st.chi/70,{chi:9,mei:4},'問答で高僧を唸らせ、本山でちょっとした評判になった。'])],
+'b_zangen/じっと耐える':['set',out(
+  [2,{kok:-8},'黙って耐えた。一年後、讒言した男のほうが別の件で失脚した。'],
+  [1,{kok:-10,mei:-3},'黙って耐えたが、疑いは晴れなかった。出世の道は遠のいた。'],
+  [1,{kok:-4,en:4},'黙って耐えていると、古参の家臣がこっそり殿に取りなしてくれた。'])],
+'b_ronin_shikan/刀を捨てて百姓になる':['add',out(
+  [2,null,''],[1,{en:4,mei:2},'元侍の腕っぷしを買われ、村の用心棒も頼まれるようになった。'],[1,{tai:-3},'慣れない野良仕事で、手が豆だらけになった。'])],
+'b_ronin_shikan/町の子らに読み書きを教えて食いつなぐ':['add',out(
+  [2,null,''],[1,{kan:2,mei:2},'教え子の親の商人が、礼にと米を届けてくれた。'],[1,{kan:-1},'月謝を払わない家が多く、暮らしは楽にならなかった。'])],
+'gen_buke_m/部屋住みのまま兄を支える':['add',out(
+  [2,null,''],[1,{en:3},'兄は思ったより自分を頼りにしてくれた。'],[1,{kok:-4},'兄嫁の目が冷たい。居候の身はつらい。'])],
+'gen_buke_m/家を出て武者修行の旅に出る':['add',out(
+  [2,null,''],[1,{bu:3},'最初の宿場で、さっそく道場破りを挑まれた。勝った。'],[1,{kan:-1,tai:-2},'最初の峠で、早くも路銀を盗まれた。'])],
+'gen_hyak_f/村で働き、嫁入りを待つ':['add',out(
+  [2,null,''],[1,{en:3},'村の若い衆の間で、ちょっとした評判になった。'],[1,{tai:-2},'田植えの最中に足をくじいた。'])],
+'gen_hyak_f/歩き巫女の一座に加わる':['add',out(
+  [2,null,''],[1,{chi:2},'口寄せの文句を三日で覚え、頭（かしら）に褒められた。'],[1,{kok:-4},'最初の旅で、もう故郷が恋しくなった。'])],
+'gen_hyak_f/城下の武家へ奉公に上がる':['add',out(
+  [2,null,''],[1,{en:3},'奥方に気に入られ、身の回りの世話を任された。'],[1,{kok:-3},'古参の下女に、ことあるごとにいびられた。'])],
+'h_nengu/正直に納める':['set',out(
+  [2,{kan:-1,kok:-2},'蔵の米が半分になった。'],
+  [1,{kan:-1,en:3},'正直に納めたのを代官が覚えていて、翌年は少し手心を加えてくれた。'],
+  [1,{kan:-2,kok:-4},'正直に納めたら、来年からはこれが基準だと言われた。'])],
+'h_nengu/隠し田のことは黙っておく':['set',out(
+  [2,{kan:3},S=>{S.f.kakushida=1;return '山の奥の隠し田は、帳面に載っていない。'}],
+  [1,{kan:-4,mei:-6},'隠し田が見つかった。村の乙名が平謝りして、どうにか罰は軽く済んだ。'],
+  [1,{kan:4,en:-2},S=>{S.f.kakushida=1;return '隣家も同じことをしているのを知った。お互い、何も言わないことにした。'}])],
+'c_toji/我慢する':['set',out(
+  [2,{tai:-2},'もぐさを据えて我慢した。'],
+  [1,{tai:1},'近所の婆さまに教わった膏薬が、思いのほかよく効いた。'],
+  [1,{tai:-5},'我慢しているうちに、歩くのもつらくなった。'])],
+'k_tera/家の手伝いを優先する':['set',out(
+  [2,{tai:3},S=>`字より鍬だ、と${chichi(S)}が言った。`],
+  [1,{tai:2,chi:2},'手伝いの合間に、地面に棒で字を書いて覚えた。'],
+  [1,{tai:3,kok:-2},'寺に通う子らを、うらやましく見送った。'])],
+'h_hitokai/どうにもできない':['set',out(
+  [2,{kok:-6},'乱世とはこういうものだ、と自分に言い聞かせた。'],
+  [1,{kok:-3,en:2},'村の者で銭を出し合い、どうにか買い戻せた。自分も少し出した。'],
+  [1,{kok:-8},'その子の母親の泣き声が、いつまでも耳に残った。'])],
+'j_gakumon/ほどほどに学ぶ':['set',out(
+  [2,{chi:3},'問答で一度だけ兄弟子を言い負かした。'],
+  [1,{chi:2,en:3},'学問より、寺の仲間との付き合いのほうが身についた。'],
+  [1,{chi:1},'居眠りしているところを師僧に見つかり、警策で肩を打たれた。'])],
+'h_chosan/村に残る':['set',out(
+  [2,{en:-4},'残った者として、代官の怒りを一身に浴びた。'],
+  [1,{en:2,kan:1},'残ったことを領主に褒められ、年貢を少し減らしてもらえた。'],
+  [1,{en:-6,kok:-4},'逃散した者たちが戻ってきたとき、裏切り者のような目で見られた。'])],
+'b_onsho/黙って受ける':['set',out(
+  [2,{kok:-3,en:2},'不満は腹にしまった。'],
+  [1,{en:4,mei:2},'黙って受けたのを、殿はちゃんと見ていた。翌年の恩賞は手厚かった。'],
+  [1,{kok:-6},'不満を飲み込んだが、その夜は眠れなかった。'])],
+'kc_demodori/家に迎え入れる':['set',out(
+  [2,{en:-1,kok:2},S=>{kidAt(S).path='出戻り';return '「よく帰ってきた」とだけ言った。'}],
+  [1,{kok:4},S=>{const k=kidAt(S);k.path='出戻り';return `しばらくして、${k.nm}は家の仕事を手伝いながら笑うようになった。`}],
+  [1,{en:-4},S=>{kidAt(S).path='出戻り';return '「出戻り」と近所に陰口を叩かれた。'}])],
+'kc_demodori/説得して嫁ぎ先へ帰す':['set',out(
+  [2,{en:3,kok:-5},'向こうの家に頭を下げ、娘を送り返した。帰り道、ずっと黙っていた。'],
+  [1,{en:4,kok:2},'送り返したあと、向こうの家もあらためてくれたらしい。夫婦仲は戻ったと文が来た。'],
+  [1,{kok:-10},'送り返したが、半年後、娘はまた泣きながら帰ってきた。'])],
+'f_miko/見て見ぬふりをする':['set',out(
+  [2,{kan:3},'知らない方がいいこともある。'],
+  [1,{kan:5,chi:2},'一座の頭から、口の堅さを見込まれて、もっと大事な文を託されるようになった。'],
+  [1,{kok:-5},'その後、峠で大きな戦があったと聞いた。あの文のせいだろうか。'])],
+'f_miko/一座を抜ける':['set',out(
+  [2,{kok:-3,en:-3},S=>{S.job='musume';return '怖くなって一座を抜けた。村に戻ると、変わった娘として扱われた。'}],
+  [1,{kok:2},S=>{S.job='musume';return '一座を抜けて村に戻った。旅の話をせがむ子どもたちに囲まれた。'}])],
+'b_zangen/国を出奔する':['add',out(
+  [2,null,''],[1,{en:-3},'国境の関所で止められかけ、山道を回って抜けた。'],[1,{kok:2},'出奔した翌月、古い知り合いが別の家への仕官を世話してくれると言ってきた。'])]
+};
+for(const list of [EV,STAGE,HIST])for(const e of list){if(!e.ch||!e.id)continue;
+  for(const c of e.ch){const v=VAR[e.id+'/'+c[0]];if(!v)continue;
+    if(v[0]==='set')c[1]=v[1];
+    else{const orig=c[1],more=v[1];c[1]=S=>{const r=orig(S);if(S.dead)return r;const m=more(S);return m?r+' '+m:r}}}}
+
+/* 丁稚のまま年を取らないよう、24歳になったら手代に上げる */
+STAGE.push({id:'tedai_auto',c:S=>S.job==='shonin'&&S.f.decchi&&!S.f.tedai&&S.age>=24,e0:S=>{S.f.tedai=1},
+ t:'長年の奉公ぶりが認められ、丁稚から手代に取り立てられた。前掛けが新しくなった。',fx:{mei:4,en:3},mj:'手代になる'});
+/* ===== 用語集：['読み','解説'] 読みだけ・解説だけの語もある ===== */
+const GL={
+/* 村・百姓 */
+'乙名':['おとな','村の運営を担う有力な百姓。村の代表者。'],
+'本百姓':['ほんびゃくしょう','自分の田畑と家を持ち、年貢を納める一人前の百姓。'],
+'小作':['','他人の田を借りて耕し、収穫の一部を地主に納める百姓。'],
+'名主':['なぬし','村の長。年貢の取りまとめ役。'],
+'年貢':['','領主に納める税。主に米で納めた。'],
+'代官':['だいかん','領主に代わって土地を治め、年貢を集める役人。'],
+'四公六民':['しこうろくみん','収穫の4割を年貢として納め、6割を百姓が取ること。'],
+'五公五民':['ごこうごみん','収穫の半分を年貢として納めること。'],
+'枡':['ます','米などの量をはかる四角い木の器。'],
+'隠し田':['かくしだ','領主に届けず、年貢を納めていない田。'],
+'鉄火起請':['てっかぎしょう','争いの決着を神に委ねる裁き。神前で真っ赤に焼いた鉄を素手で握って運び、落とした方が負けとされた。'],
+'寄合':['よりあい','村の大事なことを決める話し合い。'],
+'村掟':['むらおきて','村の人々が自分たちで決めたきまり。'],
+'入会':['いりあい','村人が共同で山や野原を使い、薪や草をとること。'],
+'宮座':['みやざ','村の神社の祭りを取り仕切る村人の組織。座る順番が村での格を表した。'],
+'虫送り':['むしおくり','松明をともし鉦や太鼓を鳴らして、田の害虫を村の外へ追い払う行事。'],
+'逃散':['ちょうさん','重い年貢などに抗議して、百姓が村ぐるみで田畑を捨てて逃げること。'],
+'土一揆':['つちいっき','百姓たちが団結して、借金の帳消し（徳政）などを求めて起こした暴動。'],
+'一向一揆':['いっこういっき','一向宗の門徒たちが起こした一揆。大名と戦い、加賀では百年近く国を治めた。'],
+'一揆':['','人々が団結して行動すること。また、その集団による武装蜂起。'],
+'徳政':['とくせい','借金を帳消しにすること。'],
+'乱取り':['らんどり','戦のとき、兵が敵地の村で物や人を奪うこと。'],
+'禁制':['きんぜい','軍勢の乱暴を禁じる札。村や寺が銭を払って大名から出してもらった。'],
+'乱妨狼藉':['らんぼうろうぜき','乱暴や略奪のこと。'],
+'人買い':['','人を売り買いする商人。戦で連れ去られた人々が売られることもあった。'],
+'刀狩':['かたながり','百姓から刀や鉄砲などの武器を取り上げた政策（1588年）。'],
+'新田開発':['しんでんかいはつ','荒れ地や沼地を新しく田に作り変えること。'],
+'陣夫':['じんぷ','戦のとき、荷物運びなどに駆り出された百姓。'],
+'種籾':['たねもみ','翌年にまく種として取っておく、もみがらつきの米。'],
+'若衆組':['わかしゅぐみ','村の若者の集まり。祭りや夜回りなどを担った。'],
+'食い扶持':['くいぶち','食べていくための米やお金。'],
+'早乙女':['さおとめ','田植えをする若い女性。'],
+'口減らし':['くちべらし','家で食べる人数を減らすため、子どもを奉公に出したりすること。'],
+'子守奉公':['こもりぼうこう','よその家に住み込んで、赤ん坊の世話をする仕事。'],
+'奉公':['ほうこう','主人の家に住み込んで仕えること。'],
+'鳴子':['なるこ','板に竹筒をつけ、縄を引くとカラカラ鳴るしかけ。鳥や獣を追い払う。'],
+'奉納相撲':['ほうのうずもう','神社の祭りで、神に捧げるために取る相撲。'],
+'畦':['あぜ',''],'鍬':['くわ',''],'甕':['かめ',''],'鉦':['かね',''],'松明':['たいまつ',''],'葛湯':['くずゆ',''],'葛':['くず',''],'粟':['あわ',''],'雑炊':['ぞうすい',''],'草鞋':['わらじ',''],'俵':['たわら',''],'蛭':['ひる',''],
+/* 武家 */
+'知行':['ちぎょう','主君から与えられた領地（その土地の年貢を受け取る権利）。石高（こくだか）で表す。'],
+'家督':['かとく','家の主としての地位と財産。家督を継ぐ＝当主になること。'],
+'嫡男':['ちゃくなん','家を継ぐ長男。'],
+'部屋住み':['へやずみ','家を継げない次男以下が、親や兄の家で養われて暮らすこと。'],
+'婿養子':['むこようし','跡取り娘の夫として、その家に養子に入ること。'],
+'元服':['げんぷく','男子の成人の儀式。前髪を剃り、大人の名に改める。'],
+'幼名':['ようみょう','子どもの頃の名前。元服で改める。'],
+'烏帽子親':['えぼしおや','元服のとき烏帽子（えぼし）をかぶせる仮の親。有力者に頼むことが多い。'],
+'髪上げ':['かみあげ','女子の成人の儀式。髪を結い上げる。'],
+'足軽':['','身分の低い歩兵。槍や鉄砲を持って集団で戦った。'],
+'組頭':['くみがしら','足軽の小隊のまとめ役。'],
+'陣触れ':['じんぶれ','戦に出るため兵を集める命令。'],
+'陣笠':['じんがさ','足軽がかぶった、鉄や革でできた笠。'],
+'具足':['ぐそく','鎧（よろい）や兜などの防具一式。'],
+'初陣':['ういじん','初めて戦に出ること。'],
+'兵糧':['ひょうろう','戦のときの兵士の食糧。'],
+'首実検':['くびじっけん','討ち取った敵の首を大将が確かめ、手柄を判定すること。'],
+'兜首':['かぶとくび','兜をかぶった、身分のある武士の首。大きな手柄になった。'],
+'一番槍':['いちばんやり','合戦で最初に敵と槍を交えること。大きな手柄とされた。'],
+'感状':['かんじょう','主君が家来の手柄を褒めて与える証明書。'],
+'殿（しんがり）':['','退却する味方の最後尾で、追ってくる敵を防ぐ役目。最も危険な役とされた。'],
+'旗指物':['はたさしもの','戦場で目印として背中に差した旗。'],
+'雑兵':['ぞうひょう','身分の低い兵士。'],
+'後詰め':['ごづめ','後方に控える予備の部隊。'],
+'三献の儀':['さんこんのぎ','出陣前に、打ち鮑・勝ち栗・昆布を肴に酒を三度飲む縁起の儀式。'],
+'打ち鮑':['うちあわび',''],'勝ち栗':['かちぐり',''],
+'前立て':['まえだて','兜の正面につける飾り。'],
+'毘沙門天':['びしゃもんてん','武運を守る神様。'],
+'恩賞':['おんしょう','手柄に対して主君が与える褒美。'],
+'加増':['かぞう','知行（領地）を増やしてもらうこと。'],
+'讒言':['ざんげん','人をおとしいれるため、目上の人に事実でない悪口を言うこと。'],
+'起請文':['きしょうもん','神仏に誓って、約束や身の潔白を書いた文書。'],
+'出奔':['しゅっぽん','主君や家を捨てて、ひそかに逃げ去ること。'],
+'籠城':['ろうじょう','城に立てこもって敵を防ぐこと。'],
+'夜討ち':['ようち','夜に敵を奇襲すること。'],
+'鷹狩り':['たかがり','飼い慣らした鷹で鳥や獣を捕らえる狩り。武将の娯楽だった。'],
+'宿直':['とのい','夜、城や屋敷に泊まり込んで警護すること。'],
+'忍び':['しのび','敵地に忍び込み、情報を集めたり破壊工作をしたりする者。忍者。'],
+'間者':['かんじゃ','敵方に送り込まれたスパイ。'],
+'かぶき者':['','派手な身なりや常識外れのふるまいで目立とうとした若者たち。'],
+'朱鞘':['しゅざや','朱色に塗った刀の鞘（さや）。'],
+'普請':['ふしん','城や堀などの土木工事。'],
+'目録':['もくろく','品物や技の名を書き並べた文書。武芸では、技を修めた証として師匠が弟子に与えた。'],
+'分家':['ぶんけ','本家から分かれて新しく立てた家。'],
+'下剋上':['げこくじょう','身分の下の者が上の者を倒し、取って代わること。'],
+'切腹':['せっぷく','自分で腹を切って死ぬこと。武士の責任の取り方とされた。'],
+'浪人':['','仕える主君を失った武士。'],
+'仕官':['しかん','武士が大名などに召し抱えられること。'],
+'帰農':['きのう','武士をやめて百姓になること。'],
+'武者修行':['むしゃしゅぎょう','諸国を旅して武芸を磨くこと。'],
+'傘張り':['かさはり','傘の骨に紙を張る内職。浪人の定番の仕事とされた。'],
+'寺子屋':['てらこや','子どもに読み書きを教えた私塾。'],
+'謀反':['むほん','主君にそむいて兵を挙げること。'],
+'討死':['うちじに','戦って死ぬこと。'],
+'城を枕に':['','城と運命をともにして、城で戦って死ぬこと。'],
+'二君に仕えず':['にくんにつかえず','忠義な武士は一生にただ一人の主君にしか仕えない、という考え。'],
+'夜陰':['やいん','夜の暗さ。'],
+'鬨の声':['ときのこえ','戦のときなどに大勢であげる、気勢を上げる叫び声。'],
+'謡':['うたい','能の歌の部分。武士のたしなみとされた。'],
+'勘定方':['かんじょうかた','お金の出し入れを管理する役。'],
+'給金':['きゅうきん',''],
+'太刀':['たち','腰に下げる長い刀。'],
+'脇差':['わきざし','腰に差す短い刀。'],
+'薙刀':['なぎなた',''],
+'櫓':['やぐら','城の見張り台。'],
+'采配':['さいはい','大将が兵を指揮するときに振る道具。「采配を振るう」＝指揮をとること。'],
+'馬防柵':['ばぼうさく','騎馬武者の突撃を防ぐための柵。'],
+'出丸':['でまる','城の外側に突き出して作った小さな砦。'],
+'赤備え':['あかぞなえ','鎧や旗を赤一色にそろえた精鋭部隊。'],
+'旗本':['はたもと','大将の本陣を守る直属の家来。'],
+'外堀':['そとぼり',''],
+'改易':['かいえき','大名などの領地を取り上げ、家を取りつぶすこと。'],
+'側室':['そくしつ','正式な妻（正室）のほかに迎える妻。家を絶やさないため、大名や上級の武士には珍しくなかった。'],
+'正室':['せいしつ','正式な妻。'],
+'後添え':['のちぞえ','妻を亡くした男が、あとから迎える妻。'],
+'応仁の乱':['おうにんのらん','1467〜1477年、京を舞台に東西の大名が争った大乱。戦国時代の始まりとされることが多い。'],
+'管領':['かんれい','室町幕府で将軍を補佐した最高の役職。'],
+'守護代':['しゅごだい','守護の代わりに国を治めた家臣。'],
+'守護':['しゅご','室町幕府が国ごとに置いた、軍事と行政の長。'],
+'国人':['こくじん','その土地に根を張った武士。'],
+'細川勝元':['ほそかわかつもと',''],'山名宗全':['やまなそうぜん',''],'細川政元':['ほそかわまさもと',''],
+'畠山':['はたけやま',''],'富樫政親':['とがしまさちか',''],'斯波':['しば',''],'土岐':['とき',''],'京極':['きょうごく',''],
+'扇谷上杉':['おうぎがやつうえすぎ',''],'伊勢宗瑞':['いせそうずい','のちに北条早雲と呼ばれる人物。'],'北条早雲':['ほうじょうそううん',''],
+'平等院':['びょうどういん',''],
+'祇園会':['ぎおんえ','京の祇園社（八坂神社）の祭り。今の祇園祭。'],
+'山鉾':['やまほこ','祭りで町を練り歩く、飾り立てた大きな山車。'],
+'遣明船':['けんみんせん','明（中国）との貿易のために送られた船。'],
+'寧波':['ニンポー',''],
+'石見':['いわみ',''],
+'法華宗':['ほっけしゅう','日蓮の教えを信じる宗派。京の町衆に信者が多かった。'],
+'侘び茶':['わびちゃ','狭く質素な部屋で、静かに茶を楽しむ茶の湯。'],
+'長尾為景':['ながおためかげ',''],'上杉房能':['うえすぎふさよし',''],'尼子':['あまご',''],'町衆':['まちしゅう','京などの町に住み、自分たちで町を運営した商人や職人。'],'木戸':['きど','町の出入り口に設けた門。夜は閉めて町を守った。'],'人質':['','約束を守る保証として、相手方に預けられる身内。'],
+/* 女性 */
+'奥勤め':['おくづとめ','城や屋敷の「奥」（主人の家族が暮らす所）で働くこと。'],
+'奥の局':['おくのつぼね','城の奥で働く位の高い侍女たち。また、その部屋。'],
+'御台所':['みだいどころ','将軍や大名の正妻。'],
+'侍女':['じじょ',''],
+'下女':['げじょ','家の雑用をする女の奉公人。'],
+'お歯黒':['おはぐろ','歯を黒く染める化粧。成人した女性のしるしだった。'],
+'貝合わせ':['かいあわせ','貝殻の内側に描いた絵を合わせる、上流の女性の遊び。'],
+'姑':['しゅうとめ',''],'舅':['しゅうと',''],
+'手切れ':['てぎれ','関係を断つこと。ここでは同盟が破れて敵どうしになること。'],
+'輿':['こし','人が担いで運ぶ乗り物。'],
+'後家':['ごけ','夫に先立たれた妻。'],
+'再縁':['さいえん','再婚のこと。'],
+'歩き巫女':['あるきみこ','諸国を旅しながら占いや口寄せをした巫女。情報集めの役も担ったと言われる。'],
+'口寄せ':['くちよせ','死者や神の言葉を、巫女が自分の口を通して語ること。'],
+'三三九度':['さんさんくど','婚礼で、夫婦が三つの盃で三度ずつ酒を飲み交わす儀式。'],
+'祝言':['しゅうげん','結婚式。'],
+'仲人':['なこうど','縁談を取り持つ人。'],
+'主命':['しゅめい','主君の命令。'],
+/* 町・商人 */
+'丁稚':['でっち','商家に住み込みで働く少年。雑用をしながら商いを覚える。'],
+'手代':['てだい','丁稚の上の位の奉公人。客の相手や売り買いを任される。'],
+'番頭':['ばんとう','奉公人のいちばん上の位。店を取り仕切る。'],
+'暖簾分け':['のれんわけ','長く勤めた奉公人に、店の名を名乗って独立することを許すこと。'],
+'暖簾':['のれん',''],
+'大店':['おおだな','大きな商店。'],
+'帳場':['ちょうば','商家で帳簿をつけたり、お金を扱ったりする場所。'],
+'算盤':['そろばん',''],
+'会合衆':['えごうしゅう','堺や博多で、町の政治を行った有力な商人たち。'],
+'土倉':['どそう','質屋をかねた金貸し。'],
+'証文':['しょうもん','借金などの証拠となる書類。'],
+'楽市楽座':['らくいちらくざ','誰でも自由に商売できるようにした政策。それまでは「座」という同業者の組合が商売を独占していた。'],
+'楽市':['らくいち','誰でも自由に商売できる市。'],
+'矢銭':['やせん','戦の費用として、大名が寺社や町に出させた銭。'],
+'帆別銭':['ほべつせん','船の帆の大きさなどに応じて取られた通行料。海賊衆が航路の安全と引き換えに取った。'],
+'海賊衆':['かいぞくしゅう','瀬戸内などの海の武士団。通行料を取って船を守った。'],
+'名物':['めいぶつ','由緒ある名高い茶道具。城一つと同じ値がつくこともあった。'],
+'茶入':['ちゃいれ','抹茶を入れる小さな壺。茶道具の中でも特に珍重された。'],
+'茶頭':['さどう','大名などに仕えて茶の湯を取り仕切る役。'],
+'数寄者':['すきしゃ','茶の湯などの風流を好む人。'],
+'目利き':['めきき','品物の良し悪しや本物かどうかを見分けること。また、その人。'],
+'写し':['うつし','名品をまねて作ったもの。'],
+'侘び':['わび','質素で静かな、落ち着いた趣。茶の湯で重んじられた。'],
+'鐚銭':['びたせん','すり減ったり欠けたりした質の悪い銭。受け取りを嫌がられた。'],
+'関銭':['せきせん','関所を通るときに払う通行料。'],
+'御用商人':['ごようしょうにん','大名などの注文を一手に引き受ける特別な商人。'],
+'生糸':['きいと','蚕の繭からとった糸。高値で取引された。'],
+'硝石':['しょうせき','火薬の原料。日本ではほとんど取れず、輸入に頼った。'],
+'初荷':['はつに','新年最初の商品の出荷。'],
+'ツケ':['','代金を後でまとめて払う約束で買うこと。'],
+'居留守':['いるす',''],
+'砂金':['さきん',''],
+/* 公家 */
+'公家':['くげ','朝廷に仕える貴族。'],
+'家格':['かかく','家柄の格付け。'],
+'名家':['めいか','公家の家格の一つ。朝廷の事務方の役職を務める家柄。'],
+'羽林家':['うりんけ','公家の家格の一つ。武官の職を務めてきた家柄。'],
+'半家':['はんけ','公家の家格の一つ。学問や実務を担う家柄。'],
+'従五位下':['じゅごいのげ','朝廷の位の一つ。公家の子が最初にもらうことの多い位。'],
+'門跡寺院':['もんぜきじいん','皇族や上級の公家の子弟が住職を務める、格の高い寺。'],
+'尼門跡':['あまもんぜき','皇族や公家の娘が住職を務める、格の高い尼寺。'],
+'裳着':['もぎ','公家の女子の成人の儀式。初めて裳（も）という衣装を着ける。'],
+'宮中の女房':['きゅうちゅうのにょうぼう','宮中に仕える女性の役人。'],
+'御湯殿上日記':['おゆどののうえのにっき','宮中の女房たちが代々書き継いだ当番日記。'],
+'装束':['しょうぞく','儀式のときに着る正式な衣服。'],
+'内裏':['だいり','天皇の住まい。御所。'],
+'節会':['せちえ','宮中で節目の日に行われる宴や儀式。'],
+'家領':['けりょう','公家の家が持つ領地。'],
+'押領':['おうりょう','他人の領地や年貢を力ずくで奪い取ること。'],
+'築地塀':['ついじべい','土を突き固めて作り、屋根をのせた塀。'],
+'下向':['げこう','都から地方へ下ること。'],
+'有職故実':['ゆうそくこじつ','朝廷や武家の儀式・作法・服装などの古いしきたり。'],
+'駿府':['すんぷ',''],'一乗谷':['いちじょうだに',''],
+'免許状':['','技を伝授したことを認める証明書。'],
+'講釈':['こうしゃく','書物の内容を解説すること。'],
+'受領名':['ずりょうめい','「〇〇守（かみ）」のような国司の名を名乗る、名誉の称号。'],
+'官位':['かんい','朝廷から与えられる役職と位。'],
+'方違え':['かたたがえ','行き先の方角が悪いとき、いったん別の場所に泊まって方角を変えること。'],
+'物忌み':['ものいみ','不吉を避けるため、決まった日に家にこもって身を慎むこと。'],
+'蹴鞠':['けまり','鹿の革の鞠（まり）を地面に落とさないように蹴り続ける、貴族の遊び。'],
+'歌会':['うたかい','和歌を詠み合う会。'],
+'連歌':['れんが','何人かで、上の句と下の句を交互につないでいく詩。'],
+'写本':['しゃほん','手で書き写した本。'],
+'関白':['かんぱく','天皇を補佐して政治を行う、最高の役職。'],
+'猶子':['ゆうし','親子の関係を結ぶこと。養子に近いが、家は継がない。'],
+'近衛家':['このえけ','公家の中で最も家格の高い家の一つ。'],
+'扇':['おうぎ',''],'槌':['つち',''],
+/* 寺・宗教 */
+'一向宗':['いっこうしゅう','浄土真宗のこと。門徒（信者）の結束が強く、各地で一揆を起こした。'],
+'門徒':['もんと','一向宗（浄土真宗）の信者。'],
+'坊守':['ぼうもり','浄土真宗の寺の住職の妻。'],
+'得度':['とくど','正式に出家して僧になること。'],
+'法名':['ほうみょう','僧になったときにつける仏教の名前。'],
+'還俗':['げんぞく','僧をやめて普通の身分に戻ること。'],
+'入道':['にゅうどう','頭を丸めて仏門に入った人。武士が隠居したあとに名乗ることが多い。'],
+'隠居':['','家督を子に譲って引退すること。'],
+'托鉢':['たくはつ','僧が家々を回って、食べ物やお金の施しを受ける修行。'],
+'勤行':['ごんぎょう','仏前で決まった時間にお経を読むこと。'],
+'檀家':['だんか','決まった寺にお布施をして、葬式や法事を頼む家。'],
+'お布施':['おふせ','僧に渡す謝礼の金品。'],
+'般若湯':['はんにゃとう','お酒のこと。僧は飲酒を禁じられていたため、こう呼んだ。'],
+'下戸':['げこ','お酒が飲めない人。'],
+'外交僧':['がいこうそう','大名の使者として、他国との交渉を担った僧。'],
+'袈裟':['けさ','僧が衣の上にかける布。'],
+'宗論':['しゅうろん','宗派どうしで、教えの正しさを争う論争。'],
+'夏安居':['げあんご','夏の約3か月、寺にこもって修行すること。'],
+'寒行':['かんぎょう','寒い時期に行う、厳しい修行。'],
+'写経':['しゃきょう','お経を書き写すこと。'],
+'彼岸':['ひがん','春分・秋分の前後7日間。墓参りをする。'],
+'住職':['じゅうしょく','寺の長である僧。'],
+'本山':['ほんざん','宗派の中心となる寺。'],
+'経典':['きょうてん',''],'尼寺':['あまでら',''],
+'菩提寺':['ぼだいじ','先祖代々の墓がある寺。'],
+'菩提':['ぼだい','死者の冥福。「菩提を弔う」＝死者があの世で安らかであるよう祈ること。'],
+'檄文':['げきぶん','人々に行動を呼びかける文書。'],
+'往生極楽':['おうじょうごくらく','死後、極楽浄土に生まれ変わること。'],
+'無間地獄':['むけんじごく','仏教で、いちばん苦しいとされる地獄。'],
+'雑賀':['さいか','紀伊（今の和歌山県）の鉄砲の名手集団、雑賀衆。'],
+'比叡山':['ひえいざん','京都の北東にある山。延暦寺があり、多くの僧兵を抱えていた。'],
+'石山':['いしやま','大坂の本願寺のこと。今の大阪城の場所にあった。'],
+'堂塔':['どうとう',''],
+'山伏':['やまぶし','山で修行する修験道の行者。'],
+'法螺貝':['ほらがい',''],
+'琵琶法師':['びわほうし','琵琶を弾きながら『平家物語』などを語った盲目の僧。'],
+'祈祷':['きとう',''],
+'伴天連':['ばてれん','キリスト教の宣教師（神父）。ポルトガル語の「パードレ」から。'],
+'デウス':['','キリスト教の神。'],
+'南蛮寺':['なんばんじ','キリスト教の教会。'],
+'南蛮':['なんばん','ポルトガルやスペインなど、南の海から来たヨーロッパの人や物。'],
+'隠れキリシタン':['','禁教のあとも、ひそかに信仰を守り続けたキリスト教徒。'],
+'キリシタン':['','キリスト教の信者。'],
+'洗礼':['','キリスト教の信者になるための儀式。'],
+'ロザリオ':['','キリスト教徒が祈りに使う数珠。'],
+'踏絵':['ふみえ','キリストやマリアの像を踏ませ、信者かどうかを調べたもの。'],
+'金平糖':['こんぺいとう',''],
+'かすていら':['','カステラ。南蛮から伝わった菓子。'],
+'天竺':['てんじく','インドのこと。'],
+/* 暮らし・病 */
+'疱瘡':['ほうそう','天然痘。高熱と発疹が出る、命に関わる病気。'],
+'痘痕':['あばた','疱瘡が治ったあと、顔に残るくぼみ。'],
+'麻疹':['はしか',''],
+'瘧':['おこり','マラリアのこと。高熱と寒気を繰り返す病気。'],
+'労咳':['ろうがい','結核のこと。'],
+'赤痢':['せきり','激しい下痢を起こす感染症。'],
+'中風':['ちゅうぶ','脳卒中などで体がまひする病気。'],
+'腫れ物':['はれもの',''],
+'肥立ち':['ひだち','出産のあと、体が元通りに回復すること。'],
+'薬師':['くすし','医者。'],
+'煎じ薬':['せんじぐすり',''],
+'七つまでは神のうち':['','七歳までの子は神様からの預かりもので、いつ神のもとへ帰ってもおかしくない、という言い伝え。'],
+'帯解き':['おびとき','子どもが着物の付け紐をやめ、初めて帯を締める祝い。今の七五三のもと。'],
+'氏神':['うじがみ','その土地や一族を守る神様。'],
+'風流踊り':['ふりゅうおどり','派手な衣装で大勢が踊る、当時流行した踊り。盆踊りのもとになった。'],
+'馬借':['ばしゃく','馬で荷物を運ぶ運送業者。'],
+'独楽':['こま',''],'凧揚げ':['たこあげ',''],'悪童':['あくどう',''],
+'神隠し':['かみかくし','子どもなどが突然行方不明になること。神や天狗のしわざと考えられた。'],
+'庭訓往来':['ていきんおうらい','当時広く使われた、子ども向けの手紙文の教科書。'],
+'いろは':['','「いろはにほへと」で始まる、47文字の仮名。'],
+'印地打ち':['いんじうち','子どもたちが二手に分かれて石を投げ合う遊び。石合戦。'],
+'端午':['たんご','5月5日の男の子の節句。'],
+'菖蒲':['しょうぶ',''],
+'桑原桑原':['くわばらくわばら','雷よけのおまじないの言葉。'],
+'蚊遣り':['かやり','煙で蚊を追い払うこと。'],
+'梶の葉':['かじのは','七夕に願い事を書いた葉。'],
+'迎え火':['むかえび','盆に先祖の霊を迎えるため、家の前で焚く火。'],
+'野分':['のわき','台風のこと。'],
+'囲炉裏':['いろり','床を四角く切って火を焚く、昔の家の暖房と台所をかねた場所。'],
+'山姥':['やまんば',''],
+'煤払い':['すすはらい','年末の大掃除。'],
+'御師':['おんし','伊勢神宮などで、参拝者の宿や案内を世話した人。'],
+'講中':['こうじゅう','同じ信仰の仲間でお金を積み立て、代表がお参りに行く集まり。'],
+'抜け参り':['ぬけまいり','親や主人に黙って伊勢参りに出ること。大目に見られることが多かった。'],
+'伊勢暦':['いせごよみ','伊勢の御師が配った暦。'],
+'伊勢参り':['いせまいり','伊勢神宮へのお参り。一生に一度の夢とされた。'],
+'柄杓':['ひしゃく',''],
+'賭場':['とば',''],
+'辻堂':['つじどう','道ばたの小さなお堂。'],
+'双六':['すごろく','サイコロを使う盤の遊び。賭け事にも使われた。'],
+'丁と張って':['ちょうとはって','サイコロの目が偶数（丁）に賭けること。'],
+'喧嘩両成敗':['けんかりょうせいばい','喧嘩をした者は、理由を問わず双方とも罰するというきまり。'],
+'湯治':['とうじ','温泉に長く滞在して病気を治すこと。'],
+'もぐさ':['','お灸に使う、よもぎから作った綿。'],
+'かぶき踊り':['','出雲の阿国が始めた踊り。歌舞伎のもとになった。'],
+'出雲の阿国':['いずものおくに','かぶき踊りを始めた女性の芸能者。'],
+'落書':['らくしょ','世の中や権力者を皮肉った、作者不明の落書き。'],
+'落首':['らくしゅ','世の中を皮肉った、作者不明の歌。'],
+'二条河原':['にじょうがわら',''],
+'天下人':['てんかびと','天下を治める最高権力者。'],
+'荷駄':['にだ',''],
+/* 史実まわり */
+'上洛':['じょうらく','京都へ上ること。'],
+'御生害':['ごしょうがい','身分の高い人が自害すること。'],
+'日向守':['ひゅうがのかみ','明智光秀の官位名。'],
+'太閤':['たいこう','関白を退いた人の呼び名。ここでは豊臣秀吉。'],
+'名護屋':['なごや','肥前（今の佐賀県）の名護屋。朝鮮出兵の拠点の城があった。'],
+'設楽原':['したらがはら',''],
+'征夷大将軍':['せいいたいしょうぐん','武士の最高の地位。幕府を開く。'],
+'大御所':['おおごしょ','将軍を引退した人。ここでは徳川家康。'],
+'元和偃武':['げんなえんぶ','大坂の陣で戦乱が終わり、天下が平和になったこと。'],
+'参勤交代':['さんきんこうたい','大名が一年おきに江戸と領地を行き来する制度。'],
+'原城':['はらじょう',''],
+'厳島':['いつくしま',''],
+'桶狭間':['おけはざま',''],
+'長篠':['ながしの',''],
+'賤ヶ岳':['しずがたけ',''],
+'姉川':['あねがわ',''],
+'種子島':['たねがしま',''],
+'安土':['あづち',''],
+'陶隆房':['すえたかふさ',''],
+'陶晴賢':['すえはるかた',''],
+'大寧寺':['たいねいじ','']
+};
+const GLK=Object.keys(GL).sort((a,b)=>b.length-a.length);
+const GLRE=new RegExp('('+GLK.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(（[^（）]{1,14}）)?','g');
+/* text を読み仮名・※つきのHTMLにする。seen に初出の語を記録し、notes で返す */
+function gl(text,seen,inert){
+  const notes=[];
+  const html=esc(text).replace(GLRE,(m,k,par)=>{
+    const [r,n]=GL[k];
+    const rd=par||(r?`（${r}）`:'');
+    if(!n)return k+rd;
+    if(seen&&!seen.has(k)){seen.add(k);notes.push(k)}
+    return inert?`<span class="gl">${k}${rd}<sup>※</sup></span>`:`<button type="button" class="gl" data-k="${k}" aria-label="${k}の解説">${k}${rd}<sup>※</sup></button>`;
+  });
+  return {html,notes};
+}
+const noteHTML=k=>`<span class="nt" data-k="${k}">※${k}：${GL[k][1]}</span>`;
+/* ===== ドット絵（キャンバスに1ピクセルずつ描く） ===== */
+let PC=null;
+const P=(x,y,w,h,col)=>{PC.fillStyle=col;PC.fillRect(x|0,y|0,w,h)};
+const SKIN='#f0c8a0',HAIR='#1d1b22',EYE='#1d1b22',WHT='#f3efe4';
+
+/* 見た目の決定 */
+function lookOf(o){
+  /* o={age,sex,job,cls} */
+  const st=o.age<=2?'baby':o.age<=12?'child':o.age>=60?'old':'adult';
+  return {st,sex:o.sex,job:o.job,cls:o.cls,old:o.age>=55};
+}
+const WIFE={hyak:'#5d6e48',buke:'#7a3b55',cho:'#2f5d76',ji:'#6b5a46',kuge:'#b04a5c'};
+
+/* 人物：x=中心, y=足元 */
+function person(x,y,L){
+  if(L.st==='baby'){P(x-3,y-5,6,5,'#f3e6ea');P(x-2,y-6,4,3,SKIN);P(x-1,y-5,1,1,EYE);P(x+1,y-5,1,1,EYE);P(x-3,y-2,6,1,'#d9b8c4');return}
+  if(L.st==='child'){
+    const t=y-15,col=L.sex==='m'?'#3f6fa0':'#c0506a';
+    P(x-3,t,6,5,SKIN);
+    if(L.sex==='m'){P(x-3,t,6,1,HAIR);P(x-3,t+1,1,1,HAIR);P(x+2,t+1,1,1,HAIR);P(x-1,t-1,2,1,HAIR)}
+    else{P(x-3,t-1,6,2,HAIR);P(x-4,t,1,5,HAIR);P(x+3,t,1,5,HAIR)}
+    P(x-2,t+3,1,1,EYE);P(x+1,t+3,1,1,EYE);
+    P(x-3,t+5,6,7,col);P(x-4,t+6,1,4,col);P(x+3,t+6,1,4,col);P(x-4,t+10,1,1,SKIN);P(x+3,t+10,1,1,SKIN);
+    P(x-1,t+5,2,1,WHT);P(x-3,t+9,6,1,'#e8c060');
+    P(x-2,t+12,1,2,SKIN);P(x+1,t+12,1,2,SKIN);P(x-2,t+14,1,1,'#5a4030');P(x+1,t+14,1,1,'#5a4030');
+    return;
+  }
+  const t=y-22,j=L.job,m=L.sex==='m',hc=L.old?'#a8a8b2':HAIR;
+  /* 服の色 */
+  let robe='#4a5a7a',low=null,obi='#3a2b20',legs=false,long=!m;
+  switch(j){
+    case 'nomin':robe='#4a5a7a';legs=true;break;
+    case 'ashigaru':robe='#5b3a2e';low='#3c3a38';break;
+    case 'samurai':robe='#d8cfb8';low='#3d5a73';break;
+    case 'ronin':robe='#77716a';low='#55504a';break;
+    case 'shonin':robe='#7a5c3a';low='#7a5c3a';break;
+    case 'chajin':robe='#5a4630';low='#5a4630';long=true;break;
+    case 'so':robe='#2a2a33';long=true;break;
+    case 'ama':robe='#5b5b66';long=true;break;
+    case 'kuge':robe='#f0ece0';low='#6b3d7a';break;
+    case 'nyobo':robe='#a8323a';long=true;break;
+    case 'miko':robe=WHT;low='#c0392b';long=false;break;
+    default:robe=m?'#4a5a7a':(WIFE[L.cls]||'#6b5a46');if(j==='goke')robe='#4a4a52';if(m)legs=L.cls==='hyak';
+  }
+  /* 女性の長い髪（体の後ろ） */
+  if(!m&&j!=='ama')P(x-4,t+1,8,j==='nyobo'||L.cls==='kuge'?13:9,hc);
+  /* 頭 */
+  P(x-3,t,6,6,SKIN);
+  if(j==='so'){P(x-3,t,6,1,'#e2b68f')}
+  else if(j==='ama'){P(x-4,t-1,8,2,WHT);P(x-4,t+1,1,6,WHT);P(x+3,t+1,1,6,WHT)}
+  else if(!m){P(x-3,t-1,6,2,hc);P(x-3,t+1,1,2,hc);P(x+2,t+1,1,2,hc);if(j==='miko'){P(x-1,t-2,2,1,'#c0392b')}}
+  else if(j==='kuge'){P(x-2,t-5,4,5,'#15151a');P(x-3,t,6,1,'#15151a');P(x-3,t+1,1,2,hc);P(x+2,t+1,1,2,hc)}
+  else if(j==='chajin'){P(x-3,t-2,6,3,'#4a3826')}
+  else if(j==='ronin'){P(x-3,t-1,6,2,hc);P(x-4,t,1,3,hc);P(x+3,t,1,3,hc);P(x+2,t-2,1,1,hc)}
+  else{P(x-3,t,6,1,'#e7c09a');P(x-3,t+1,1,2,hc);P(x+2,t+1,1,2,hc);P(x-1,t-1,2,1,hc);P(x-1,t-2,1,1,hc);
+    if(j==='nomin'||(L.cls==='hyak'&&!j))P(x-3,t+1,6,1,WHT);}
+  P(x-2,t+3,1,1,EYE);P(x+1,t+3,1,1,EYE);
+  if(L.old){P(x-2,t+4,1,1,'#c99c78');P(x+1,t+4,1,1,'#c99c78')}
+  if(m&&L.old&&j!=='kuge')P(x-1,t+5,2,1,'#c8c8d0');
+  /* 胴 */
+  P(x-4,t+6,8,8,robe);P(x-5,t+7,1,5,robe);P(x+4,t+7,1,5,robe);
+  P(x-5,t+12,1,1,SKIN);P(x+4,t+12,1,1,SKIN);
+  P(x-2,t+6,1,1,WHT);P(x+1,t+6,1,1,WHT);P(x-1,t+7,2,1,WHT);
+  if(j==='shonin'){for(let i=-4;i<4;i+=2)P(x+i,t+6,1,8,'#5d4529');P(x-3,t+11,6,7,'#25304a')}
+  if(j==='nyobo'){P(x-2,t+6,1,1,'#2f6b4f');P(x+1,t+6,1,1,'#2f6b4f');P(x-4,t+8,1,1,'#e8c060');P(x+2,t+10,1,1,'#e8c060')}
+  if(!m&&!['ama','nyobo','miko','so'].includes(j)){P(x-3,t+9,1,1,'#e8d9b0');P(x+1,t+11,1,1,'#e8d9b0');P(x-1,t+13,1,1,'#e8d9b0')}
+  if(j==='samurai'){P(x-6,t+6,12,2,low);P(x-4,t+8,2,1,low);P(x+2,t+8,2,1,low)}
+  if(j==='ashigaru'){P(x-4,t+8,8,1,'#7a5040');P(x-4,t+10,8,1,'#7a5040')}
+  if(j==='so'){for(let i=0;i<7;i++)P(x-3+i,t+6+i,2,1,'#c8892a')}
+  P(x-4,t+11,8,1,j==='so'?'#2a2a33':obi);
+  /* 下半身 */
+  if(legs){P(x-4,t+12,8,3,robe);P(x-3,t+15,2,5,SKIN);P(x+1,t+15,2,5,SKIN)}
+  else if(long){P(x-4,t+12,8,9,robe);P(x-5,t+19,10,2,robe)}
+  else{P(x-4,t+12,8,8,low||robe);P(x-5,t+18,10,2,low||robe);if(j==='samurai'||j==='kuge'||j==='ronin')P(x-1,t+13,1,6,'#00000022')}
+  P(x-3,t+20,2,2,'#4a3a2c');P(x+1,t+20,2,2,'#4a3a2c');
+  /* 持ち物 */
+  if(j==='samurai'||j==='ronin'){P(x+4,t+11,1,1,'#222');P(x+5,t+10,1,1,'#222');P(x+6,t+9,1,1,'#ddd');P(x+4,t+12,1,1,'#222');P(x+5,t+12,2,1,'#222')}
+  if(j==='ashigaru'){P(x-5,t-1,10,1,'#2a2a2a');P(x-3,t-2,6,1,'#2a2a2a');P(x-1,t-3,2,1,'#2a2a2a');P(x+6,t-8,1,30,'#6b4a2a');P(x+6,t-11,1,3,'#cfd6dc')}
+  if(j==='miko'){P(x+5,t+8,1,6,'#6b4a2a');P(x+4,t+7,3,2,'#e8c060')}
+}
+
+/* 寝込んでいる姿 */
+function lying(x,y,L){P(x-10,y-4,22,4,WHT);P(x-6,y-5,18,4,'#5a77a8');P(x-10,y-7,6,4,SKIN);P(x-10,y-8,6,2,L.old?'#a8a8b2':HAIR);P(x-8,y-6,1,1,EYE);P(x+2,y-12,2,2,'#9fc6ff');P(x+5,y-14,2,2,'#9fc6ff')}
+/* 墓 */
+function grave(x,y){P(x-4,y-2,9,2,'#8a8a90');P(x-3,y-14,7,12,'#9c9ca4');P(x-3,y-14,7,1,'#b8b8c0');P(x-1,y-12,1,8,'#6a6a72');P(x+1,y-12,1,6,'#6a6a72');P(x-6,y-4,1,3,'#3f7a3a');P(x-7,y-6,3,2,'#d94a5a');P(x+6,y-4,1,3,'#3f7a3a');P(x+5,y-6,3,2,'#f0d040')}
+
+/* 背景 */
+const SKY={春:['#bfe0f5','#d6ebf7','#f1e4ee'],夏:['#6fb6e6','#97cdef','#cbe7f6'],秋:['#e9a86a','#f2c992','#f7e2c0'],冬:['#97a5b8','#b6c1cf','#d3d9e2']};
+const GRD={春:'#8fbf6a',夏:'#5f9e45',秋:'#b8944a',冬:'#e8edf2'};
+const MTN={春:'#8aa7b8',夏:'#4f7f6a',秋:'#9c6a52',冬:'#c5ccd8'};
+function bg(se,place){
+  const s=SKY[se]||SKY.春;P(0,0,128,14,s[0]);P(0,14,128,12,s[1]);P(0,26,128,14,s[2]);
+  for(let x=0;x<128;x++){const h=Math.round(9+4*Math.sin(x*.07)+3*Math.sin(x*.19+1.3));P(x,40-h,1,h,MTN[se]||MTN.春)}
+  P(0,38,128,10,GRD[se]||GRD.春);P(0,38,128,1,'#00000018');
+  if(se==='夏'&&place==='village')for(let i=0;i<6;i++)P(0,40+i*2,64,1,'#7fb85a');
+  /* 木 */
+  if(se==='春'){P(10,24,2,15,'#6b4a3a');for(const [a,b,c] of [[4,14,14],[2,18,18],[6,12,10]])P(a,b,c,8,'#f2b8c8');P(6,16,2,2,'#fff0f4');P(14,20,2,2,'#fff0f4')}
+  else if(se==='秋'){P(10,24,2,15,'#5a3a2a');for(const [a,b,c] of [[4,14,14],[2,18,18],[6,12,10]])P(a,b,c,8,'#d2543a');P(8,16,2,2,'#f0a040')}
+  else if(se==='冬'){P(10,22,2,17,'#5a4a42');P(6,24,4,1,'#5a4a42');P(12,26,4,1,'#5a4a42');P(4,38,22,1,WHT)}
+  else{P(10,24,2,15,'#5a3a2a');P(3,14,16,11,'#3f7a3a');P(5,12,12,3,'#4d8a45')}
+  building(place,se);
+}
+function building(pl,se){
+  const snow=se==='冬';
+  if(pl==='village'){P(92,26,30,12,'#d8c8a0');P(88,18,38,9,'#8a6a40');P(90,15,34,4,'#7a5a34');P(104,30,6,8,'#3a2e24');if(snow)P(89,14,36,3,WHT)}
+  else if(pl==='town'){P(86,22,40,16,'#e2d8c4');P(84,18,44,5,'#5b5f68');P(86,13,40,5,'#e2d8c4');P(84,10,44,4,'#5b5f68');P(92,26,24,6,'#2b3f6a');P(102,27,4,3,WHT);P(94,32,20,6,'#3a2e24');if(snow){P(84,9,44,2,WHT);P(84,17,44,2,WHT)}}
+  else if(pl==='castle'){P(90,28,34,10,'#8a8a88');for(let i=0;i<5;i++)P(90+i*7,30+(i%2),5,1,'#6f6f6c');P(96,18,22,10,WHT);P(93,15,28,4,'#2e3440');P(99,8,16,8,WHT);P(96,5,22,4,'#2e3440');P(104,0,6,6,WHT);P(102,-1,10,2,'#2e3440');P(104,20,2,2,'#2e3440');P(110,20,2,2,'#2e3440');P(106,10,2,2,'#2e3440');if(snow){P(93,14,28,1,WHT);P(96,4,22,1,WHT)}}
+  else if(pl==='temple'){P(92,24,30,14,'#c0b8a8');P(86,16,42,9,'#3b3f48');P(84,22,4,2,'#3b3f48');P(126,22,4,2,'#3b3f48');for(let i=0;i<4;i++)P(94+i*8,25,2,13,'#a8402e');P(102,30,10,8,'#3a2e24');if(snow)P(86,15,42,2,WHT)}
+  else if(pl==='palace'){P(84,28,44,10,'#ece6d6');for(let i=0;i<4;i++)P(84,30+i*2,44,1,'#d8cdb6');P(84,25,44,3,'#6a4a3a');P(98,16,18,12,'#ece6d6');P(95,12,24,5,'#6a4a3a');P(104,20,6,8,'#a8402e');if(snow){P(84,24,44,1,WHT);P(95,11,24,1,WHT)}}
+  else if(pl==='shrine'){P(100,16,24,3,'#c0392b');P(98,14,28,2,'#2a2a2a');P(104,19,2,19,'#c0392b');P(118,19,2,19,'#c0392b');P(102,21,20,2,'#c0392b')}
+  else{P(84,38,44,3,'#c9b58a');P(110,14,3,24,'#5a3a2a');P(102,10,20,6,'#2f6a3a');P(105,6,14,5,'#3a7a44')}
+}
+
+/* 出来事に合わせた小道具 */
+const PROPS=[
+  [/討死|合戦|陣触れ|出陣|籠城|攻め|戦が始|突撃|斬り込|夜討ち|乱取り|軍勢/,'battle'],
+  [/火事|焼け|燃え|火がかけ|火の中|炎/,'fire'],[/地震|揺れ/,'quake'],
+  [/子が生まれ|男の子が生まれ|女の子が生まれ|孫/,'baby'],[/祝言|夫婦にな|嫁いだ|婿となった|再縁/,'wed'],
+  [/疫病|病|寝込|熱を出|疱瘡|咳|腹を下|床に/,'sick'],[/亡くな|先立た|葬式|墓/,'grave'],
+  [/茶/,'tea'],[/船|海賊|港|帆別/,'ship'],[/伴天連|洗礼|キリシタン|デウス|踏絵|ロザリオ/,'cross'],
+  [/酒|般若湯|盃/,'sake'],[/祭り|踊り|盆|相撲|かぶき/,'fest'],[/十五夜|月見|月を見|天の川|蛍/,'moon'],
+  [/銭|儲|金貸し|土倉|売れ|算盤|取り立て|矢銭|仕入れ|ツケ/,'money'],
+  [/米|稲|田植え|年貢|豊作|俵|苗|草取り/,'rice'],[/いなご/,'bug'],[/雪/,'snow'],[/桜|花見/,'sakura'],
+  [/川があふれ|大雨|夕立|溺れ|雷/,'rain'],[/経|托鉢|写経|法事|勤行|説法/,'temple'],
+  [/手習い|読み書き|学問|和歌|歌会|連歌|日記|写本|講釈|いろは/,'study'],[/喧嘩|殴|乱闘|取っ組み合い|石を投げ/,'fight'],
+  [/伊勢|旅|峠|参り|下向|諸国/,'travel']
+];
+function propOf(en){if(en.k==='death')return 'grave';for(const [re,p] of PROPS)if(re.test(en.t+(en.res||'')))return p;return null}
+function prop(p,f){
+  const x=66,y=38;
+  switch(p){
+    case 'battle':for(const bx of [70,80]){P(bx,6,1,32,'#4a3a2a');P(bx+1,6,5,14,WHT);P(bx+2,9,3,3,'#c0392b')}P(60,30+(f%2),4,3,'#bbbbbb88');P(64,26-(f%2),5,4,'#cccccc88');break;
+    case 'fire':for(let i=0;i<6;i++){const h=3+((f+i)%3)*2;P(90+i*6,16-h,4,h,i%2?'#f0a020':'#e04a20')}P(96,4-(f%2),6,4,'#77777788');P(104,1,8,4,'#88888866');break;
+    case 'quake':P(60,40,2,1,'#5a4a3a');P(62,41,2,1,'#5a4a3a');P(64,42,3,1,'#5a4a3a');P(67,43,2,1,'#5a4a3a');break;
+    case 'baby':person(x,y,{st:'baby'});break;
+    case 'wed':P(x-4,y-6,8,6,'#a8402e');P(x-3,y-8,2,2,'#c0392b');P(x+1,y-8,2,2,'#c0392b');P(x-2,y-9,1,1,'#f0d040');P(x+2,y-9,1,1,'#f0d040');break;
+    case 'grave':grave(x+2,y);if(f%2)P(x+6,y-10,1,2,'#bbbbbb');else P(x+7,y-12,1,2,'#bbbbbb');break;
+    case 'tea':P(x-4,y-5,8,5,'#3a2e2a');P(x-3,y-6,6,1,'#5f8a3a');P(x+6,y-7,1,6,'#d8c8a0');P(x+5,y-2,3,2,'#d8c8a0');break;
+    case 'ship':P(48,36,40,3,'#3f6fa0');P(60,32,18,4,'#2a2018');P(66,18,1,14,'#4a3a2a');P(62,20,10,10,WHT);P(73,24,1,8,'#4a3a2a');P(70,25,6,6,WHT);P(64,22,2,2,'#c0392b');break;
+    case 'cross':P(x,y-14,2,14,'#8a6a40');P(x-3,y-11,8,2,'#8a6a40');break;
+    case 'sake':P(x-2,y-9,4,9,'#e6dccb');P(x-1,y-10,2,1,'#e6dccb');P(x-2,y-6,4,1,'#3f5f8a');P(x+4,y-3,4,3,'#a8402e');break;
+    case 'fest':P(56,8,40,1,'#5a4a3a');for(let i=0;i<5;i++){P(57+i*8,9,5,6,i%2?WHT:'#d0402e');P(58+i*8,15,3,1,'#2a2a2a')}break;
+    case 'moon':P(52,4,10,10,'#f6edc0');P(54,3,6,1,'#f6edc0');P(54,14,6,1,'#f6edc0');P(56,6,2,2,'#e6dca8');break;
+    case 'money':for(let i=0;i<3;i++){P(x-4+i*4,y-3-i*2,6,3+i*2,'#c9a03a');P(x-2+i*4,y-2-i*2,2,1,'#7a5a1a')}break;
+    case 'rice':for(const [a,b] of [[0,0],[8,0],[4,-4]]){P(x-4+a,y-5+b,8,5,'#d8c070');P(x-4+a,y-3+b,8,1,'#a8904a')}break;
+    case 'bug':for(let i=0;i<14;i++)P(48+((i*17+f*5)%40),8+((i*11+f*3)%26),2,1,'#5a6a2a');break;
+    case 'temple':P(x-3,y-6,7,6,'#6a6a72');P(x-4,y-7,9,1,'#55555c');P(x,y-11+(f%2),1,3,'#bbbbbb');break;
+    case 'study':P(x-6,y-4,12,4,'#7a5a3a');P(x-4,y-6,8,2,WHT);P(x-1,y-6,1,2,'#2a2a2a');P(x+5,y-10,1,6,'#3a2e24');break;
+    case 'fight':for(let i=0;i<5;i++)P(x-6+i*3,y-10+((i+f)%3)*2,3,3,'#c8b89088');P(x+4,y-16,1,4,'#c0392b');P(x+4,y-11,1,1,'#c0392b');break;
+    case 'travel':P(54,38,30,2,'#c9b58a');P(x+2,y-14,1,14,'#6b4a2a');P(x-1,y-15,6,1,'#b08a50');break;
+  }
+}
+/* 舞う粒（季節・天気） */
+let parts=[];
+function particles(se,p,f,still){
+  const kind=p==='rain'?'rain':p==='snow'||se==='冬'?'snow':p==='sakura'||se==='春'?'petal':se==='秋'?'leaf':null;
+  if(!kind){parts=[];return}
+  if(still){parts=[];for(let i=0;i<12;i++)parts.push({x:(i*37)%128,y:(i*19)%40})}
+  while(parts.length<(kind==='rain'?40:16))parts.push({x:Math.random()*128,y:Math.random()*40});
+  const col={rain:'#7fa8d8',snow:'#ffffff',petal:'#f6c0d0',leaf:'#d8603a'}[kind];
+  for(const q of parts){
+    if(!still){q.y+=kind==='rain'?3:kind==='snow'?.6:.8;q.x+=kind==='rain'?-1:Math.sin((f+q.y)*.3)*.6;if(q.y>46){q.y=-2;q.x=Math.random()*128}}
+    P(q.x,q.y,1,kind==='rain'?3:1,col);
+  }
+}
+function placeOf(S){
+  const j=S.job;
+  if(j==='ronin')return 'road';if(j==='miko')return 'shrine';
+  if(['so','ama'].includes(j))return 'temple';if(j==='kuge')return 'palace';
+  if(['samurai','ashigaru'].includes(j))return 'castle';if(['shonin','chajin'].includes(j))return 'town';
+  if(j==='nyobo')return S.cls==='kuge'?'palace':'castle';
+  return {hyak:'village',buke:'castle',cho:'town',ji:'temple',kuge:'palace'}[S.cls];
+}
+function spouseLook(S){
+  const sp=S.sp,c=sp.cls||S.cls;
+  const job=sp.sex==='f'?'wife':{hyak:'nomin',buke:'samurai',cho:'shonin',kuge:'kuge',ji:'so'}[c];
+  return lookOf({age:sp.age,sex:sp.sex,job,cls:c});
+}
+/* 場面全体 */
+function drawScene(cv,S,se,p,f,still){
+  PC=cv.getContext('2d');PC.imageSmoothingEnabled=false;
+  const shake=p==='quake'&&!still?((f%2)?1:-1):0;
+  PC.save();PC.translate(shake,0);
+  bg(se,placeOf(S));
+  if(p&&p!=='grave'&&p!=='baby'&&p!=='wed')prop(p,f);
+  if(married(S))person(26,40,spouseLook(S));
+  let ks=liveKids(S).filter(k=>S.y-k.by<15).slice(-3);
+  if(ks.length<3&&S.magos)ks=ks.concat(S.magos.filter(g=>g.alive&&S.y-g.by<12).slice(-(3-ks.length)));
+  ks.forEach((k,i)=>person(46+i*7,40,lookOf({age:S.y-k.by+1,sex:k.sex,job:'kid',cls:S.cls})));
+  const L=lookOf(S);
+  if(S.dead)grave(38,40);
+  else if(p==='sick'&&S.age>2)lying(38,40,L);
+  else person(38,40-(still?0:(f%4===0?1:0)),L);
+  if((p==='grave'&&!S.dead)||p==='baby'||p==='wed')prop(p,f);
+  if(S.dead&&!still)P(42,28-(f%3),1,2,'#bbbbbb');
+  particles(se,p,f,still);
+  PC.restore();
+}
+/* 一人だけ（終幕・表紙用） */
+function drawFigure(cv,L,dead){
+  PC=cv.getContext('2d');PC.imageSmoothingEnabled=false;PC.clearRect(0,0,cv.width,cv.height);
+  if(dead){grave(cv.width/2,cv.height-2);return}
+  person(cv.width/2,cv.height-2,L);
+}
+/* ===== 画面 ===== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let speed=2,timer=null;
+/* 待ち時間＝基本＋文字数×1文字あたり（ミリ秒）。[止める,ゆっくり,ふつう,はやい] */
+const WBASE=[0,2200,1600,700],PER=[0,120,85,35],CAP=[0,22000,15000,6000],GAP=[0,1800,1300,500];
+const SPD=GAP;let lastDelay=2000;
+function readMs(el){
+  if(!speed)return 0;
+  const nt=[...el.querySelectorAll('.nt')].reduce((a,x)=>a+x.textContent.length,0);
+  const ch=[...el.querySelectorAll('.d')].reduce((a,x)=>a+x.textContent.length,0);
+  const body=el.textContent.length-nt-ch;
+  return Math.min(CAP[speed],WBASE[speed]+PER[speed]*(body+nt*.5));
+}
+let curEnts=null,curSeason=null;
+const KEY='sengoku12m.kako';
+const SEAL={nomin:'百',ashigaru:'武',samurai:'武',ronin:'浪',shonin:'商',chajin:'茶',so:'僧',ama:'尼',kuge:'公',nyobo:'奥',miko:'巫'};
+
+function loadKako(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
+function saveKako(){try{const l=loadKako();l.unshift({mode:S.mode,nm:fullName(S),km:S.kaimyo,cls:S.cls,job:jobName(S),by:S.by,dy:S.dy,age:S.age,cause:S.cause,kuni:kuni(S)});localStorage.setItem(KEY,JSON.stringify(l.slice(0,30)))}catch(e){}}
+
+function show(id){for(const s of ['title','app','end'])$(s).hidden=s!==id;if(id!=='app')$('sheet').hidden=true}
+
+function renderOdds(){
+  const tot=Object.values(CLS).reduce((a,c)=>a+c.w,0);
+  $('odds').innerHTML=Object.values(CLS).map(c=>{const p=c.w/tot*100;return `<li><span>${c.odds}</span><span class="bar"><i style="width:${p.toFixed(1)}%"></i></span><span class="pc">${Math.round(p)}%</span></li>`}).join('');
+}
+function renderKako(){
+  const l=loadKako();
+  $('kakoEmpty').hidden=l.length>0;
+  $('kakoList').innerHTML=l.slice(0,12).map(k=>`<li><div class="k1"><b>${esc(k.nm)}${k.mode==='bushi'?'<span class="badge">武士</span>':''}</b><span>享年 ${k.age}</span></div><div class="k2">${esc(k.kuni)}・${esc(k.job)}／${eraStr(k.by)}〜${eraStr(k.dy)}／${esc(k.cause)}</div></li>`).join('');
+}
+
+/* --- 本編 --- */
+function renderHead(){
+  $('seal').textContent=isKid(S)?CLS[S.cls].seal:(SEAL[S.job]||CLS[S.cls].seal);
+  $('nm').innerHTML=`${esc(fullName(S))}${S.mode==='bushi'?'<span class="badge">武士の道</span>':''}<small>${S.sex==='m'?'男':'女'}・数え${S.age}歳</small>`;
+  $('meta').innerHTML=`<b>${eraStr(S.y)}</b>（${S.y}年）・${esc(kuni(S))}国・${esc(jobName(S))}<br>領主　${esc(lord(S))}`;
+  const st=SK.map(([k,c,d])=>{const v=S.st[k];return `<div class="st${v<25?' low':''}" title="${d}"><span class="k">${c}</span><span class="bar"><i style="width:${v}%"></i></span><span class="v">${v}</span></div>`}).join('');
+  const kids=liveKids(S).length;
+  const purse=[`銭 <b>${S.kan}</b>貫文<span class="yen">（${yenStr(S.kan)}）</span>`];
+  if(S.koku>0||S.job==='samurai')purse.push(`知行 <b>${S.koku}</b>石`);
+  purse.push(`連れ合い <b>${S.sp?esc(S.sp.alive?S.sp.nm:'（故人）'):'なし'}</b>`);
+  purse.push(`子 <b>${kids}</b>人`);
+  if(S.f.kiri)purse.push(`洗礼名 <b>${esc(S.f.kiri)}</b>`);
+  $('stats').innerHTML=st+`<div class="purse">${purse.map(p=>`<span>${p}</span>`).join('')}</div>`;
+}
+/* --- 今のお金への換算（1貫文＝約6万5千円。米1石＝銭500文と今の米価からの目安） --- */
+const YEN_PER_KAN=65000;
+function yenStr(kan){const v=kan*YEN_PER_KAN;if(v<=0)return '0円';
+  if(v>=1e8){const o=v/1e8;return '約'+(o>=10?Math.round(o).toLocaleString():o.toFixed(1).replace(/\.0$/,''))+'億円'}
+  if(v>=1e4){const m=v/1e4;return '約'+(m>=100?(Math.round(m/10)*10).toLocaleString():m<10?m.toFixed(1).replace(/\.0$/,''):Math.round(m))+'万円'}
+  return '約'+Math.round(v/1000)+'千円'}
+function knum(s){if(/^\d+$/.test(s))return +s;const D='〇一二三四五六七八九';let tot=0,sec=0,cur=0;
+  for(const ch of s){const d=D.indexOf(ch);if(d>=0){cur=d;continue}const u={'十':10,'百':100,'千':1000}[ch];if(u){sec+=(cur||1)*u;cur=0;continue}if(ch==='万'){tot+=(sec+cur)*10000;sec=0;cur=0}}
+  return tot+sec+cur}
+const yenText=t=>String(t||'').replace(/([〇一二三四五六七八九十百千万]+|\d+)貫(文)?(?![いくかきけこ])/g,(m,n)=>`${m}（${yenStr(knum(n))}）`);
+function chips(d){
+  const o=[];for(const k in d){const v=d[k];if(!v)continue;o.push(`<span class="${v<0?'m':''}">${SL[k]}${v>0?'+':''}${v}${k==='kan'?`（${yenStr(Math.abs(v))}）`:''}</span>`)}
+  return o.length?`<span class="d">${o.join('')}</span>`:'';
+}
+let glSeen=new Set();
+function entHTML(n,showS,live,seen){
+  seen=seen||glSeen;
+  const cl='en'+(n.k?' '+n.k:'')+(live?' new':'');
+  const ss=showS&&n.s?`<span class="ss">${n.s}</span>`:'';
+  const uw=n.k==='news'?'<span class="uw">噂</span>':'';
+  const t=gl(yenText(n.t),seen),pk=n.pick?gl(yenText(n.pick),seen,true):null,rs=n.pick?gl(yenText(n.res),seen):null;
+  const res=n.pick?`<span class="res"><span class="pick">「${pk.html}」</span> ${rs.html}</span>`:'';
+  const notes=[...t.notes,...(pk?pk.notes:[]),...(rs?rs.notes:[])].map(noteHTML).join('');
+  return `<p class="${cl}">${ss}${uw}${t.html}${res}${chips(n.d)}${notes}</p>`;
+}
+function yrHead(Y){const e=eraOf(Y.y);return `<div class="y">${e.name}${e.num}年<small>${Y.y}年<br>${Y.age}歳</small></div>`}
+function yearHTML(Y,seen){
+  let last=null;
+  const ents=Y.ents.map(n=>{const sh=n.s&&n.s!==last;if(n.s)last=n.s;return entHTML(n,sh,false,seen)}).join('');
+  return `<div class="yr">${yrHead(Y)}<div class="ents">${ents}</div></div>`;
+}
+function renderYear(Y){const lg=$('log');lg.insertAdjacentHTML('beforeend',yearHTML(Y));lg.scrollTop=lg.scrollHeight}
+
+/* 一件ずつ進める */
+function loop(){
+  clearTimeout(timer);
+  if(!S||S.pending||!speed)return;
+  if(S.dead&&!S.inYear)return;
+  if(!S.inYear){startYear();timer=setTimeout(loop,GAP[speed]*.6);return}
+  const r=next();
+  if(r==='more')timer=setTimeout(loop,lastDelay);
+  else if(r==='done'&&!S.dead)timer=setTimeout(loop,Math.max(GAP[speed],lastDelay));
+}
+function schedule(ms){clearTimeout(timer);if(!S||S.pending||(S.dead&&!S.inYear))return;
+  /* 選択の結果で死んだときは、止めていても年を締めくくって最期の画面へ進める */
+  if(S.dead){timer=setTimeout(()=>{let g=0;while(S&&S.inYear&&g++<99)next()},Math.min(lastDelay,2500));return}
+  if(!speed)return;timer=setTimeout(loop,ms??lastDelay)}
+function finishYear(){
+  if(!S||S.pending||(S.dead&&!S.inYear))return;
+  clearTimeout(timer);
+  if(!S.inYear)startYear();
+  let g=0;while(next()==='more'&&g++<99);
+  if(!S.pending)schedule();
+}
+
+/* --- ドット絵の場面 --- */
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let pf=0,scSe='春',scProp=null;
+function paint(){const cv=$('scene');if(!S||$('app').hidden)return;drawScene(cv,S,scSe,scProp,pf,RM)}
+setInterval(()=>{if(RM||!S||$('app').hidden)return;pf++;paint()},220);
+UI.yearStart=Y=>{scSe='春';scProp=null;
+  const lg=$('log');
+  lg.insertAdjacentHTML('beforeend',`<div class="yr new">${yrHead(Y)}<div class="ents"></div></div>`);
+  curEnts=lg.lastElementChild.querySelector('.ents');curSeason=null;
+  renderHead();lg.scrollTop=lg.scrollHeight;
+};
+UI.ent=n=>{
+  if(!curEnts)return;
+  const sh=n.s&&n.s!==curSeason;if(n.s)curSeason=n.s;
+  curEnts.insertAdjacentHTML('beforeend',entHTML(n,sh,true));
+  lastDelay=readMs(curEnts.lastElementChild);
+  if(n.s)scSe=n.s;scProp=propOf(n);paint();
+  renderHead();const lg=$('log');lg.scrollTop=lg.scrollHeight;
+};
+UI.yearEnd=Y=>{renderHead()};
+UI.wait=p=>{
+  clearTimeout(timer);
+  $('shW').textContent=`${eraStr(S.y)}　数え${S.age}歳`;
+  $('shH').textContent='分かれ道';
+  const seen=new Set();
+  $('shT').innerHTML=gl(yenText(p.t),seen,true).html;
+  $('shC').innerHTML=p.chs.map((c,i)=>`<button type="button" data-i="${i}">${gl(yenText(c[0]),seen,true).html}</button>`).join('');
+  $('shN').innerHTML=[...seen].map(noteHTML).join('');
+  $('sheet').hidden=false;
+  const b=$('shC').querySelector('button');if(b)b.focus({preventScroll:true});
+};
+UI.end=()=>{clearTimeout(timer);saveKako();setTimeout(showEnd,2200)};
+
+let lastMode='normal';
+function startLife(mode){
+  if(mode!=='bushi'&&mode!=='normal')mode=lastMode;lastMode=mode;
+  clearTimeout(timer);born(mode);
+  show('app');$('log').innerHTML='';glSeen=new Set();
+  for(const Y of S.log)renderYear(Y);
+  curEnts=null;scSe='春';scProp='baby';renderHead();paint();lastDelay=WBASE[speed]+PER[speed]*60;schedule();
+}
+
+/* --- 終幕 --- */
+function showEnd(){
+  show('end');$('end').scrollTop=0;
+  $('jisei').innerHTML=S.jisei?esc(S.jisei).replace(/　/g,'<br>'):'<span class="none">辞世（じせい）は残っていない</span>';
+  drawFigure($('endPx'),lookOf(S),false);
+  $('btnAgain').textContent=S.mode==='bushi'?'もう一度、武士として生まれる':'もう一度生まれる';lastMode=S.mode||'normal';
+  $('kyonen').innerHTML=`${kj(S.age)}<small>歳</small>`;
+  $('endName').textContent=fullName(S);
+  $('kaimyo').textContent=S.kaimyo.startsWith('洗礼名')?S.kaimyo:'戒名（かいみょう）　'+S.kaimyo;
+  $('cause').textContent=`${eraStr(S.by)}（${S.by}年）〜${eraStr(S.dy)}（${S.dy}年）`;
+  const kids=S.kids.length,alive=liveKids(S).length;
+  const best=SK.reduce((a,b)=>S.st[b[0]]>S.st[a[0]]?b:a);
+  const rows=[['生まれ',`${kuni(S)}国の${CLS[S.cls].name}`+(S.cls==='buke'?`（${S.f.fkoku}石）`:'')],['最後の身分',jobName(S)],['死因',S.cause]];
+  if(S.koku>0)rows.push(['知行',S.koku+'石']);
+  rows.push(['蓄え',`${S.kan}貫文（${yenStr(S.kan)}）`],['家族',(S.sp?(S.sp.alive?'連れ合いあり':'連れ合いに先立たれた'):S.f.rien?'離縁':'連れ合いなし')+`・子${kids}人`+(kids?`（存命${alive}人）`:'')],['いちばんの取り柄',`${best[2]}（${best[1]} ${S.st[best[0]]}）`]);
+  $('sum').innerHTML=rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('');
+  $('major').innerHTML=S.major.length?S.major.slice(0,16).map(m=>`<li><b>${m.age}歳</b>　${gl(m.t,null,true).html}</li>`).join(''):'<li>大きな出来事のない、短い一生だった。</li>';
+  $('kidBlock').hidden=!S.kids.length;
+  const ms=S.magos.length,ma=S.magos.filter(g=>g.alive).length;
+  $('kidl').innerHTML=S.kids.map(k=>`<li><b>${k.role}</b><span class="kn">${esc(k.nm)}</span><span class="kf">${gl(kidFate(k),null,true).html}</span></li>`).join('')+(ms?`<li class="mg"><b>孫</b><span class="kn">${ms}人</span><span class="kf">${ma<ms?`うち${ms-ma}人は幼くして亡くなった`:'みな元気に育っている'}</span></li>`:'');
+  const es=new Set();$('endLog').innerHTML=S.log.map(Y=>yearHTML(Y,es)).join('');
+}
+
+/* --- 操作 --- */
+$('btnBorn').addEventListener('click',()=>startLife('normal'));
+$('btnBushi').addEventListener('click',()=>startLife('bushi'));
+$('btnAgain').addEventListener('click',()=>startLife(lastMode));
+$('btnTitle').addEventListener('click',()=>{S=null;clearTimeout(timer);renderKako();show('title')});
+$('btnPlay').addEventListener('click',finishYear);
+document.querySelectorAll('.speed button').forEach(b=>b.addEventListener('click',()=>{
+  speed=+b.dataset.sp;document.querySelectorAll('.speed button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));schedule();
+}));
+$('auto').addEventListener('change',e=>{
+  AUTO=e.target.checked;
+  if(AUTO&&S&&S.pending){$('sheet').hidden=true;choose(Math.floor(R()*S.pending.chs.length));schedule()}
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button.gl');if(!b)return;
+  const p=b.closest('.en');if(!p)return;
+  const k=b.dataset.k,ex=[...p.querySelectorAll('.nt')].find(x=>x.dataset.k===k);
+  if(ex)ex.remove();else p.insertAdjacentHTML('beforeend',noteHTML(k));
+});
+$('shC').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||!S||!S.pending)return;
+  $('sheet').hidden=true;choose(+b.dataset.i);schedule();
+});
+
+/* --- 起動（更新時に状態を引き継ぐ） --- */
+window.claude?.hot?.snapshot?.(()=>{
+  if(!S||S.pending||S.inYear)return {};
+  try{const c=JSON.parse(JSON.stringify({...S,q:[],pending:null}));return {S:c,speed,AUTO,scr:$('end').hidden?($('app').hidden?'title':'app'):'end'}}catch(e){return {}}
+});
+function drawLineup(){
+  const cv=$('titlePx');PC=cv.getContext('2d');PC.imageSmoothingEnabled=false;PC.clearRect(0,0,cv.width,cv.height);
+  const L=[['m','nomin','hyak'],['f','wife','hyak'],['m','ashigaru','hyak'],['m','samurai','buke'],['f','nyobo','buke'],['m','shonin','cho'],['m','so','ji'],['f','ama','ji'],['m','kuge','kuge'],['f','musume','kuge']];
+  L.forEach(([sex,job,cls],i)=>person(8+i*13,29,lookOf({age:30,sex,job,cls})));
+}
+function boot(d){
+  renderOdds();renderKako();drawLineup();
+  if(d&&d.S){
+    S=d.S;lastMode=S.mode||'normal';S.cur=S.log[S.log.length-1];speed=d.speed??2;AUTO=!!d.AUTO;$('auto').checked=AUTO;
+    document.querySelectorAll('.speed button').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.sp===speed?'true':'false'));
+    if(d.scr==='end'&&S.dead){showEnd();return}
+    if(d.scr==='app'){show('app');$('log').innerHTML='';glSeen=new Set();for(const Y of S.log)renderYear(Y);curEnts=null;renderHead();paint();schedule();return}
+  }
+  show('title');
+}
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
+</script>
+</body>
+</html>
