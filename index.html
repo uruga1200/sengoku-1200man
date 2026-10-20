@@ -183,6 +183,9 @@ button.gl:hover{text-decoration-color:var(--kin)}
 .rankl b{color:var(--ink)}
 .kyonen{white-space:nowrap}
 .en.omoi{color:var(--muted);padding-left:1em;font-size:14px}
+.jj{display:block;font-size:13px;line-height:1.75;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--good);padding:7px 10px;margin-top:7px;border-radius:0 5px 5px 0;font-weight:400}
+.jj b{display:block;font-size:11.5px;letter-spacing:.12em;color:var(--good);margin-bottom:2px;font-weight:700}
+.obo{white-space:nowrap}
 .choices .hint{display:block;margin-top:3px;font-size:12.5px;line-height:1.55;color:var(--muted);font-weight:400}
 @media (max-width:480px){.jisei{font-size:18px;line-height:1.75}.kyonen{font-size:40px}}
 </style>
@@ -310,14 +313,14 @@ const REG={
   mikawa:{n:'三河',l:[[1548,'松平家'],[1560,'今川家'],[1590,'徳川家'],[1600,'豊臣方の諸将'],[9999,'徳川家']]},
   suruga:{n:'駿河',l:[[1568,'今川家',1],[1582,'武田家',1],[1590,'徳川家'],[1600,'豊臣方の諸将'],[9999,'徳川家']]},
   kai:{n:'甲斐',l:[[1582,'武田家',1],[1590,'徳川家'],[1600,'豊臣方の諸将'],[9999,'徳川家']]},
-  echigo:{n:'越後',l:[[1507,'守護の上杉家'],[1560,'長尾家'],[1598,'上杉家'],[9999,'堀家']]},
+  echigo:{n:'越後',l:[[1507,'守護の上杉家'],[1560,'長尾家'],[1598,'上杉家'],[1610,'堀家'],[9999,'徳川方の諸将']]},
   sagami:{n:'相模',l:[[1516,'三浦家と扇谷上杉家',1],[1590,'北条家',1],[9999,'徳川家']]},
   omi:{n:'近江',l:[[1525,'京極家'],[1573,'浅井家',1],[1582,'織田家'],[1600,'豊臣家'],[9999,'徳川方の諸将']]},
   yamashiro:{n:'山城',l:[[1549,'管領の細川家'],[1568,'三好家'],[1582,'織田家'],[1600,'豊臣家'],[9999,'徳川家']]},
   izumi:{n:'和泉（堺）',l:[[1549,'細川家'],[1568,'三好家'],[1582,'織田家'],[1615,'豊臣家',1],[9999,'徳川家']]},
   settsu:{n:'摂津',l:[[1549,'細川家'],[1568,'三好家'],[1582,'織田家'],[1615,'豊臣家',1],[9999,'徳川家']]},
   kaga:{n:'加賀',l:[[1488,'富樫家',1],[1580,'一向門徒の惣国',1],[9999,'前田家']]},
-  aki:{n:'安芸',l:[[1554,'大内家'],[1600,'毛利家'],[9999,'福島家']]},
+  aki:{n:'安芸',l:[[1554,'大内家'],[1600,'毛利家'],[1619,'福島家'],[9999,'浅野家']]},
   chikuzen:{n:'筑前',l:[[1557,'大内家',1],[1587,'大友家'],[1600,'小早川家'],[9999,'黒田家']]},
   satsuma:{n:'薩摩',l:[[9999,'島津家']]},
   mutsu:{n:'陸奥',l:[[9999,'伊達家']]}
@@ -356,7 +359,7 @@ const hoName=()=>{let n;do{n=pick(HO1)+pick(HO2)}while(n[0]===n[1]);return n};
 
 /* ===== 能力 ===== */
 const SK=[['tai','体','からだの丈夫さ'],['kok','心','こころの満ち足り'],['chi','知','読み書きと教養'],['bu','武','武芸と胆力'],['en','縁','人とのつながり'],['mei','名','世間の評判']];
-const SL={tai:'体',kok:'心',chi:'知',bu:'武',en:'縁',mei:'名',kan:'銭',koku:'石'};
+const SL={tai:'体',kok:'心',chi:'知',bu:'武',en:'縁',mei:'名',kan:'銭',koku:'石',ko:'覚え'};
 
 /* ===== 判定 ===== */
 const isBushi=S=>S.sex==='m'&&(S.job==='ashigaru'||S.job==='samurai');
@@ -415,6 +418,7 @@ function ad(S,o){
   for(const k in o){const v=Math.round(o[k]);if(!v)continue;
     if(k==='kan'){S.kan=Math.max(0,S.kan+v)}
     else if(k==='koku'){S.koku=Math.max(0,S.koku+v)}
+    else if(k==='ko'){if(!S.tono)continue;S.tono.ko=clamp(S.tono.ko+v,0,100)}
     else{S.st[k]=clamp(S.st[k]+v,0,100)}
     S._d[k]=(S._d[k]||0)+v;}
 }
@@ -549,6 +553,7 @@ function startYear(){
   if(!S||S.dead||S.pending||S.inYear)return false;
   S.y++;S.age++;
   for(const p of [S.fa,S.mo,S.sp])if(p&&p.alive)p.age++;
+  if(S.tono&&typeof tonoYear==='function')tonoYear(S);
   if(S.age>=45&&chance(.5))S.st.tai=clamp(S.st.tai-rnd(0,2),0,100);
   else if(S.age<45&&S.st.tai<60)S.st.tai=clamp(S.st.tai+rnd(0,2),0,100);
   const Y={y:S.y,age:S.age,ents:[]};S.cur=Y;S._d={};S.curS=null;
@@ -591,7 +596,7 @@ function randomPicks(hasCh){
   return out;
 }
 function fire(e){
-  if(e.n){push(typeof e.n==='function'?e.n(S):e.n,'news');if(e.om&&!S.dead&&S.age>=12&&chance(.45))push(e.om,'omoi');return}
+  if(e.n){push(typeof e.n==='function'?e.n(S):e.n,'news');if(e.om&&!S.dead&&S.age>=12&&chance(.45)&&!S.cur.ents.some(x=>x.t===e.om))push(e.om,'omoi');return}
   if(!safeC(e))return;
   if(e.id)S.seen[e.id]=S.y;
   if(typeof e.e0==='function')e.e0(S);
@@ -622,11 +627,13 @@ function push(t,k,e,pk,res){
   const en={t,k:k||'',d:{...S._d},s:S.curS||''};
   if(pk){en.pick=pk;en.res=res||''}
   if(e&&e.px)en.px=typeof e.px==='function'?e.px(S):e.px;
+  /* お国事情：その国ならではの出来事に、なぜ起きるのかを添える（同じ出来事では一度だけ） */
+  if(e&&e.ji&&e.id){const u=S.jis||(S.jis={});if(!u[e.id]){u[e.id]=1;en.ji=typeof e.ji==='function'?e.ji(S):e.ji;en.jk=kuni(S)}}
   S._d={};S.cur.ents.push(en);
   if(e&&e.mj){const m=typeof e.mj==='function'?e.mj(S,pk):e.mj;if(m)mj(m)}
   UI.ent(en);
   if(k!=='rank'&&k!=='news')rankWatch();
-  if(k!=='omoi'&&k!=='news'&&(S._om||S._omW)){const th=omoiNext(S);if(th)push(th,'omoi')}
+  if(k!=='omoi'&&k!=='news'&&(S._om||S._omW)){const th=omoiNext(S);if(th&&!S.cur.ents.some(x=>x.t===th))push(th,'omoi')}
   return en;
 }
 /* 身分が上がったら知らせる */
@@ -978,7 +985,7 @@ function kidSteps(out){
 
 function kidPathEv(k){
   const m=k.sex==='m',c=famCls(S),first=m&&eldestSon(S)===k;
-  const rename=()=>{if(m&&(c==='buke'||c==='kuge')){const o=k.nm;k.nm=pick(NM[c].m);return `幼名の${o}を改め、${k.nm}と名乗らせた。`}return ''};
+  const rename=()=>{if(m&&(c==='buke'||c==='kuge')){const o=k.nm,used=S.kids.map(x=>x.nm).concat(S.nm);const L=NM[c].m.filter(x=>!used.includes(x));k.nm=pick(L.length?L:NM[c].m);return `幼名の${o}を改め、${k.nm}と名乗らせた。`}return ''};
   const ch=[];
   if(m){
     if(S.job==='so')ch.push(['寺の跡継ぎとして得度させる',S=>{k.path='僧';k.heir=1;k.nm=hoName();ad(S,{kok:5});return `頭を剃らせ、${k.nm}という法名を授けた。`}]);
@@ -1356,9 +1363,26 @@ const SERIF=[
 [S=>S.job==='ashigaru','組頭','足軽は、槍をそろえてなんぼだ。一人で出しゃばるな'],
 [S=>S.job==='ashigaru','組頭','首を取るより、生きて帰れ。死んだら給金も出んぞ'],
 [S=>S.job==='samurai'&&hasLord(S)&&S.age<=40,'同輩','殿の前では、とにかく「ははっ」と言っておけばいい'],
-[S=>S.job==='samurai'&&hasLord(S)&&rankOf(S)>=3&&S.st.mei>=40,'殿','その方の働き、聞いておるぞ'],
-[S=>S.job==='samurai'&&hasLord(S)&&rankOf(S)>=5,'殿','頼りにしておるぞ。これからも励め'],
-[S=>S.job==='samurai'&&hasLord(S)&&S.st.mei<25,'殿','近ごろ、たるんでおらぬか'],
+[S=>tnS(S)&&rankOf(S)>=3&&S.tono.ko>=55,'殿','その方の働き、聞いておるぞ'],
+[S=>tnS(S)&&rankOf(S)>=5&&S.tono.ko>=65,'殿','頼りにしておるぞ。これからも励め'],
+[S=>tnS(S)&&S.tono.ko<30,'殿','近ごろ、たるんでおらぬか'],
+[S=>tnS(S)&&S.tono.ko<20,'同輩','殿のお顔色が、おぬしを見ると曇る。何かしたのか'],
+[S=>tnS(S)&&S.tono.ko>=80,'同輩','殿のお気に入りは、気楽でよいのう'],
+/* --- 殿の気質 --- */
+[S=>tnS(S)&&tki(S,'kanshaku'),'殿','遅い！ 何をしておった'],
+[S=>tnS(S)&&tki(S,'furyu')&&rankOf(S)>=3,'殿','この月を見て何も感じぬようでは、武士とは言えぬぞ'],
+[S=>tnS(S)&&tki(S,'gotan'),'殿','戦場で背を見せる者は、わしの家臣ではない'],
+[S=>tnS(S)&&tki(S,'rinshoku'),'殿','無駄な費えは、一文たりとも許さぬ'],
+[S=>tnS(S)&&tki(S,'hitotarashi')&&rankOf(S)>=2,'殿',S=>married(S)?'おう、その方か。女房どのは達者か':'おう、その方か。早う嫁をもらえ'],
+[S=>tnS(S)&&tki(S,'utagai'),'殿','その方、近ごろ誰と会うておる'],
+[S=>tnS(S)&&tki(S,'meikun')&&rankOf(S)>=3,'殿','下の者の声を、包み隠さずわしに届けよ'],
+[S=>tnS(S)&&tki(S,'shushoku'),'殿','堅いことを申すな。今宵は飲め'],
+[S=>tnS(S)&&tki(S,'date'),'殿','地味な身なりで出仕するでない。見ておるだけで気が滅入る'],
+[S=>tnS(S)&&tki(S,'kawari'),'殿','面白い。その方も、もっと変わったことをしてみよ'],
+[S=>tnS(S)&&tki(S,'shincho'),'殿','急いてはならぬ。待つのも戦のうちじゃ'],
+[S=>tnS(S)&&tki(S,'mukuchi')&&rankOf(S)>=2,'殿','……うむ',S=>'殿に声をかけられた。「……うむ」とだけ。それでも、家中では大変なことらしい。'],
+[S=>tnS(S)&&tki(S,'wagamama'),'殿の側近','殿は、おぬしのことなど覚えておられぬわ'],
+[S=>tnS(S)&&tki(S,'yowaki')&&rankOf(S)>=3,'殿','そなたは、どう思う？　わしには、もうわからぬ'],
 [S=>S.job==='shonin'&&S.f.decchi&&!S.f.tedai,'番頭','お客様の前では、損をしても笑え'],
 [S=>S.job==='shonin'&&S.f.decchi,'主人','商いは、細く長くだ。欲をかいたら終わりだ'],
 [S=>S.job==='shonin'&&S.f.decchi,'主人','算盤は嘘をつかんが、人は嘘をつく。覚えておけ'],
@@ -1435,6 +1459,10 @@ const LAST_MO=S=>pick(['ちゃんと食べるんだよ','あんたが生まれ�
 /* ===== 主人公の心の声（大きな出来事のあとに一行） =====
    mj() で「大きな出来事」が記録されたら、その言葉に合う心の声を選ぶ。合戦のあとは結果で選ぶ */
 const OMOI=[
+ [/殿の代替わり/,['（新しい殿の下で、自分はどうなるのだろう。）','（先代の殿の声が、まだ耳に残っている。）']],
+ [/拝領/,['（この品は、家の宝として子に伝えよう。）','（殿は、ちゃんと見ていてくださった。）']],
+ [/一字を賜り/,['（殿の名の一字を、この身に背負うのだ。）']],
+ [/守役/,['（若君を、きっと立派な殿に育ててみせる。）']],
  [/勘当を解く/,['（何も言わなくても、親子だ。）']],
  [/勘当する/,['（親でも子でもないと言ったが、夜になると気になる。）']],
  [/夫婦になる/,['（この人と、一生やっていくのか。）','（悪い人ではなさそうだ。たぶん。）','（祝言の料理の味を、まるで覚えていない。）']],
@@ -1562,9 +1590,9 @@ EV.push(
  ch:[['使者を追い返す',S=>{ad(S,{mei:4,en:2});return '使者を追い返し、そのことを殿に報告した。忠義を褒められた。'}],
      ['寝返りに応じる',S=>{if(chance(.55)){ad(S,{koku:S.koku,mei:-10,en:-8});mj('寝返って知行が倍に');return '戦のさなかに旗を翻した。約束どおり知行は倍になった。だが「裏切り者」の名は一生ついて回る。'}if(chance(.6)){die(S,'寝返りが露見して切腹');return '内通が露見した。殿の前に引き出され、腹を切ることになった。'}S.job='ronin';S.koku=0;ad(S,{mei:-15});mj('寝返りが露見し出奔');return '内通がばれ、夜陰にまぎれて国を出奔した。'}],
      ['返事を濁して両方に保険をかける',S=>{ad(S,{en:-3,chi:2});return 'どちらにも取れる返事をした。戦国の世では、これも生き残り方のひとつだ。'}]]},
-{id:'b_zangen',c:S=>hasLord(S)&&S.job==='samurai'&&adult(S),w:.6,t:S=>S.y<1616?`同輩が殿に讒言したらしい。「${S.nm}は敵方と通じている」と。殿の目が冷たい。`:`同輩が殿に讒言したらしい。「${S.nm}は陰で殿の悪口を言っている」と。殿の目が冷たい。`,
- ch:[['身の潔白を弁明する',S=>{if(chance(.45+S.st.chi/250)){ad(S,{mei:4});return '起請文を書いて身の潔白を誓い、疑いは晴れた。'}if(S.koku<20){ad(S,{mei:-6,kok:-4});return '弁明は聞き入れられず、出仕を差し止められた。しばらく屋敷にこもるしかない。'}const l=Math.round(S.koku*.2);ad(S,{koku:-l,mei:-5});return `弁明は聞き入れられず、知行を${l}石減らされた。`}],['じっと耐える',S=>{ad(S,{kok:-8});return '黙って耐えた。一年後、讒言した男のほうが別の件で失脚した。'}],['国を出奔する',S=>{S.job='ronin';S.koku=0;ad(S,{mei:-6,kok:-6});mj('讒言にあい出奔');return 'こんな家に未練はない、と国を出た。'}]]},
-{id:'b_takagari',c:S=>hasLord(S)&&S.job==='samurai'&&S.koku>=100,w:.6,t:S=>pick(['殿の鷹狩りのお供をした。獲物を追って泥田に突っ込み、殿に大笑いされた。','宿直の夜、うっかり居眠りした。同輩が肘でつついてくれなかったら危なかった。','殿の碁の相手をした。勝ちすぎてはいけないし、負けすぎてもいけない。']),fx:{en:3}},
+{id:'b_zangen',c:S=>hasLord(S)&&S.job==='samurai'&&adult(S),w:S=>tki(S,'utagai','wagamama')?1.1:.6,fx:{ko:-6},t:S=>S.y<1616?`同輩が殿に讒言したらしい。「${S.nm}は敵方と通じている」と。殿の目が冷たい。`:`同輩が殿に讒言したらしい。「${S.nm}は陰で殿の悪口を言っている」と。殿の目が冷たい。`,
+ ch:[['身の潔白を弁明する',S=>{if(chance(.45+S.st.chi/250-(tki(S,'utagai')?.12:0))){ad(S,{mei:4,ko:5});return '起請文を書いて身の潔白を誓い、疑いは晴れた。'}if(S.koku<20){ad(S,{mei:-6,kok:-4});return '弁明は聞き入れられず、出仕を差し止められた。しばらく屋敷にこもるしかない。'}const l=Math.round(S.koku*.2);ad(S,{koku:-l,mei:-5});return `弁明は聞き入れられず、知行を${l}石減らされた。`}],['じっと耐える',S=>{ad(S,{kok:-8});return '黙って耐えた。一年後、讒言した男のほうが別の件で失脚した。'}],['国を出奔する',S=>{S.job='ronin';S.koku=0;ad(S,{mei:-6,kok:-6});mj('讒言にあい出奔');return 'こんな家に未練はない、と国を出た。'}]]},
+{id:'b_takagari',c:S=>hasLord(S)&&S.job==='samurai'&&S.koku>=100,w:.6,t:S=>pick(['殿の鷹狩りのお供をした。獲物を追って泥田に突っ込み、殿に大笑いされた。','宿直の夜、うっかり居眠りした。同輩が肘でつついてくれなかったら危なかった。','殿の碁の相手をした。勝ちすぎてはいけないし、負けすぎてもいけない。']),fx:{en:3,ko:2}},
 {id:'b_shinobi',c:S=>S.job==='samurai'&&S.koku>=200&&warLv(S.y)>0,w:.4,once:1,t:'夜、屋敷の天井裏で物音がした。',
  ch:[['槍で天井を突く',S=>{if(chance(.4)){ad(S,{mei:8,bu:3});mj('屋敷に忍び込んだ間者を討つ');return '手応えがあった。翌朝、庭に血の跡が点々と残っていた。敵方の忍びだったらしい。'}ad(S,{mei:-1});return '出てきたのは大きな鼠だった。'}],['寝たふりをする',S=>{ad(S,{chi:2});return '翌朝、文箱の中の書状が一通なくなっていた。'}]]},
 {id:'b_kabuki',c:S=>isWar(S)&&S.y>=1590&&S.y<=1615&&S.age<=35,w:.6,once:1,t:'仲間内で、派手な着物に長刀を差して練り歩く「かぶき者」が流行っている。',
@@ -1725,12 +1753,14 @@ function wReward(S,res){
     return t+`敵の所領を切り取り、${add}石を加えた。手柄を立てた家臣たちに、恩賞の銭を配った。`;
   }
   if(S.job==='samurai'){
-    const k0=S.koku;
-    if(m>=5){const add=Math.round(Math.max(60,k0?Math.round(k0*.3/10)*10:80)*half);ad(S,{koku:add,mei:6,bu:2});S.f.kanjo=(S.f.kanjo||0)+1;mj(`${w.nm}の手柄で${add}石の加増`);
-      return t+`${w.ichi?'一番槍の功':'抜群の働き'}として、${add}石の加増を受けた。感状も添えられていた。`+(k0===0?'これで、自分の知行を持つ身になった。':'')}
-    if(m>=3){const add=Math.round(Math.max(30,Math.round(k0*.15/5)*5)*half);ad(S,{koku:add,mei:3});
-      return t+`恩賞として${add}石の加増を受けた。`+(k0===0?'これで、自分の知行を持つ身になった。':'')}
-    if(m>=1){const k=rnd(2,5);ad(S,{kan:k,mei:2});S.f.kanjo=(S.f.kanjo||0)+1;return t+`感状と、褒美の銭${k}貫文を賜った。`}
+    const k0=S.koku,tm=tonoMul(S);
+    /* 殿の気質によるひとこと（しまり屋・人たらし） */
+    const tw=()=>!S.tono||!tonoOK(S)?'':tki(S,'rinshoku')&&chance(.5)?'しまり屋の殿にしては、気前のいいほうだ。':tki(S,'hitotarashi')&&chance(.5)?'殿は手ずから盃を取らせてくれた。':'';
+    if(m>=5){const add=Math.max(10,Math.round(Math.max(60,k0?Math.round(k0*.3/10)*10:80)*half*tm/5)*5);ad(S,{koku:add,mei:6,bu:2,ko:6});S.f.kanjo=(S.f.kanjo||0)+1;mj(`${w.nm}の手柄で${add}石の加増`);
+      return t+`${w.ichi?'一番槍の功':'抜群の働き'}として、${add}石の加増を受けた。感状も添えられていた。`+(k0===0?'これで、自分の知行を持つ身になった。':'')+tw()}
+    if(m>=3){const add=Math.max(5,Math.round(Math.max(30,Math.round(k0*.15/5)*5)*half*tm/5)*5);ad(S,{koku:add,mei:3,ko:3});
+      return t+`恩賞として${add}石の加増を受けた。`+(k0===0?'これで、自分の知行を持つ身になった。':'')+tw()}
+    if(m>=1){const k=rnd(2,5);ad(S,{kan:k,mei:2,ko:1});S.f.kanjo=(S.f.kanjo||0)+1;return t+`感状と、褒美の銭${k}貫文を賜った。`}
     return t+pku(['目立った手柄はなかった。','手柄らしい手柄はなかったが、生きて戻った。']);
   }
   if(S.job==='ashigaru'){
@@ -1946,10 +1976,10 @@ function becomeDaimyo(S){
 
 EV.push(
 /* --- 官途名・家老 --- */
-{id:'mb_kanto',c:S=>samL(S)&&rankOf(S)>=4&&S.st.mei>=40&&!S.f.kanto,w:.8,once:1,
+{id:'mb_kanto',c:S=>samL(S)&&rankOf(S)>=4&&S.st.mei>=40&&!S.f.kanto&&(!S.tono||S.tono.ko>=35),w:.8,once:1,
  t:S=>rankOf(S)>=6?'城を預かる身として、殿から受領名か官途名を名乗ることを許された。どう名乗るか。':'日ごろの働きを認められ、殿から官途名（かんとな）を名乗ることを許された。どう名乗るか。',
- ch:[['国の名がつく受領名を名乗る',S=>{S.f.kanto=pick(ZURYO);S.f.zuryo=1;ad(S,{mei:4});mj(`「${S.f.kanto}」を名乗る`);return `「${S.f.kanto}」と名乗ることにした。その国に行ったことは一度もない。`},S=>rankOf(S)>=6],
-     ['朝廷の役名を名乗る',S=>{S.f.kanto=pick((rankOf(S)>=6?KANTO_HI:KANTO_LO).filter(x=>x!==S.nm));ad(S,{mei:3});mj(`「${S.f.kanto}」を名乗る`);return `「${S.f.kanto}」と名乗ることにした。書状の宛名が少し長くなった。`}],
+ ch:[['国の名がつく受領名を名乗る',S=>{S.f.kanto=pick(ZURYO);S.f.zuryo=1;ad(S,{mei:4,ko:3});mj(`「${S.f.kanto}」を名乗る`);return `「${S.f.kanto}」と名乗ることにした。その国に行ったことは一度もない。`},S=>rankOf(S)>=6],
+     ['朝廷の役名を名乗る',S=>{S.f.kanto=pick((rankOf(S)>=6?KANTO_HI:KANTO_LO).filter(x=>x!==S.nm));ad(S,{mei:3,ko:3});mj(`「${S.f.kanto}」を名乗る`);return `「${S.f.kanto}」と名乗ることにした。書状の宛名が少し長くなった。`}],
      ['身に余ると辞退する',S=>{ad(S,{en:3,mei:1});return '「まだその器ではございません」と辞退した。殿は笑って、それ以上は言わなかった。'}]]},
 {id:'mb_zuryo',c:S=>samL(S)&&rankOf(S)>=6&&!!S.f.kanto&&!S.f.zuryo,w:.9,once:1,k:'big',
  e0:S=>{S.f._zr=pick(ZURYO)},t:S=>`城を預かる身となった功を認められ、殿から「${S.f._zr}」の受領名を許された。`,
@@ -1959,9 +1989,9 @@ EV.push(
  t:'公家を通じて朝廷に献金すれば、正式な官位をいただけるという。',
  ch:[['献金して官位を賜る',S=>{S.f.kanto=pick(ZURYO);S.f.zuryo=1;ad(S,{kan:-Math.min(S.kan,20),mei:8});mj(`朝廷から官位を賜り「${S.f.kanto}」となる`);return `朝廷から従五位下${S.f.kanto}に任じられた。勅使が下ってきて、城じゅうが大騒ぎになった。`}],
      ['銭は兵に回す',S=>{ad(S,{kan:3});return '官位より兵だ。銭は城の普請と兵糧に回した。'}]]},
-{id:'mb_karo',c:S=>samL(S)&&S.koku>=1500&&S.st.mei>=55&&!S.f.karo&&S.age<=62,w:.9,once:1,k:'big',
+{id:'mb_karo',c:S=>samL(S)&&S.koku>=1500&&S.st.mei>=55&&!S.f.karo&&S.age<=62&&(!S.tono||S.tono.ko>=50),w:.9,once:1,k:'big',
  t:'殿から、家老の一人に加わるよう命じられた。家中の政を預かる重い役目だ。',
- ch:[['謹んでお受けする',S=>{S.f.karo=1;ad(S,{mei:6,en:3});rkSet(S);mj('家老となる');return '評定の席で、殿のすぐ下座に座ることになった。家中の誰もが、こちらの顔色をうかがうようになった。'}],
+ ch:[['謹んでお受けする',S=>{S.f.karo=1;ad(S,{mei:6,en:3,ko:4});rkSet(S);mj('家老となる');return '評定の席で、殿のすぐ下座に座ることになった。家中の誰もが、こちらの顔色をうかがうようになった。'}],
      ['荷が重いと辞退する',S=>{ad(S,{en:2,mei:-1});return '辞退した。家老になれば、責めを負って腹を切ることもある。'}]]},
 /* --- 身分に合った暮らし --- */
 {id:'mb_daikan',c:S=>samL(S)&&rankOf(S)>=2&&rankOf(S)<=5&&S.y<1640,w:.7,cd:6,
@@ -1986,7 +2016,7 @@ EV.push(
      ['親の代からの具足を繕って使う',S=>{ad(S,{kok:2});return '親の代からの具足を繕った。あちこちに古い傷がある。'}]]},
 {id:'mb_isame',c:S=>samL(S)&&rankOf(S)>=4&&S.y<1590,w:.5,cd:8,
  t:'殿が、勝ち目の薄い出陣を決めた。家中の誰も、異を唱えようとしない。',
- ch:[['命がけで諫める',S=>{if(chance(.45+S.st.mei/300)){ad(S,{mei:6,en:3});return '「お考え直しを」と頭を下げた。殿はしばらく黙り、出陣を取りやめた。'}if(chance(.3)){const l=Math.round(S.koku*.2);ad(S,{koku:-l,mei:-3});return `諫めたが、殿の怒りを買った。知行を${l}石削られた。`}ad(S,{en:-4});return '諫めたが、聞き入れられなかった。出陣は予定どおりだ。'}],
+ ch:[['命がけで諫める',S=>{if(chance(.45+S.st.mei/300+(tki(S,'meikun')?.2:0)-(tki(S,'kanshaku','wagamama')?.15:0))){ad(S,{mei:6,en:3,ko:tki(S,'meikun')?6:2});return '「お考え直しを」と頭を下げた。殿はしばらく黙り、出陣を取りやめた。'}if(chance(.3)){const l=Math.round(S.koku*.2);ad(S,{koku:-l,mei:-3,ko:-6});return `諫めたが、殿の怒りを買った。知行を${l}石削られた。`}ad(S,{en:-4,ko:-3});return '諫めたが、聞き入れられなかった。出陣は予定どおりだ。'}],
      ['黙って従う',S=>{ad(S,{kok:-3});return '黙って従った。武士とは、そういうものだ。'}]]},
 {id:'mb_shiro',c:S=>samL(S)&&rankOf(S)===6,w:.6,cd:6,
  t:'預かる城の城下を、どう治めるか。',
@@ -2006,20 +2036,20 @@ EV.push(
  t:S=>`${lord(S)}の重臣から、代官として取り立てたいという話が来た。銭勘定のできる者が欲しいらしい。`,
  ch:[['刀を差して武士になる',S=>{setJob(S,'samurai');S.koku=150;S.f.daikan=1;ad(S,{mei:5,en:-3});mj('商人から武士に取り立てられる（150石）');return '店を番頭に任せ、刀を差した。算盤を弾く武士は珍しくないが、刀を抜いたことは一度もない。'}],
      ['商人のままでいる',S=>{ad(S,{en:3});return '「刀より算盤のほうが、よほど人を動かせます」と答えた。'}]]},
-{id:'gk_oshikome',c:S=>samL(S)&&(rankOf(S)>=5||S.f.karo)&&S.st.mei>=45&&S.y<1600&&S.age<=62&&!S.f.kenryoku&&!S.f.chugi,w:.8,once:1,k:'big',
- t:'殿は酒色に溺れ、政をかえりみない。重臣たちが集まり、殿を隠居させて若君を立てようという話になった。',
- ch:[['押し込めに加わる',S=>{if(chance(.55+S.st.en/300)){S.f.kenryoku=1;const a=Math.round(S.koku*.3/10)*10;ad(S,{koku:a,mei:8,en:-4});mj('主君を押し込め、家中の実権を握る');return `夜明け前、殿の寝所を囲んで隠居を迫った。殿は座敷に押し込められ、若君が跡を継いだ。家中の実権はこちらに移り、知行も${a}石増えた。`}
+{id:'gk_oshikome',c:S=>samL(S)&&(rankOf(S)>=5||S.f.karo)&&S.st.mei>=45&&S.y<1600&&S.age<=62&&!S.f.kenryoku&&!S.f.chugi&&(!S.tono||isGen(S.tono)&&tki(S,'shushoku','wagamama','yowaki','kanshaku')),w:.8,once:1,k:'big',
+ t:S=>(tki(S,'kanshaku')?'殿の乱行は目に余る。気に入らぬ家臣を、次々とお手打ちにしている。':tki(S,'wagamama')?'殿は寵臣の言いなりで、古くからの家臣を次々と遠ざけている。':tki(S,'yowaki')?'殿は政を投げ出し、何ひとつ決められない。':'殿は酒色に溺れ、政をかえりみない。')+'重臣たちが集まり、殿を隠居させて若君を立てようという話になった。',
+ ch:[['押し込めに加わる',S=>{if(chance(.55+S.st.en/300)){S.f.kenryoku=1;const a=Math.round(S.koku*.3/10)*10;ad(S,{koku:a,mei:8,en:-4});if(S.tono){const n=tonoNew(S,{house:S.tono.house,k:null},'succ',S.tono);n.ko=90;n.om=1;S.tono=n}mj('主君を押し込め、家中の実権を握る');return `夜明け前、殿の寝所を囲んで隠居を迫った。殿は座敷に押し込められ、若君が跡を継いだ。家中の実権はこちらに移り、知行も${a}石増えた。`}
       if(chance(.5)){die(S,'主君の押し込めに失敗し切腹');return '企ては事前に漏れていた。屋敷を囲まれ、腹を切るしかなかった。'}S.job='ronin';S.koku=0;S.f.karo=0;ad(S,{mei:-10});mj('主君押し込めに失敗し出奔');return '企ては漏れた。夜陰にまぎれて国を出奔した。'}],
-     ['殿に密告する',S=>{if(chance(.6)){const a=Math.round(S.koku*.2/10)*10;ad(S,{koku:a,mei:3,en:-8});return `重臣たちは捕らえられた。殿は喜び、${a}石の加増をくれた。家中では「裏切り者」と囁かれている。`}ad(S,{en:-8});return '密告は握りつぶされた。かえって重臣たちに睨まれることになった。'}],
+     ['殿に密告する',S=>{if(chance(.6)){const a=Math.round(S.koku*.2/10)*10;ad(S,{koku:a,mei:3,en:-8,ko:10});return `重臣たちは捕らえられた。殿は喜び、${a}石の加増をくれた。家中では「裏切り者」と囁かれている。`}ad(S,{en:-8});return '密告は握りつぶされた。かえって重臣たちに睨まれることになった。'}],
      ['関わらない',S=>{ad(S,{en:-2});return '病と称して屋敷にこもった。'}]]},
-{id:'gk_gekokujo',c:S=>samL(S)&&((rankOf(S)>=5&&S.st.mei>=45)||S.f.kenryoku)&&warLv(S.y)>0&&S.y<1590&&S.age>=22&&S.age<=60&&!S.f.chugi,w:S=>S.f.kenryoku?1.6:1,cd:5,k:'big',px:S=>S._wpx||'w_field',
+{id:'gk_gekokujo',c:S=>samL(S)&&((rankOf(S)>=5&&S.st.mei>=45)||S.f.kenryoku)&&warLv(S.y)>0&&S.y<1590&&S.age>=22&&S.age<=60&&!S.f.chugi,w:S=>(S.f.kenryoku?1.6:1)*(S.tono?(S.tono.ko<30?1.8:S.tono.ko>=70?.4:1):1),cd:5,k:'big',px:S=>S._wpx||'w_field',
  t:S=>`主家の${lord(S)}は、近ごろ戦に負け続けて力が衰えている。家中の多くの者が、自分を頼りにし始めた。今なら……。`,
  ch:[['兵を挙げて主家を倒す',S=>warGo(S,{nm:'謀反',ty:'siege',big:1,noRet:1,win:.3+S.st.bu/400+S.st.en/400+(S.f.kenryoku?.12:0)+(rankOf(S)>=6?.05:0),
        open:'夜明け前、手勢を率いて主君の城を囲んだ。城門に火矢が射込まれる。',
        fin:(S,r)=>{if(r==='win')return becomeDaimyo(S);if(chance(.55)){die(S,'謀反に失敗して討たれ');return '謀反は失敗した。屋敷を囲まれ、火の中で果てた。'}S.job='ronin';S.koku=0;S.f.karo=0;ad(S,{mei:-15});mj('謀反に失敗し、国を追われる');return '謀反は失敗した。わずかな供を連れ、国を落ち延びた。'}},2)],
      ['今はまだ機を待つ',S=>{ad(S,{chi:2});return '機はまだ熟していない。腹の内は誰にも見せなかった。'}],
      ['あくまで忠義を尽くす',S=>{S.f.chugi=1;ad(S,{mei:8,en:6});return '主家を支え続けると決めた。家中の者は「あの方こそ忠臣」と言った。'}]]},
-{id:'gk_dokuritsu',c:S=>samL(S)&&rankOf(S)===6&&S.y<1590&&warLv(S.y)>0&&S.age<=62&&!S.f.chugi,w:.7,once:1,k:'big',
+{id:'gk_dokuritsu',c:S=>samL(S)&&rankOf(S)===6&&S.y<1590&&warLv(S.y)>0&&S.age<=62&&!S.f.chugi,w:S=>S.tono&&S.tono.ko<30?1.1:.7,once:1,k:'big',
  t:'主家が隣国との戦に大敗した。周りの城主たちが、次々と主家を見限り始めている。',
  ch:[['主家から離れて自立する',S=>{S.f.kunishu=1;ad(S,{mei:4,en:-4});rkSet(S);mj('主家から離れ、国衆として自立する');return '主家に手切れの書状を送った。今日から、この城と周りの村は自分のものだ。'}],
      ['敵方に寝返る',S=>{const a=Math.round(S.koku*.5/10)*10;ad(S,{koku:a,mei:-8});mj(`寝返って${a}石の加増`);return `敵方に城ごと降った。知行は${a}石増えた。古い主家からは、末代までの恨みを買った。`}],
@@ -2094,12 +2124,13 @@ STAGE.push(
 
 /* 下剋上への道をもう少し */
 EV.push(
-{id:'b_shoshin',c:S=>samL(S)&&rankOf(S)>=2&&rankOf(S)<=5&&S.st.mei>=35,w:1,cd:4,
+{id:'b_shoshin',c:S=>samL(S)&&rankOf(S)>=2&&rankOf(S)<=5&&S.st.mei>=35,w:S=>S.tono&&tonoOK(S)?.4+S.tono.ko/70:1,cd:4,
  t:S=>{const a=Math.max(20,Math.round(Math.max(S.koku,50)*.15/10)*10);ad(S,{koku:a,mei:2});return `${pku(['日ごろの勤めぶりが認められ、','城の普請奉行を無事に務め上げ、','国境の砦の守りを長く務めた功で、','殿の使いを見事に果たし、'])}${a}石の加増を受けた。知行は${S.koku}石になった。`},mj:S=>`加増（${S.koku}石）`},
-{id:'gk_kouken',c:S=>samL(S)&&rankOf(S)>=5&&S.st.mei>=45&&warLv(S.y)>0&&S.y<1600&&!S.f.kenryoku&&!S.f.chugi&&S.age<=60,w:.8,once:1,k:'big',
+{id:'gk_kouken',c:S=>samL(S)&&rankOf(S)>=5&&S.st.mei>=45&&warLv(S.y)>0&&S.y<1600&&!S.f.kenryoku&&!S.f.chugi&&S.age<=60&&(!S.tono||isGen(S.tono)),w:.8,once:1,k:'big',
+ e0:S=>{if(S.tono){const n=tonoNew(S,{house:S.tono.house,k:null},'succ',S.tono);n.age=8;n.ko=60;n.om=1;S.tono=n;mj('殿が討死し、幼い若君が跡を継ぐ')}},
  t:'殿が戦で討たれた。跡を継いだ若君は、まだ八つだ。重臣たちは、若君の後見を任せたいと言ってきた。',
- ch:[['後見を引き受ける',S=>{S.f.kenryoku=1;const a=Math.round(S.koku*.2/10)*10;ad(S,{koku:a,mei:6,en:2});mj('幼い主君の後見として実権を握る');return `若君の後見となった。家中の政は、すべて自分を通るようになった。知行も${a}石増えた。`}],
-     ['若君を立てて身を引く',S=>{S.f.chugi=1;ad(S,{mei:6,en:5});return '「若君を盛り立てるのが臣の務め」と、後見を辞した。'}]]},
+ ch:[['後見を引き受ける',S=>{S.f.kenryoku=1;const a=Math.round(S.koku*.2/10)*10;ad(S,{koku:a,mei:6,en:2,ko:25});mj('幼い主君の後見として実権を握る');return `若君の後見となった。家中の政は、すべて自分を通るようになった。知行も${a}石増えた。`}],
+     ['若君を立てて身を引く',S=>{S.f.chugi=1;ad(S,{mei:6,en:5,ko:10});return '「若君を盛り立てるのが臣の務め」と、後見を辞した。'}]]},
 {id:'gk_kokujin',c:S=>samL(S)&&rankOf(S)>=4&&S.st.mei>=40&&S.y<1560&&!S.f.chugi&&S.age<=58&&['土岐家','京極家','富樫家','管領の細川家','細川家','守護の斯波家','守護の上杉家'].includes(lordOf(S.reg,S.y)),w:1.2,once:1,k:'big',px:S=>S._wpx||'w_field',
  t:S=>`守護の${lordOf(S.reg,S.y).replace(/^(守護の|管領の)/,'')}は名ばかりで、国人たちはひそかに集まって守護を追い出そうとしている。その旗頭に担ぎたいと言われた。`,
  ch:[['旗頭となって兵を挙げる',S=>warGo(S,{nm:'国人一揆',ty:'siege',big:1,noRet:1,win:.42+S.st.en/300,open:'国人たちの手勢を集め、守護の館を囲んだ。',
@@ -2121,6 +2152,362 @@ EV.push(
        if(chance(.5)){die(S,'城を乗っ取ろうとして討たれ');return '主家の大軍に城を囲まれ、兵たちにも見放された。'}S.job='ronin';S.koku=0;ad(S,{mei:-8});mj('城の乗っ取りに失敗し、国を追われる');return '主家の大軍が来ると、兵たちは門を開けた。国を追われた。'}],
      ['城を主家に返す',S=>{ad(S,{mei:5,en:4});return '城の鍵を主家の使者に渡した。忠義者と褒められた。'}]]}
 );
+/* ===== 殿（主君）との主従関係 =====
+   殿は、仕えている家の当主。史実の当主がわかる家は実在の人物を、わからない家は名もなき殿を置く。
+   殿の「覚え」（0〜100）は受け答えや手柄で上下し、加増・家老・下剋上などに響く */
+const KI={
+  kanshaku:'気性が激しく、気に入らぬことがあるとすぐに雷が落ちる',
+  meikun:'賢く公平で、下の者の話にもよく耳を傾ける',
+  gotan:'何より武勇を好み、臆病者を嫌う',
+  furyu:'和歌や連歌、茶の湯を好む風流人の',
+  yowaki:'人は良いが、重臣たちの言いなりになりがちな',
+  shincho:'用心深く、何ごとも石橋を叩いて渡る',
+  kawari:'常人には思いもよらぬことをする、変わり者の',
+  shushoku:'酒と遊興を好み、政は家臣任せの',
+  hitotarashi:'気さくで、家臣の名や家族のことまでよく覚えている',
+  utagai:'疑い深く、家臣の動きに目を光らせている',
+  rinshoku:'倹約家で、一文の無駄遣いも許さない',
+  mukuchi:'めったに口をきかず、笑った顔を見た者はほとんどいない',
+  date:'派手好みで、人の目を驚かせるのが何より好きな',
+  wagamama:'お気に入りの側近ばかりを重く用いる',
+  futsu:'良くも悪くも、取り立てて噂のない'
+};
+const KI_W={futsu:3,meikun:1.2,kanshaku:1,gotan:1.2,furyu:1,yowaki:1,shincho:1,rinshoku:.8,hitotarashi:.7,utagai:.8,shushoku:.6,kawari:.5,mukuchi:.5,wagamama:.6};
+const HENKI=['忠','政','長','勝','信','重','康','秀','景','元','家','義','光','頼'];
+
+/* [この年から, 人の印, 名, 気質, 偏諱の字, 代替わりの様子, 先代が亡くなったか, 季節]  印がnullなら名もなき殿 */
+const HEADS={
+'土岐家':[[0,'toki1','土岐成頼','futsu','頼'],[1496,'toki2','土岐政房','futsu','頼','守護家の跡目争い（船田合戦）の末、政房さまが守護を継いだ。'],
+  [1519,'toki3','土岐頼武','yowaki','頼','殿（政房）が亡くなり、頼武さまが守護を継いだ。だが、弟の頼芸さまを推す家臣も多く、家中は割れている。',1],
+  [1535,'toki4','土岐頼芸','furyu|yowaki','頼','兄弟の争いの末、頼芸さまが守護となった。後ろ盾は、長井新九郎（のちの斎藤道三）という油断のならない男だ。']],
+'斎藤家':[[0,'dosan','斎藤道三','kanshaku|utagai','利'],[1554,'yoshitatsu','斎藤義龍','gotan','龍','殿（道三）が隠居し、嫡男の義龍さまが跡を継いだ。だが父子の仲は険悪で、家中にはきな臭い噂が流れている。'],
+  [1561,'tatsuoki','斎藤龍興','shushoku|yowaki','興','殿（義龍）が病で急死した。跡を継いだ龍興さまは、まだ十四だ。',1,'夏']],
+'織田家':[[0,'nobunaga','織田信長','kanshaku|kawari','長'],
+  [1582,'sanboshi','三法師（のちの織田秀信）','yowaki','秀','本能寺で、殿（信長）と若殿の信忠さまが、明智光秀に討たれた。清洲での談合の末、織田家の跡は、まだ三つの三法師さまが継ぐことになった。家中を動かすのは、羽柴秀吉さまや柴田勝家さまたち重臣だ。',1,'夏']],
+'松平家':[[0,null],[1523,'kiyoyasu','松平清康','gotan','康','若い清康さまが家督を継いだ。武勇にすぐれ、三河の国衆を次々と従えているという。'],
+  [1535,'hirotada','松平広忠','yowaki','忠','殿（清康）が、尾張攻めの陣中で家臣に斬られて亡くなった（守山崩れ）。跡を継いだ広忠さまはまだ十だ。家中は大きく揺れている。',1,'冬']],
+'今川家':[[0,'yoshitada','今川義忠','gotan','忠'],
+  [1476,'ujichika','今川氏親','meikun','親','殿（義忠）が遠江での戦の帰りに討たれた。跡目をめぐって家中が割れたが、伊勢新九郎（のちの北条早雲）の取りなしで、幼い龍王丸（のちの氏親）さまが跡を継ぐことに決まった。',1],
+  [1526,'ujiteru','今川氏輝','yowaki','輝','殿（氏親）が亡くなった。跡を継いだ氏輝さまはまだ十四で、母君の寿桂尼さまが政を見ている。',1,'夏'],
+  [1536,'yoshimoto','今川義元','meikun|furyu','元','殿（氏輝）が若くして急死し、跡目をめぐって弟君たちが争った（花倉の乱）。勝ったのは、寺に入っていた栴岳承芳さま、のちの今川義元さまだ。',1,'夏'],
+  [1560,'ujizane','今川氏真','furyu|yowaki','真','殿（義元）が、尾張の桶狭間で討たれた。跡を継いだ氏真さまは、蹴鞠と和歌の名手だという。',1,'夏']],
+'武田家':[[0,'nobumasa','武田信昌','futsu','昌'],[1492,'nobutsuna','武田信縄','futsu','縄','殿（信昌）が隠居し、信縄さまが跡を継いだ。だが弟君の信恵さまとのあいだで、家督をめぐる争いが続いている。'],
+  [1507,'nobutora','武田信虎','kanshaku','虎','殿（信縄）が亡くなり、まだ十四の信虎さまが家督を継いだ。',1],
+  [1541,'shingen','武田晴信（のちの信玄）','meikun|gotan','信','若殿の晴信さまが、駿河の今川家を訪ねた殿（信虎）を、国境を閉ざして締め出した。信虎さまは二度と甲斐に戻れず、晴信さまが新しい殿となった。家臣の多くは、ひそかに胸をなでおろしている。',0,'夏'],
+  [1559,'shingen','武田信玄','meikun|gotan','信'],
+  [1573,'katsuyori','武田勝頼','gotan','勝','殿（信玄）が、三河へ攻め入った陣中で病に倒れ、甲斐へ戻る途中で亡くなった。「三年は死を隠せ」との遺言で、表向きは隠居ということになっている。跡は四郎勝頼さまが継いだ。',1,'春']],
+'徳川家':[[1561,'ieyasu','松平元康（のちの徳川家康）','shincho|rinshoku','康','桶狭間のあと、岡崎城に入った松平元康さまが今川家と手を切り、三河の主として立った。'],
+  [1566,'ieyasu','徳川家康','shincho|rinshoku','康'],[1601,null]],
+'徳川家@owari':[[1601,'tadayoshi','松平忠吉','futsu','吉'],
+  [1607,'yoshinao','徳川義直','meikun','直','殿（忠吉）が若くして病で亡くなり、大御所さまの九男、義直さまが尾張の新しい殿となった。',1,'春'],
+  [1650,'mitsutomo','徳川光友','furyu','友','殿（義直）が亡くなり、光友さまが跡を継いだ。',1,'夏'],[1693,null]],
+'守護の上杉家':[[0,'fusasada','上杉房定','meikun','定'],[1494,'fusayoshi','上杉房能','kanshaku','能','殿（房定）が亡くなり、房能さまが守護を継いだ。守護代の長尾家とのあいだに、冷たい風が吹いている。',1]],
+'長尾家':[[1508,'tamekage','長尾為景','gotan','景','昨年、守護代の長尾為景さまが兵を挙げ、守護の上杉房能さまを自害に追い込んだ。越後の実権は、長尾家のものとなった。'],
+  [1536,'harukage','長尾晴景','yowaki','景','殿（為景）が隠居し、晴景さまが跡を継いだ。体が弱く、国人たちが言うことを聞かないという。'],
+  [1548,'kenshin','長尾景虎（のちの上杉謙信）','gotan|furyu','景','殿（晴景）が隠居し、弟君の景虎さまが跡を継いだ。まだ十九だが、戦にかけては並ぶ者がないという。',0,'冬']],
+'上杉家':[[0,'kenshin','上杉謙信','gotan|furyu','景'],
+  [1578,'kagekatsu','上杉景勝','mukuchi','勝','殿（謙信）が春日山城で倒れ、そのまま亡くなった。跡目をめぐって、二人の養子、景勝さまと景虎さまが争い始めた（御館の乱）。',1,'春']],
+'堀家':[[0,'horihide','堀秀治','futsu','秀'],[1606,'tadatoshi','堀忠俊','yowaki','俊','殿（秀治）が亡くなり、まだ幼い忠俊さまが跡を継いだ。',1,'夏']],
+'北条家':[[0,'soun','伊勢宗瑞（北条早雲）','meikun','盛'],
+  [1519,'ujitsuna','北条氏綱','meikun','綱','殿の伊勢宗瑞さまが、長い生涯を終えた。跡を継いだ氏綱さまは、やがて家の名を「北条」と改めた。',1,'秋'],
+  [1541,'ujiyasu','北条氏康','meikun|gotan','康','殿（氏綱）が亡くなり、氏康さまが跡を継いだ。',1,'夏'],
+  [1559,'ujimasa','北条氏政','futsu','政','殿（氏康）が隠居し、氏政さまが家督を継いだ。もっとも、大事なことはまだ御隠居さまが決めている。'],
+  [1580,'ujinao','北条氏直','yowaki','直','殿（氏政）が隠居し、まだ若い氏直さまが跡を継いだ。']],
+'浅井家':[[0,'sukemasa','浅井亮政','gotan','政'],[1542,'hisamasa','浅井久政','yowaki','久','殿（亮政）が亡くなり、久政さまが跡を継いだ。南近江の六角家に押され気味だという。',1],
+  [1560,'nagamasa','浅井賢政（のちの長政）','gotan','政','家臣たちが、六角家に頭の上がらない殿（久政）を隠居させ、十六の若殿・賢政（のちの長政）さまを立てた。'],
+  [1561,'nagamasa','浅井長政','gotan','政']],
+'細川家':[[0,'katsumoto','細川勝元','meikun','元'],[1473,'masamoto','細川政元','kawari','元','殿（勝元）が亡くなり、まだ八つの政元さまが跡を継いだ。',1,'夏'],
+  [1507,'takakuni','細川高国','futsu','国','殿（政元）が、湯殿で行水をしているところを家臣に襲われ、殺された。養子たちの跡目争いの末、高国さまが細川家の主となった。',1,'夏'],
+  [1531,'harumoto','細川晴元','utagai','元','殿（高国）が摂津の戦（大物崩れ）に敗れ、自害させられた。新しい主は細川晴元さまだ。',1,'夏']],
+'三好家':[[0,'nagayoshi','三好長慶','furyu|meikun','長'],[1564,'yoshitsugu','三好義継','yowaki','継','殿（長慶）が、弟君や嫡男を相次いで亡くした末に、病で亡くなった。跡を継いだ義継さまはまだ若く、三好三人衆と松永久秀が実権を握っている。',1,'夏']],
+'豊臣家':[[0,'hideyoshi','羽柴秀吉','hitotarashi|date','秀'],[1586,'hideyoshi','豊臣秀吉','hitotarashi|date','秀'],
+  [1598,'hideyori','豊臣秀頼','yowaki','頼','太閤（秀吉）さまが伏見城で亡くなった。跡を継いだ秀頼さまは、まだ六つだ。政は五大老と五奉行に託された。',1,'秋']],
+'富樫家':[[0,'masachika','富樫政親','futsu','親']],
+'前田家':[[0,'toshiie','前田利家','rinshoku|gotan','利'],[1599,'toshinaga','前田利長','shincho','長','殿（利家）が大坂の屋敷で亡くなり、利長さまが跡を継いだ。',1,'春'],
+  [1605,'toshitsune','前田利常','kawari','常','殿（利長）が隠居し、弟君の利常さまが跡を継いだ。'],
+  [1639,'mitsutaka','前田光高','futsu','高','殿（利常）が隠居し、光高さまが跡を継いだ。'],
+  [1645,'tsunanori','前田綱紀','meikun','紀','殿（光高）が急死した。跡を継いだ綱紀さまはわずか三つで、御隠居の利常さまが後見についた。',1,'春']],
+'大内家':[[0,'masahiro','大内政弘','furyu','弘'],[1495,'yoshioki','大内義興','gotan','興','殿（政弘）が亡くなり、義興さまが跡を継いだ。',1],
+  [1529,'yoshitaka','大内義隆','furyu|yowaki','隆','殿（義興）が亡くなり、義隆さまが跡を継いだ。',1],
+  [1551,'yoshinaga','大内義長','yowaki','長','重臣の陶隆房（晴賢）が謀反を起こし、殿（義隆）は長門の大寧寺で自害に追い込まれた。陶は、豊後の大友家から晴英さま（のちの義長）を新しい殿として迎えることに決めた。',1,'秋']],
+'毛利家':[[0,'motonari','毛利元就','shincho','元'],[1571,'terumoto','毛利輝元','futsu','元','殿（元就）が七十五で亡くなった。跡は孫の輝元さまが継ぎ、叔父の吉川元春さまと小早川隆景さまが支える。',1,'夏']],
+'福島家':[[0,'masanori','福島正則','kanshaku|gotan','正']],
+'浅野家':[[0,'nagaakira','浅野長晟','futsu','長'],[1632,'mitsuakira','浅野光晟','meikun','晟','殿（長晟）が亡くなり、光晟さまが跡を継いだ。',1,'秋']],
+'大友家':[[0,'sorin','大友宗麟','kawari|furyu','鎮']],
+'小早川家':[[0,'takakage','小早川隆景','meikun','景'],[1595,'hideaki','小早川秀秋','yowaki','秀','殿（隆景）が隠居し、太閤の正室の甥にあたる秀秋さまが、養子として跡を継いだ。']],
+'黒田家':[[0,'nagamasa','黒田長政','gotan','長'],[1623,'tadayuki','黒田忠之','wagamama','忠','殿（長政）が亡くなり、忠之さまが跡を継いだ。',1,'秋'],[1654,'mitsuyuki','黒田光之','futsu','光','殿（忠之）が亡くなり、光之さまが跡を継いだ。',1]],
+'島津家':[[0,'tatsuhisa','島津立久','futsu','久'],[1474,'tadamasa','島津忠昌','furyu','忠','殿（立久）が亡くなり、忠昌さまが跡を継いだ。',1],
+  [1508,'tadaharu','島津忠治','futsu','忠','国人たちの反乱に悩んだ殿（忠昌）が、自ら命を絶った。跡は忠治さまが継いだ。',1,'春'],
+  [1515,'tadataka','島津忠隆','futsu','隆','殿（忠治）が陣中で亡くなり、弟君の忠隆さまが跡を継いだ。',1],
+  [1519,'katsuhisa','島津勝久','yowaki','勝','殿（忠隆）が亡くなり、弟君の勝久さまが跡を継いだ。',1],
+  [1526,'takahisa','島津貴久','meikun','久','国が乱れるなか、分家の島津忠良さまの子・貴久さまが、本家の勝久さまの養子となって跡を継いだ。'],
+  [1566,'yoshihisa','島津義久','meikun','久','殿（貴久）が隠居し、義久さまが家督を継いだ。弟君の義弘・歳久・家久さまも、それぞれ戦上手で知られる。'],
+  [1602,'iehisa','島津忠恒（のちの家久）','kanshaku','恒','義久さまの跡は、弟君の義弘さまの子・忠恒（のちの家久）さまが継いだ。'],
+  [1607,'iehisa','島津家久','kanshaku','恒'],
+  [1638,'mitsuhisa','島津光久','futsu','久','殿（家久）が亡くなり、光久さまが跡を継いだ。',1]],
+'伊達家':[[0,'shigemune','伊達成宗','futsu','宗'],[1487,'hisamune','伊達尚宗','futsu','宗','殿（成宗）が亡くなり、尚宗さまが跡を継いだ。',1],
+  [1514,'tanemune','伊達稙宗','gotan','宗','殿（尚宗）が亡くなり、稙宗さまが跡を継いだ。',1],
+  [1548,'harumune','伊達晴宗','futsu','宗','六年にわたる父子の争い（天文の乱）の末、先代の稙宗さまが隠居し、晴宗さまが家督を継いだ。',0,'秋'],
+  [1565,'terumune','伊達輝宗','meikun','宗','殿（晴宗）が隠居し、輝宗さまが跡を継いだ。'],
+  [1584,'masamune','伊達政宗','date|gotan','宗','殿（輝宗）が隠居し、十八の若殿・政宗さまが家督を継いだ。幼いころの疱瘡で右目の光を失っているが、気性の激しい方だという。',0,'秋'],
+  [1636,'tadamune','伊達忠宗','meikun','宗','殿（政宗）が江戸の屋敷で亡くなった。後を追って腹を切る家臣が、十五人も出た。跡は忠宗さまが継いだ。',1,'夏'],
+  [1658,'tsunamune','伊達綱宗','shushoku','宗','殿（忠宗）が亡くなり、綱宗さまが跡を継いだ。',1,'夏'],
+  [1660,'tsunamura','伊達綱村','yowaki','村','殿（綱宗）が、遊興にふけっていると幕府に咎められ、二十一で隠居させられた。跡を継いだ綱村さまは、わずか二つだ。家中に不穏な空気が流れている。',0,'夏']]
+};
+HEADS['管領の細川家']=HEADS['細川家'];
+
+/* --- 殿を調べる --- */
+const tonoOK=S=>S.job==='samurai'&&hasLord(S)&&lord(S)!=='一向門徒の惣国';
+const tnS=S=>!!S.tono&&tonoOK(S)&&adult(S)&&!!S.tono.om;
+const tnR=(S,a,b)=>tnS(S)&&rankOf(S)>=a&&rankOf(S)<=(b??9);
+const kiOf=S=>S.tono?S.tono.ki.split('|'):[];
+const tki=(S,...k)=>!!S.tono&&kiOf(S).some(x=>k.includes(x));
+const tnm=S=>S.tono&&S.tono.nm?`殿（${S.tono.nm.replace(/（[^）]*）/g,'')}）`:'殿';
+const koLv=v=>v>=80?'めでたい':v>=60?'よい':v>=40?'ふつう':v>=20?'薄い':'悪い';
+const isGen=t=>!!t&&String(t.k).startsWith('g:');
+/* 恩賞の多い少ない（殿の気質と覚え） */
+const tonoMul=S=>!S.tono||!tonoOK(S)?1:(tki(S,'rinshoku')?.75:1)*(tki(S,'hitotarashi')?1.25:1)*(S.tono.ko>=80?1.15:S.tono.ko<20?.8:1);
+function tonoHead(S){
+  const house=lord(S);
+  const L=HEADS[house+'@'+S.reg]||HEADS[house];
+  let e=null;if(L)for(const x of L)if(x[0]<=S.y)e=x;
+  if(!e||!e[1])return {house,k:null};
+  return {house,y:e[0],k:e[1],nm:e[2],ki:e[3],h:e[4],how:e[5]||'',die:!!e[6],s:e[7]};
+}
+function tonoList(S,nm){const L=S.f.tonos||(S.f.tonos=[]);if(nm&&!L.includes(nm))L.push(nm)}
+function tonoNew(S,h,mode,o){
+  const gen=o&&o.house===h.house?(o.gen||1)+1:1;
+  const t={house:h.house,k:h.k||('g:'+h.house+':'+S.y),nm:h.nm||'',ki:h.ki||wpick(Object.keys(KI_W),x=>KI_W[x]),h:h.h||pick(HENKI),
+    age:h.k?0:(mode==='succ'?rnd(12,30):rnd(25,50)),ko:30,y0:S.y,gen,om:0};
+  if(mode==='start'){t.ko=(S.cls==='buke'&&S.lord0===h.house)?rnd(36,46):rnd(24,34);if(S.f.koshou)t.ko+=12}
+  else if(mode==='shinsan')t.ko=rnd(20,30);
+  tonoList(S,t.nm||h.house.replace(/^(守護の|管領の)/,'').replace(/の諸将$/,'')+'の殿');
+  return t;
+}
+/* 名もなき殿の老いと死（その年に一度だけ振る） */
+function tonoRoll(S){const t=S.tono;if(!isGen(t))return '';
+  if(t.ry!==S.y){t.ry=S.y;t.age++;t.rr=chance(mort(t.age)*1.1)?'die':(t.age>=52&&chance(.05)?'inkyo':'')}
+  return t.rr}
+function tonoNeed(S){
+  if(!tonoOK(S))return !!S.tono;
+  if(!S.tono)return true;
+  const h=tonoHead(S),o=S.tono;
+  if(h.house!==o.house)return true;
+  if(h.k)return h.k!==o.k||h.nm!==o.nm;
+  if(!isGen(o))return true;
+  return !!tonoRoll(S);
+}
+function tonoApply(S){
+  const I={t:'',die:0,oldKo:0,junshi:0};
+  if(!tonoOK(S)){S.tono=null;return I}
+  const o=S.tono,h=tonoHead(S);
+  if(!o){S.tono=tonoNew(S,h,'start');return I}
+  if(h.house!==o.house){
+    if(h.k&&h.k===o.k){o.house=h.house;o.nm=h.nm;tonoList(S,h.nm);return I}
+    S.f.moriyaku=0;S.tono=tonoNew(S,h,'shinsan',o);
+    if(h.how&&h.y===S.y)I.t=h.how;
+    else if(fallOf(S.reg,S.y))I.t=`新しい主家の${h.house}で、新参者として一から出直すことになった。古参の家臣たちの目は冷たい。`;
+    else I.t=`${h.house}が${kuni(S)}の新しい主となった。家臣たちは、そのまま新しい殿に仕えることになった。`;
+    return I;
+  }
+  if(h.k&&h.k===o.k){o.nm=h.nm;tonoList(S,h.nm);return I}
+  /* 代替わり */
+  const die=h.k?h.die:(isGen(o)?o.rr!=='inkyo':true);
+  let t=h.k?h.how:'';
+  if(!t)t=h.k?`殿が代わり、${h.nm}さまが新しい殿となった。`:die?pku(['殿が病に倒れ、そのまま亡くなった。','殿が急な病で亡くなった。','殿が、長く患った末に亡くなった。'])+'若殿が跡を継いだ。':'殿が隠居し、若殿が家督を継いだ。';
+  const n=tonoNew(S,h,'succ',o);
+  let ko=Math.round(o.ko*.4+24),tail='';
+  if(S.f.moriyaku){ko=Math.max(ko,80);tail='守役として育てた若君が、新しい殿となった。';S.f.moriyaku=0}
+  else if(o.ko>=80){ko=Math.min(ko,36);tail='先代に重く用いられた者は、新しい殿の側近たちからは煙たがられるものだ。'}
+  else if(S.f.wakaKo){ko+=S.f.wakaKo}
+  S.f.wakaKo=0;
+  n.ko=clamp(ko,0,100);S.tono=n;
+  I.t=t+tail;I.die=die?1:0;I.oldKo=o.ko;
+  I.junshi=die&&o.ko>=70&&S.y<1663&&rankOf(S)>=3&&S.age>=18?1:0;
+  if(die&&o.ko>=70&&S.y>=1663)I.t+='殉死は、幕府の御法度で禁じられている。';
+  mj(`殿の代替わり（${n.nm||'若殿'}）`);
+  return I;
+}
+/* 長く仕えるほど、少しずつ覚えがよくなる（よすぎる覚えは、放っておくと少し冷める） */
+function tonoYear(S){const t=S.tono;if(!tonoOK(S))return;
+  if(t.ko<65&&chance(.55+rankOf(S)*.04))t.ko++;else if(t.ko>85&&chance(.3))t.ko--}
+const TN_SEASON=S=>{try{if(!tonoOK(S))return undefined;const h=tonoHead(S);return h.k&&h.y===S.y&&h.s||undefined}catch(x){return undefined}};
+
+STAGE.push({id:'tono_chk',rep:1,k:'big',get s(){return S?TN_SEASON(S):undefined},c:S=>tonoNeed(S),
+ e0:S=>{S._tn=tonoApply(S)},t:S=>S._tn?S._tn.t:'',
+ ch:[['追い腹を切って、殿のお供をする',S=>{die(S,'先代の殿に殉じて切腹');ad(S,{mei:15});mj('先代の殿に殉じて追い腹を切る');
+      return pku(['殿の葬儀の翌日、屋敷で静かに腹を切った。文机の上に「御供つかまつる」とだけ書き残してあった。','菩提寺で殿の墓に一礼し、その場で腹を切った。'])},S=>!!(S._tn&&S._tn.junshi),'ここで命を絶つ。その忠義は長く語り継がれる'],
+     ['髪を下ろして、先代の菩提を弔う',S=>{const h=heir(S);shukke(S);S.koku=0;S.tono=null;ad(S,{kok:4,mei:3});mj('先代の殿の菩提を弔うため出家');
+      return (h?`家督を${h.nm}に譲り、`:'')+'髪を下ろした。寺に入り、朝夕、先代の殿のために経を読む身となった。'},S=>!!(S._tn&&S._tn.die&&S._tn.oldKo>=45&&S.age>=25),'武士をやめて僧になる'],
+     ['新しい殿にお仕えする',S=>{ad(S,{kok:-3});return pku(['涙をこらえて、新しい殿の前に平伏した。','先代の分まで、新しい殿にお仕えしようと心に決めた。'])},S=>!!(S._tn&&S._tn.die&&S._tn.oldKo>=45),'これまでどおり仕える']]});
+
+/* ===== 殿との出来事 ===== */
+/* --- 目通り（殿が代わるたびに一度。必ず起きる） --- */
+STAGE.push({id:'tn_omemie',rep:1,c:S=>!!S.tono&&tonoOK(S)&&adult(S)&&!S.tono.om,k:'big',e0:S=>{S.tono.om=1},
+ t:S=>{const t=S.tono;const a=t.gen>1&&S.y-t.y0<=1?`代替わりした${tnm(S)}に、改めて目通りした。`:rankOf(S)<=2?`${tnm(S)}の御前に、ほかの侍たちと並んで目通りした。`:`${tnm(S)}に目通りした。`;
+   return a+`${KI[kiOf(S)[0]]}お方だという。`},
+ ch:[['堂々と名乗りを上げる',S=>{if(tki(S,'gotan','kanshaku','date','hitotarashi')){ad(S,{ko:7,mei:2});return '殿は「良い面構えじゃ」と、こちらの顔をしげしげと見た。'}
+       if(tki(S,'utagai','shincho','mukuchi')){ad(S,{ko:1});return '殿は何も言わず、こちらをじっと見ていた。'}ad(S,{ko:4,mei:1});return '殿は小さくうなずいた。'},null,'武を好む殿や派手好みの殿には気に入られやすい'],
+     ['平伏して控えめにする',S=>{if(tki(S,'utagai','shincho','meikun','rinshoku','mukuchi')){ad(S,{ko:6});return '殿は「慎み深い者よ」と、そばの者に言ったらしい。'}
+       if(tki(S,'gotan','date')){ad(S,{ko:-2});return '殿は「覇気がないのう」とつぶやいた。'}ad(S,{ko:2});return '平伏したまま、目通りは終わった。'},null,'用心深い殿や公平な殿には好まれやすい'],
+     ['気の利いた一言を添える',S=>{if(chance(.4+S.st.chi/250)){ad(S,{ko:tki(S,'hitotarashi','furyu','kawari','date')?10:6,mei:1});return '殿はふっと笑った。「面白い奴じゃ。名は何と申したか」'}
+       if(tki(S,'kanshaku','utagai')){ad(S,{ko:-7});return '「誰が口をきけと申した」と、殿の雷が落ちた。'}ad(S,{ko:-2});return '気の利いたつもりの一言は、誰にも笑われずに宙に浮いた。'},null,S=>`知しだい（今の知${S.st.chi}）。気性の激しい殿や疑い深い殿だとしくじったときが怖い`]]});
+
+EV.push(
+/* --- 殿のそばで --- */
+{id:'tn_makigari',c:S=>tnR(S,2,7)&&S.age<=55&&S.y<1650,w:S=>tki(S,'gotan','date')?1.2:.6,cd:6,
+ t:'殿の巻狩りに加わった。勢子が山を囲んで獣を追い出し、武者たちが馬で射止める。戦の稽古も兼ねた大がかりな狩りだ。',
+ ch:[['猪の前に馬を進める',S=>{if(chance(.45+S.st.bu/250)){ad(S,{ko:6,mei:4,bu:1});return '突進してきた大猪に、真正面から矢を射込んだ。殿が手を打って喜んだ。'}
+       if(chance(.3)){ad(S,{tai:-8,mei:-1});return '猪の牙に馬の脚をやられ、落馬した。'}ad(S,{mei:-1});return '矢は外れ、猪は藪の中へ消えた。'},null,S=>`武しだい（今の武${S.st.bu}）。しくじると落馬することも`],
+     ['殿のそばを離れずに控える',S=>{ad(S,{ko:2});return '殿の馬の脇に控え、獲物が来るたびに矢を手渡した。'},null,'覚えが少し上がる']]},
+{id:'tn_renga',c:S=>tnR(S,3),w:S=>tki(S,'furyu')?1.5:.35,cd:5,
+ t:'殿の催す連歌の会に、末席で加わることになった。上の句に、下の句を付けていく遊びだ。',
+ ch:[['思い切って句を付ける',S=>{if(chance(.35+S.st.chi/180)){ad(S,{ko:tki(S,'furyu')?8:4,chi:2,mei:2});return '殿が「よう付けた」と膝を打った。'}ad(S,{mei:-1,ko:-1});return '季の言葉を取り違え、座がしんとなった。'},null,S=>`知しだい（今の知${S.st.chi}）。風流好みの殿なら大いに気に入られる`],
+     ['執筆（書き役）を買って出る',S=>{ad(S,{ko:2,chi:1});return '皆の句を、懐紙に丁寧に書き留めた。'},null,'無難。覚えが少し上がる'],
+     ['腹痛と称して逃げる',S=>{ad(S,{ko:tki(S,'furyu')?-4:-1});return '仮病を使って席を外した。'},null,'恥はかかないが、覚えが下がる']]},
+{id:'tn_chakai',c:S=>tnR(S,3)&&S.y>=1550,w:S=>tki(S,'furyu','date')?1.4:.4,cd:6,
+ t:'殿の茶会に招かれた。床の間には、殿ご自慢の名物の茶入れが飾られている。',
+ ch:[['名物の茶入れをほめる',S=>{if(tki(S,'furyu','date')){ad(S,{ko:7,chi:1});return '殿は嬉しそうに、その茶入れを手に入れた経緯を半刻も語った。'}ad(S,{ko:2});return '殿は「わかるか」と目を細めた。'},null,'道具自慢の殿なら大いに喜ぶ'],
+     ['作法どおり、静かにいただく',S=>{ad(S,{ko:2,chi:2});return '作法どおりに茶をいただいた。粗相はなかった。'}],
+     ['茶の湯は不調法だと正直に言う',S=>{if(tki(S,'furyu','date')){ad(S,{ko:-4});return '殿の顔から、すっと笑みが消えた。'}ad(S,{ko:1,en:1});return '殿は笑って「正直でよい」と言った。'},null,'風流好みの殿だと覚えが下がる']]},
+{id:'tn_shiai',c:S=>tnR(S,1)&&S.age<=45,w:S=>tki(S,'gotan')?1.5:.4,cd:5,
+ t:'殿の御前で、家臣どうしの槍試合が催された。',
+ ch:[['名乗り出て試合う',S=>{if(chance(.35+S.st.bu/180)){ad(S,{ko:tki(S,'gotan')?8:4,mei:4,bu:1});return '相手の槍を巻き落とし、胸元に穂先を突きつけた。殿が床几から立ち上がった。'}ad(S,{tai:-4,mei:-1});return '三本勝負で二本取られた。脇腹に青あざが残った。'},null,S=>`武しだい（今の武${S.st.bu}）。武を好む殿なら覚えが大きく上がる`],
+     ['見物に回る',S=>{ad(S,{ko:tki(S,'gotan')?-1:0});return '見物の列から、試合を眺めた。'}]]},
+{id:'tn_sosou',c:S=>tnR(S,2),w:.35,once:1,
+ t:'殿の御前で、緊張のあまり、手にした茶をこぼしてしまった。殿の袴に茶のしみが広がっていく。',
+ ch:[['額を畳にこすりつけて詫びる',S=>{if(tki(S,'kanshaku')){ad(S,{ko:-5});return '殿の雷が落ちた。その日は、生きた心地がしなかった。'}ad(S,{ko:-1});return '殿は「よい、よい」と手を振った。'},null,'癇癪持ちの殿だと覚えが下がる'],
+     ['「袴に新しい模様が」と笑いに変える',S=>{if(tki(S,'hitotarashi','kawari','date','shushoku')){ad(S,{ko:5,en:2});return '殿が吹き出した。以来、殿はこの話を何度も人にするようになった。'}if(tki(S,'kanshaku','utagai','mukuchi')){ad(S,{ko:-8});return 'あたりが凍りついた。殿は無言で席を立った。'}ad(S,{ko:1});return '殿は苦笑いした。'},null,'気さくな殿なら気に入られる。気難しい殿だと大しくじり']]},
+
+/* --- 殿の気質による出来事 --- */
+{id:'tn_kanshaku',c:S=>tnR(S,2)&&tki(S,'kanshaku'),w:1.3,cd:5,k:'big',
+ t:'評定の席で殿の機嫌が悪く、茶坊主が茶をこぼしただけで、殿が刀に手をかけた。',
+ ch:[['身を挺して茶坊主をかばう',S=>{if(chance(.5+S.st.mei/300)){ad(S,{ko:3,en:5,mei:2});return '「お手打ちは、どうかご容赦を」と平伏した。殿は刀から手を離した。あとで「ようとめた」と、ぽつりと言われた。'}
+       ad(S,{ko:-8});return '「その方も斬られたいか」と怒鳴られ、しばらく出仕を止められた。茶坊主の命は助かった。'},null,S=>`名しだい（今の名${S.st.mei}）。しくじると覚えが大きく下がる`],
+     ['黙って見ている',S=>{ad(S,{kok:-4});return chance(.5)?'殿はやがて刀から手を離した。誰も口をきかなかった。':'茶坊主は、その場でお手打ちになった。誰も止めなかった。自分も。'},null,'覚えは変わらないが、心が沈む'],
+     ['すかさず別の話を持ち出す',S=>{if(chance(.4+S.st.chi/250)){ad(S,{ko:2,chi:1});return '「ところで殿、国境の砦のことで」と切り出すと、殿の目がそちらへ向いた。'}ad(S,{ko:-3});return '「今、その話か」と、怒りの矛先がこちらへ向いた。'},null,S=>`知しだい（今の知${S.st.chi}）`]]},
+{id:'tn_kanshaku2',c:S=>tnR(S,3)&&tki(S,'kanshaku'),w:.8,once:1,
+ t:'殿が書状の出来に腹を立て、硯を投げつけた。こちらの額に当たった。あとで、殿の小姓がこっそり膏薬を届けてきた。',fx:{tai:-3,kok:-2,ko:1}},
+{id:'tn_sokkin',c:S=>tnR(S,3)&&tki(S,'shushoku','wagamama','yowaki'),w:1.2,cd:6,
+ t:S=>tki(S,'shushoku')?'殿が酒宴にふけるあいだに、お気に入りの側近が賄賂を取って、知行の割り振りを勝手に決めている。':'殿のお気に入りの側近が、殿の名を借りて家中の政を勝手に動かしている。',
+ ch:[['殿に直言する',S=>{if(chance(.3+S.st.mei/300+S.tono.ko/400)){ad(S,{ko:4,mei:5});return '殿は渋い顔をしたが、側近を遠ざけた。家中の者たちが、こっそり礼を言いに来た。'}ad(S,{ko:-10,mei:2});return '「わしの目が節穴だと申すか」と、殿の不興を買った。側近は勝ち誇った顔をしている。'},null,S=>`名と覚えしだい（覚え${koLv(S.tono.ko)}）。しくじると覚えが大きく下がる`],
+     ['側近に付け届けをする',S=>{ad(S,{kan:-Math.min(S.kan,3),ko:4,mei:-2});return '側近に銭を包んだ。次の評定から、こちらの申し出がすんなり通るようになった。'},null,'銭で覚えを買う。名は少し落ちる'],
+     ['見て見ぬふりをする',S=>{ad(S,{en:-2});return '何も言わなかった。家中の空気が、少しずつ濁っていく。'}]]},
+{id:'tn_kenyaku',c:S=>tnR(S,2)&&tki(S,'rinshoku'),w:1.1,cd:6,
+ t:'殿から倹約のお触れが出た。家臣の屋敷の普請も、衣服の新調も、宴も控えよという。',
+ ch:[['率先して倹約する',S=>{ad(S,{kan:2,ko:3});return '継ぎの当たった着物で出仕した。殿が満足げにうなずいた。'},null,'銭が浮き、覚えも上がる'],
+     ['こっそり贅沢を続ける',S=>{if(chance(.35)){ad(S,{ko:-7});return '新調した羽織を目付に見咎められ、殿に知れた。'}ad(S,{kok:3});return '屋敷の中でだけ、うまい酒を飲んだ。'},null,'三割五分ほどで見つかる']]},
+{id:'tn_kenyaku2',c:S=>tnR(S,2)&&tki(S,'rinshoku')&&senran(S),w:.8,once:1,
+ t:'戦の恩賞の代わりに、殿直筆の感状だけが渡された。「銭は出せぬが、名は残る」とのことだ。',fx:{mei:3,ko:1}},
+{id:'tn_utagai',c:S=>tnR(S,2)&&tki(S,'utagai','shincho'),w:1,cd:6,
+ t:'殿の目付が、屋敷に出入りする者を調べているらしい。他国の商人と会ったことが、殿の耳に入ったようだ。',
+ ch:[['自ら殿に申し開きをする',S=>{if(chance(.45+S.st.chi/250)){ad(S,{ko:3});return '商人とは米の値の話をしただけだと、帳面を見せて説明した。殿は納得した。'}ad(S,{ko:-4});return '申し開きをしたが、かえって「なぜ自分から言いに来た」と怪しまれた。'},null,S=>`知しだい（今の知${S.st.chi}）`],
+     ['起請文を差し出して、二心なきを誓う',S=>{ad(S,{ko:4,kok:-2});return '牛王宝印の紙に誓いを書き、血判を押して差し出した。'},null,'確実に覚えが少し上がる'],
+     ['気にせず放っておく',S=>{if(chance(.4)){ad(S,{ko:-10});return '疑いは深まった。廊下で会っても、殿は目を合わせなくなった。'}return '何事も起こらなかった。'},null,'四割ほどで覚えが大きく下がる']]},
+{id:'tn_kawari',c:S=>tnR(S,2)&&tki(S,'kawari','date'),w:1.1,cd:5,
+ t:S=>pku([S.y>=1550?'殿が、南蛮渡りの帽子とマントを身につけて評定に現れた。家臣は誰も笑えない。':'殿が、山伏の装束で評定に現れた。家臣は誰も笑えない。','殿が家臣を集めて相撲を取らせた。勝ち抜いた者には褒美を出すという。','殿の命で、次の出陣では皆、人目を驚かせる派手な飾りの兜をかぶることになった。']),
+ ch:[['殿に合わせて面白がる',S=>{ad(S,{ko:5,kan:-Math.min(S.kan,2)});return '殿に合わせて大いに楽しんだ。殿は「話のわかる奴よ」と上機嫌だった。'},null,'覚えが上がる。少し銭がかかる'],
+     ['眉をひそめて距離を置く',S=>{ad(S,{ko:-3,mei:1});return '古参の家臣たちと、眉をひそめて見ていた。'},null,'覚えが下がる']]},
+{id:'tn_hito',c:S=>tnS(S)&&tki(S,'hitotarashi'),w:1.2,cd:6,
+ t:S=>`廊下ですれ違った殿が、足を止めて「おう、${S.nm}。${married(S)?(liveKids(S).length?'子らは息災か':'女房どのは達者か'):'早う嫁をもらえ'}」と声をかけてきた。名を覚えてもらっていた。`,fx:{ko:4,kok:4,en:1}},
+{id:'tn_meikun',c:S=>tnR(S,3)&&tki(S,'meikun'),w:1.1,cd:6,
+ t:'殿が評定の席で、末席の者にまで意見を求めた。領内の年貢をどうするかという話だ。',
+ ch:[['思い切って意見を述べる',S=>{if(chance(.4+S.st.chi/200)){ad(S,{ko:6,mei:3,chi:1});return '村の暮らしぶりを話すと、殿は筆を取って書き留めた。翌月、年貢の決まりが少し改められた。'}ad(S,{ko:1});return '意見を述べた。殿は黙って聞いていた。'},null,S=>`知しだい（今の知${S.st.chi}）。うまく言えば覚えが大きく上がる`],
+     ['上役に任せて黙っている',S=>'上役たちの話を、黙って聞いていた。']]},
+{id:'tn_mukuchi',c:S=>tnR(S,2)&&tki(S,'mukuchi'),w:1,once:1,
+ t:'大役を果たして戻ると、殿は黙ってこちらを見て、ひとつうなずいた。それだけで、家中では大変な誉れだという。',fx:{ko:5,mei:2,kok:3}},
+
+/* --- 覚えがよいと --- */
+{id:'tn_haryo',c:S=>tnR(S,2)&&S.tono.ko>=60&&(S.f.haryo||[]).length<2,w:S=>.4+S.tono.ko/150,cd:8,k:'big',
+ e0:S=>{S.f._hr=pku(S.y>=1550?['刀','脇差','陣羽織','茶碗','馬','扇','鉄砲']:['刀','脇差','陣羽織','茶碗','馬','扇'])},
+ t:S=>`日ごろの奉公を賞して、殿から${S.f._hr}を拝領した。`,
+ fx:{mei:4,kok:5,ko:2},mj:S=>{(S.f.haryo||(S.f.haryo=[])).push(S.f._hr);return `殿から${S.f._hr}を拝領`}},
+{id:'tn_henki',c:S=>tnR(S,3)&&S.tono.ko>=70&&!S.f.imina,w:.9,once:1,k:'big',
+ e0:S=>{const h=S.tono.h,ng=['信長','信玄','家康','秀吉','秀頼','秀忠','政宗','信忠','勝頼','長政','元就','氏康','義元','景勝','利家','輝元','義昭','秀長','信康','忠勝','長秀','元康','直政','勝家','景虎','家光','忠長','忠吉','光秀','清正','正則','長重','利長','秀次','秀家','秀秋','信政','長吉'];
+   const c=['房','綱','信','長','政','忠','家','勝','重','景','秀','久','元','直','清','貞','成','高','次','安','正','吉','広','義'].map(x=>h+x).filter(x=>x[0]!==x[1]&&!ng.includes(x)&&!(S.tono.nm||'').includes(x));S.f._im=pick(c)},
+ t:S=>`${tnm(S)}から、名の一字「${S.tono.h}」を賜ることになった。これからは諱（いみな）を「${S.f._im}」と名乗る。主君から名の字をいただくのは、家臣として大きな誉れだ。`,
+ ch:[['ありがたく頂戴する',S=>{S.f.imina=S.f._im;ad(S,{ko:5,mei:6});mj(`殿から一字を賜り、諱を「${S.f.imina}」とする`);return `諱を「${S.f.imina}」と改めた。書状の署名を書くたび、背筋が伸びる。`},null,'覚えと名が上がる'],
+     ['畏れ多いと辞退する',S=>{if(tki(S,'kanshaku','date')){ad(S,{ko:-6});return '「わしの字が気に入らぬか」と、殿は不機嫌になった。'}ad(S,{ko:-1,en:1});return '辞退した。殿は「欲のない奴よ」と苦笑いした。'},null,'気性の激しい殿だと覚えが下がる']]},
+{id:'tn_endan',c:S=>tnS(S)&&S.sex==='m'&&!married(S)&&S.age>=17&&S.age<=35&&S.tono.ko>=45&&!S.f.rien,w:.9,once:1,k:'big',
+ e0:S=>{S.f._en=mkSpouse(S,'buke')},
+ t:S=>`${tnm(S)}の肝いりで、家中の${S.f._en.sur}家の娘、${S.f._en.nm}との縁談が持ち込まれた。殿の仲立ちとあっては、断るのは難しい。`,
+ ch:[['喜んでお受けする',S=>{wed(S,S.f._en);ad(S,{ko:4,en:3});return '殿の名代が祝言の席に来て、祝いの品を置いていった。'},null,'嫁を迎え、覚えも上がる'],
+     ['心に決めた人がいると断る',S=>{ad(S,{ko:tki(S,'kanshaku','wagamama')?-10:-5});return '「そうか」と殿は言ったが、目は笑っていなかった。'},null,'覚えが下がる']]},
+{id:'tn_moriyaku',c:S=>tnR(S,4)&&S.tono.ko>=55&&S.age>=30&&S.age<=58&&!S.f.moriyaku,w:.6,once:1,k:'big',
+ t:'殿から、若君の守役を命じられた。学問、武芸、作法を教え、一人前の主君に育てる役目だ。',
+ ch:[['謹んでお受けする',S=>{S.f.moriyaku=S.y;ad(S,{ko:5,mei:4});mj('若君の守役となる');return '若君の前に座り、深く頭を下げた。若君は、じっとこちらを見ていた。'},null,'若君が殿になったとき、覚えがよい'],
+     ['荷が重いと辞退する',S=>{ad(S,{ko:-3});return '辞退した。若君の育て方ひとつで、家の行く末が変わる。軽々しくは引き受けられない。'}]]},
+{id:'tn_moriyaku2',c:S=>tnS(S)&&!!S.f.moriyaku&&S.y-S.f.moriyaku>=1,w:1,cd:4,
+ t:S=>pku(['若君が、こっそり城を抜け出して川で泳いでいた。','若君が、手習いの最中に居眠りをしていた。','若君が、小姓と取っ組み合いの喧嘩をして、鼻血を出していた。','若君が「戦とは、どうすれば勝てるのか」と尋ねてきた。']),
+ ch:[['厳しく叱って道理を説く',S=>{ad(S,{chi:1,mei:1});return pku(['若君は唇を噛んで聞いていた。','若君はむくれたが、翌日は朝早くから稽古に出てきた。'])},null,'名が少し上がる'],
+     ['一緒になって遊んでやる',S=>{ad(S,{kok:3,en:2});return pku(['若君と並んで川に足を浸した。若君が初めて声を上げて笑った。','若君と並んで寝転び、雲の形を言い合った。'])},null,'心と縁が増える']]},
+{id:'tn_onari',c:S=>tnR(S,4)&&S.tono.ko>=55,w:.5,once:1,k:'big',
+ t:'殿が、屋敷へ御成になるという。もてなしの支度で、家じゅうがひっくり返った。',
+ ch:[['名物の道具をそろえて、豪勢にもてなす',S=>{ad(S,{kan:-Math.min(S.kan,8),ko:tki(S,'furyu','date')?10:tki(S,'rinshoku')?1:5,mei:3});return tki(S,'rinshoku')?'殿は膳を見るなり「贅沢じゃな」と言った。':'殿は上機嫌で、夜更けまで盃を重ねた。'},null,'銭が大きく減る。風流好み・派手好みの殿なら大喜び'],
+     ['身の丈に合った、質素なもてなしにする',S=>{ad(S,{kan:-Math.min(S.kan,2),ko:tki(S,'rinshoku','meikun','shincho')?7:tki(S,'date')?-2:3});return tki(S,'rinshoku','meikun','shincho')?'殿は「これでよい。見栄を張る者は信用ならぬ」と言った。':'殿は出された膳を、黙って平らげた。'},null,'倹約家や公平な殿には好まれる']]},
+{id:'tn_otogi',c:S=>tnR(S,3)&&S.age>=55&&S.tono.ko>=50,w:.7,once:1,
+ t:'殿から、話し相手の御伽衆に加わるよう言われた。昔の戦の話を聞きたいという。',
+ ch:[['若いころの手柄話をする',S=>{ad(S,{ko:4,kok:5});return '槍一本で敵陣に飛び込んだ話をすると、殿は身を乗り出して聞いた。少し話を盛った。'}],
+     ['負け戦の話をする',S=>{ad(S,{ko:tki(S,'meikun','shincho')?7:3,chi:2});return '仲間を置いて逃げた夜の話をした。殿は長いあいだ黙っていた。「よう話してくれた」'},null,'賢い殿や用心深い殿ほど喜ぶ'],
+     ['体が言うことをきかぬと辞退する',S=>'辞退した。年寄りの昔話は、聞かせるほうも疲れる。']]},
+
+{id:'tn_bugyo',c:S=>tnR(S,3,7),w:.6,cd:7,
+ t:S=>pku(['殿から、城の石垣の普請奉行を命じられた。期日は秋の取り入れまでだ。','殿から、領内の道と橋の普請奉行を命じられた。','殿から、城下の町割りの奉行を命じられた。']),
+ ch:[['期日を守るため、人足を厳しく使う',S=>{if(chance(.7)){ad(S,{ko:5,en:-4});return '期日どおりに仕上げた。殿は満足げだったが、人足たちの恨みを買った。'}ad(S,{ko:-2,en:-4});return '急がせすぎて石垣の一角が崩れ、やり直しになった。'},null,'七割ほどで覚えが上がる。縁は減る'],
+     ['人足をいたわりながら進める',S=>{if(chance(.55)){ad(S,{ko:3,en:5});return '少し遅れたが、丁寧な仕事に殿は目を留めた。人足たちは最後まで逃げずに働いた。'}ad(S,{ko:-4,en:4});return '期日に間に合わず、殿に叱られた。人足たちは、こちらをかばってくれた。'},null,'縁が増える。五割ほどで覚えも上がる']]},
+{id:'tn_kyoo',c:S=>tnR(S,3)&&S.y<1650,w:.5,cd:8,
+ t:'他国から来た使者をもてなす、饗応の役を命じられた。料理の段取りから座敷の飾りまで、粗相があれば殿の恥になる。',
+ ch:[['銭を惜しまず、豪勢にもてなす',S=>{ad(S,{kan:-Math.min(S.kan,4),ko:tki(S,'rinshoku')?-2:5,mei:2});return tki(S,'rinshoku')?'使者は喜んだが、殿は勘定書きを見て渋い顔をした。':'使者は上機嫌で国へ帰った。殿の面目が立った。'},null,'銭が減る。しまり屋の殿だと喜ばれない'],
+     ['作法どおり、手堅くもてなす',S=>{if(chance(.8)){ad(S,{ko:3,chi:1});return '滞りなく務めた。使者は丁寧に礼を述べて帰った。'}ad(S,{ko:-3});return '膳の順を一つ取り違え、使者に笑われた。'},null,'八割ほどで無難に済む']]},
+/* --- 覚えが悪いと --- */
+{id:'tn_kanki',c:S=>tnR(S,1)&&S.tono.ko<=22,w:S=>.4+(25-S.tono.ko)/25+(tki(S,'kanshaku','utagai','wagamama')?.4:0),cd:6,k:'big',
+ t:S=>pku(['ささいな行き違いから殿の勘気をこうむり、出仕を差し止められた。','評定での一言が殿の機嫌を損ね、屋敷での蟄居を命じられた。']),
+ ch:[['ひたすら謹んで許しを待つ',S=>{ad(S,{kok:-4});if(chance(.6)){ad(S,{ko:8});return '半年後、許しが出た。'}ad(S,{ko:3});return '一年たっても、許しは出ない。'},null,'六割ほどで許される'],
+     ['親しい重臣に取りなしを頼む',S=>{ad(S,{kan:-Math.min(S.kan,2)});if(chance(.4+S.st.en/250)){ad(S,{ko:12});return '重臣の取りなしで、思ったより早く許しが出た。'}ad(S,{ko:-3});return '取りなしは不首尾に終わった。かえって「陰で動いている」と思われた。'},null,S=>`縁しだい（今の縁${S.st.en}）`],
+     ['見切りをつけて国を出る',S=>{S.job='ronin';S.koku=0;S.tono=null;ad(S,{mei:-4,kok:-3});mj('殿の勘気をこうむり、出奔して浪人となる');return 'こんな殿に仕える気はない、と夜のうちに国を出た。'},null,'浪人になる']]},
+{id:'tn_seppuku',c:S=>tnR(S,2)&&S.tono.ko<=8&&tki(S,'kanshaku','utagai','wagamama')&&S.y<1650,w:.6,once:1,k:'big',
+ t:'殿の怒りは、ついに極まった。使者が屋敷に来て、切腹を申しつけると告げた。',
+ ch:[['潔く腹を切る',S=>{die(S,'主君の命により切腹');ad(S,{mei:10});return '白装束に着替え、作法どおりに腹を切った。介錯は、長年の友が務めた。'},null,'ここで命を終える。名は残る'],
+     ['必死に申し開きをする',S=>{if(chance(.3+S.st.chi/300)){S.koku=Math.round(S.koku/2);ad(S,{ko:10,mei:-4});return `使者が引き返し、命は助けられた。知行は半分の${S.koku}石に減らされた。`}die(S,'申し開きが聞き入れられず切腹');return '申し開きは聞き入れられなかった。'},null,S=>`知しだい（今の知${S.st.chi}）。しくじれば切腹`],
+     ['夜のうちに国を出奔する',S=>{if(chance(.2)){die(S,'出奔の途中、追手に討たれ');return '国境の峠で、追手に追いつかれた。'}S.job='ronin';S.koku=0;S.tono=null;ad(S,{mei:-10});mj('切腹を命じられ、出奔する');return '妻子を連れて、夜の山道を国境へ走った。'},null,'二割ほどで追手に討たれる。逃げきれば浪人']]},
+
+/* --- 殿の命 --- */
+{id:'tn_mitsumei',c:S=>tnR(S,3)&&S.tono.ko>=50&&S.y<1640,w:.5,cd:8,k:'big',
+ t:'夜更けに殿の居間へ呼ばれた。「ある重臣に、敵方と通じている疑いがある。探れ」との密命だ。',
+ ch:[['引き受けて探る',S=>{if(chance(.45+S.st.chi/250)){ad(S,{ko:8,mei:2,en:-3});return chance(.5)?'重臣の家来を酒で手なずけ、密書のありかを突き止めた。疑いは本当だった。':'調べを尽くし、疑いは晴れた。重臣は何も知らずに、今日も笑っている。'}ad(S,{ko:-4,en:-5});return '探っていることが漏れ、家中で孤立した。'},null,S=>`知しだい（今の知${S.st.chi}）。うまくいけば覚えが大きく上がる`],
+     ['同輩を探るのは武士の道に外れると断る',S=>{ad(S,{ko:tki(S,'meikun')?-1:-4,mei:2});return '「それがしには向きませぬ」と頭を下げた。'},null,'名は上がるが、覚えが下がる']]},
+{id:'tn_kishomon',c:S=>tnR(S,1)&&S.y<1600,w:.5,cd:10,
+ t:'殿が家臣一同に、二心なき旨の起請文を差し出せと命じた。牛王宝印の紙の裏に誓いを書き、血判を押すのだ。',
+ ch:[['血判を押して誓う',S=>{ad(S,{ko:3,kok:-1});return '小刀で指先を切り、名の下に血を押した。'},null,'覚えが少し上がる'],
+     ['形ばかりに済ませる',S=>{if(chance(.2)||tki(S,'utagai')&&chance(.5)){ad(S,{ko:-5});return '殿の目付は、血の色の薄さまで見ていた。'}return '指先に少しだけ血をにじませて、判を押した。'},null,'見抜かれると覚えが下がる']]},
+{id:'tn_shonin',c:S=>tnS(S)&&married(S)&&S.y<1615,w:.45,once:1,
+ t:'殿の命で、家臣の妻子は城下の屋敷に住むことになった。裏切りを防ぐための証人（人質）だ。',
+ ch:[['妻子を城下に移す',S=>{ad(S,{ko:3,kok:-3});return '妻子を城下の屋敷に移した。村の家には、自分ひとりで帰る。'},null,'覚えが少し上がる'],
+     ['病を理由に引き延ばす',S=>{ad(S,{ko:tki(S,'utagai','shincho')?-10:-5});return '引き延ばすうちに、殿の目付が様子を見に来るようになった。'},null,'覚えが下がる']]},
+{id:'tn_kaishaku',c:S=>tnR(S,3)&&S.y<1650,w:.3,once:1,k:'big',
+ t:'殿の怒りに触れた同輩が、切腹を命じられた。その介錯を、こちらに頼みたいという。',
+ ch:[['引き受ける',S=>{ad(S,{kok:-6,mei:3,bu:1});return '一太刀で務めを果たした。同輩は最後に「かたじけない」と言った。その声が、しばらく耳から離れなかった。'},null,'心が沈むが、名が上がる'],
+     ['殿に助命を願い出る',S=>{if(chance(.25+S.tono.ko/300)){ad(S,{ko:-2,en:6});return '殿は長いあいだ黙っていたが、やがて「知行を召し上げるにとどめる」と言った。'}ad(S,{ko:-6});return '「その方も同罪か」と退けられた。同輩は、別の者の介錯で腹を切った。'},null,S=>`覚えしだい（覚え${koLv(S.tono.ko)}）。しくじると覚えが下がる`],
+     ['断る',S=>{ad(S,{en:-4});return '断った。同輩は、別の者の介錯で腹を切った。'}]]},
+{id:'tn_byoki',c:S=>tnS(S)&&isGen(S.tono)&&S.tono.age>=45&&!S.f.wakaKo,w:.4,cd:10,
+ t:'殿が病に伏せった。家中では、早くも跡目の噂がささやかれている。',
+ ch:[['寺社に平癒の祈祷を頼む',S=>{ad(S,{kan:-Math.min(S.kan,3),ko:4});return '祈祷の札を殿の枕元に届けた。殿は弱々しく礼を言った。'},null,'覚えが上がる'],
+     ['若殿に近づいておく',S=>{S.f.wakaKo=15;ad(S,{ko:-2,mei:-1});return '若殿の鷹狩りに、それとなくお供をするようになった。'},null,'代替わりしたとき、新しい殿の覚えがよい'],
+     ['いつもどおり務める',S=>'いつもどおり務めた。']]},
+{id:'tn_kosan',c:S=>tnS(S)&&S.tono.gen>=2&&S.y-S.tono.y0<=4&&S.age>=40,w:1,once:1,
+ t:'新しい殿は、若い側近ばかりを重く用い、先代からの古参を遠ざけ始めた。',
+ ch:[['新しい殿に取り入る',S=>{ad(S,{ko:6,mei:-2});return '若い側近たちの酒宴に顔を出し、話を合わせた。古参仲間の目が冷たい。'},null,'覚えが上がるが、名は落ちる'],
+     ['古参として筋を通す',S=>{ad(S,{mei:3,ko:-3});return '先代のやり方を曲げなかった。'},null,'名は上がるが、覚えが下がる'],
+     ['黙って務めを果たす',S=>{ad(S,{kok:-2});return '何も言わず、目の前の務めを果たした。'}]]}
+);
+
+/* --- 合戦の場面：殿の危機 --- */
+MIDS.push({id:'tono_kiki',c:S=>tnR(S,2,6)&&wty(S,'field','defend'),w:.5,
+ t:'本陣が崩れかけている。敵の一団が、殿の馬前まで迫ってきた。',
+ ch:[['身を挺して殿の盾となる',S=>{const d=wD(S,.3,'殿の前に立ちはだかり、敵の槍を一身に受けた。殿は無事だった。');if(d){ad(S,{mei:8});return d}
+       wP(S,3);ad(S,{ko:12,mei:6});return '殿の前に立ちはだかり、群がる敵を槍で払い続けた。戦のあと、殿から「その方の命、わしが預かった」と言われた。'+wW(S,.6)},null,'命の危険が高い。生き延びれば覚えが大きく上がる'],
+     ['敵の頭目に斬りかかる',S=>{if(chance(.35+S.st.bu/200)){wK(S);wP(S,2);ad(S,{ko:6});return '敵の頭目に組みつき、首を取った。残りの敵は崩れて引いた。'}const d=wD(S,.2,'敵の頭目と斬り結び、返り討ちにあった。');if(d)return d;return '頭目とは斬り結んだまま引き分けた。そのあいだに味方が駆けつけた。'+wW(S,.6)},null,S=>`武しだい（今の武${S.st.bu}）。首を取れば大手柄`],
+     ['殿の馬の轡を取って退かせる',S=>{wP(S,1);ad(S,{ko:4});return '殿の馬の轡をつかみ、後ろの陣まで引いていった。殿は「離せ」と怒鳴ったが、離さなかった。'},null,'危険は少ない。覚えが少し上がる']]});
 /* ===== あるあるイベント：商人・茶人 ===== */
 const port=S=>['izumi','settsu','chikuzen'].includes(S.reg);
 EV.push(
@@ -2330,6 +2717,591 @@ EV.push(
 {id:'c_yuya',c:S=>adult(S)&&(city(S)||S.cls==='cho')&&S.y>=1480,w:.5,cd:4,t:S=>pku(['町の湯屋で、ひさしぶりに汗を流した。','寺の施浴の日に、湯を使わせてもらった。','湯屋の二階で、知らない者たちと碁を打った。']),fx:{tai:1,kok:2}},
 {id:'c_tenki',c:S=>S.age>=8,w:.4,cd:6,t:S=>pku(['昼間なのに空が暗くなり、日が欠けた。皆、家にこもって念仏を唱えた。','夜空に、尾を引く星が出た。何かの前触れだと、年寄りたちが騒いでいる。','西の空が、夜になっても赤かった。']),fx:{kok:-1}}
 );
+/* ===== 国ごとの出来事（お国事情つき） =====
+   ji にはその国でなぜそれが起きるのかを書く。画面では出来事の下に「〇〇のお国事情」として一度だけ出る */
+const rA=S=>adult(S)&&!wander(S);
+const rCho=S=>isMerch(S)||(S.cls==='cho'&&adult(S));
+const rBu=S=>isBushi(S)&&adult(S);
+const inY=(S,a,b)=>S.y>=a&&S.y<=b;
+const CW=3;
+
+EV.push(
+/* ===== 尾張 ===== */
+{id:'cz_ow_tsushima',c:S=>S.reg==='owari'&&rA(S)&&inY(S,1500,1615),w:CW,once:1,
+ t:S=>rCho(S)?'津島の湊で、伊勢から着いた舟の荷をまとめて買い付けた。川沿いの問屋には、美濃や伊勢の言葉が飛び交っている。':'津島の天王祭に出かけた。夜の川面に、提灯をいくつも灯した舟が並んで流れていく。',
+ fx:S=>rCho(S)?{kan:rnd(3,8),en:2}:{kok:4,en:1},
+ ji:'津島は、木曽川の流れが伊勢湾に注ぐあたりの川湊で、牛頭天王をまつる津島神社の門前町でもある。美濃や伊勢と舟で結ばれて商いが盛んで、この町を押さえた織田弾正忠家（信長の家）は、その銭で力をつけた。夏の天王祭は、いまも続いている。'},
+{id:'cz_ow_seto',c:S=>S.reg==='owari'&&vil(S),w:CW,once:1,
+ t:'冬のあいだ、瀬戸の窯場へ薪を運ぶ仕事に出た。窯の煙で、山の向こうまで霞んでいる。',
+ ch:[['窯場で焼き物づくりも手伝う',S=>{ad(S,{kan:rnd(2,4),chi:1,tai:-2});return '土をこね、釉薬をかけるのを手伝った。焼き上がった茶碗の色に、思わず見とれた。'},null,'銭と知が少し増える。体は疲れる'],
+     ['薪を運ぶだけにする',S=>{ad(S,{kan:1});return '薪を運び終えると、すぐ村へ帰った。'},null,'少しの銭']],
+ ji:'尾張の瀬戸は、鎌倉時代から釉薬をかけた焼き物を焼いてきた土地だ。戦国時代には多くの陶工が隣の美濃へ移ったが、のちに尾張の殿様が呼び戻した。「瀬戸物」が焼き物そのものを指す言葉になるほど、その名は広く知られた。'},
+{id:'cz_ow_yowahei',c:S=>S.reg==='owari'&&rBu(S)&&inY(S,1555,1600),w:CW,once:1,
+ t:'他国の侍から「尾張の兵は弱い」と笑われた。',
+ ch:[['「なら試してみるか」と言い返す',S=>{if(chance(.4+S.st.bu/250)){ad(S,{mei:4,bu:1});return '腕比べになり、相手を地面に転がした。それきり誰も笑わなくなった。'}ad(S,{mei:-3,tai:-3});return '腕比べになり、こちらが転がされた。笑い声がいっそう大きくなった。'},null,S=>`武しだい（今の武${S.st.bu}）`],
+     ['「弱いから知恵を使う」と笑って流す',S=>{ad(S,{chi:2,en:2});return '「弱いから、数と鉄砲と銭で勝つのよ」と笑うと、相手は妙に感心していた。'},null,'知と縁が少し増える']],
+ ji:'濃尾平野の尾張は米がよく穫れる豊かな国で、山国の甲斐や雪国の越後に比べて、兵は弱いとよく言われた。そのぶん織田家は、銭で雇った兵や鉄砲を多く用い、田植えや稲刈りに縛られずに戦える兵を増やしていったといわれる。'},
+{id:'cz_ow_chita',c:S=>S.reg==='owari'&&vil(S),w:CW,once:1,
+ t:'知多の浜へ、塩焼きの手伝いに出た。海水をまいた砂を日に干し、釜で煮詰める。煙で目が痛い。',fx:{kan:2,tai:-1},
+ ji:'尾張の知多半島では、古くから海水から塩をつくる塩焼きや、常滑焼という大きな甕（かめ）づくりが盛んだった。塩や甕は、伊勢湾の舟で各地へ運ばれた。'},
+{id:'cz_ow_kiyosu',c:S=>S.reg==='owari'&&rA(S)&&inY(S,1610,1613),w:3,once:1,
+ t:S=>rCho(S)?'清洲の町が丸ごと、新しくできる名古屋の城下へ引っ越すことになった。店も、寺も、橋までも運ぶのだという。':'名古屋に新しい城を築く普請が始まり、清洲の町も丸ごと名古屋へ移ることになった。',
+ ch:[['名古屋の新しい町に店を移す',S=>{ad(S,{kan:-Math.min(S.kan,3),en:3});return '荷車に家財を積んで名古屋へ移った。新しい町割りの通りは、まっすぐで広い。'},rCho,'引っ越しに銭がかかる。縁が増える'],
+     ['清洲に残る',S=>{ad(S,{kan:-Math.min(S.kan,2),kok:2});return '清洲に残った。町はみるみる寂しくなり、客足が遠のいた。'},rCho,'住み慣れた町に残るが、商いは細る'],
+     ['普請の人足に出る',S=>{ad(S,{kan:rnd(2,4),tai:-3});return '石垣の石を運ぶ人足に出た。西国の大名たちの家来が、競うように石を積んでいる。'},S=>!rCho(S)&&!isBushi(S),'銭が入るが、体は疲れる'],
+     ['遠くから眺める',S=>{ad(S,{chi:1});return '遠くで槌の音を聞きながら、いつもの暮らしを続けた。'},S=>!rCho(S)]],
+ ji:'慶長十五年（1610年）、徳川家康は尾張の中心を、水害に弱い清洲から名古屋台地へ移すことにした。名古屋城の石垣は西国の大名たちに分担させ（天下普請）、町人や寺社、橋まで清洲から丸ごと移した。これを「清洲越し」という。'},
+
+/* ===== 美濃 ===== */
+{id:'cz_mn_wajuu',c:S=>S.reg==='mino'&&vil(S),w:.9,cd:10,
+ t:'大雨が続き、長良川と木曽川があふれた。村をぐるりと囲む堤に、村じゅう総出で土俵を積んだ。',
+ ch:[['夜通し堤を守る',S=>{if(chance(.75)){ad(S,{tai:-4,en:4});return '夜明けに水が引き始めた。堤は持ちこたえた。泥だらけの顔で、皆で笑い合った。'}ad(S,{tai:-6,kan:-Math.min(S.kan,2),kok:-6});return '堤の一角が切れ、田の半分が水に浸かった。'},null,'たいてい堤は守れる。体は疲れる'],
+     ['隣の村の救いに舟を出す',S=>{if(chance(.12)){ad(S,{tai:-10});return '流れに舟を取られ、危うく溺れかけた。'}ad(S,{en:6,mei:2});return '屋根に逃げた隣村の者たちを舟で助けた。ふだんは水争いをする仲なのに。'},null,'縁が大きく増える。わずかに危ない'],
+     ['家財を高い所に運ぶ',S=>{ad(S,{kan:1,en:-1});return '米俵と鍋を天井裏に上げた。土台を高く積んだ水屋のある家が、うらやましい。'},null,'損を減らす']],
+ ji:'美濃の南部は、木曽川・長良川・揖斐川の三つの大河が集まる低い土地で、たびたび洪水に襲われた。人々は村のまわりをぐるりと堤で囲んだ「輪中」をつくり、村ぐるみで水と戦った。土台を高く盛って、水屋という避難用の蔵を建てる家もあった。'},
+{id:'cz_mn_kami',c:S=>S.reg==='mino'&&(vil(S)||(S.cls==='hyak'&&S.age>=10&&!wander(S)&&!isBushi(S))),w:CW,once:1,
+ t:'冬のあいだ、冷たい川で楮の皮をさらし、紙を漉いた。指がかじかんで、感覚がない。',
+ ch:[['丁寧に薄く漉く',S=>{ad(S,{kan:rnd(2,4),chi:1});return '漉き上げた紙は、光にかざすと向こうが透けて見えた。大矢田の紙市で、いい値がついた。'},null,'銭が増える'],
+     ['数をこなす',S=>{ad(S,{kan:rnd(1,3),tai:-2});return '量だけは誰にも負けなかった。'}]],
+ ji:'美濃は古くからの和紙の産地で、長良川の支流の清い水と楮で漉く「美濃紙」は、薄くて丈夫だと京でも重宝された。美濃の大矢田には紙の市が立ち、各地の商人が買い付けに来た。'},
+{id:'cz_mn_seki',c:S=>S.reg==='mino'&&adult(S)&&(isBushi(S)||isMerch(S)||S.job==='ronin')&&S.kan>=6,w:CW,once:1,
+ t:'関の刀鍛冶が、打ち上げたばかりの刀を見せてくれた。刃に、杉の木が並んだような波の模様が浮かんでいる。',
+ ch:[['買い求める（銭六貫文）',S=>{ad(S,{kan:-6,bu:2,mei:2});S.f.sekiTo=1;return '刀を買った。抜くたびに、気が引き締まる。'},S=>S.kan>=6,'銭が減るが、武と名が上がる'],
+     ['見るだけにしておく',S=>{ad(S,{chi:1});return '鍛冶の話を聞くだけでも、ためになった。'}]],
+ ji:'美濃の関には多くの刀鍛冶が集まり、「関の孫六」こと兼元などの名工が出た。よく切れて折れにくく、数も多く出回った関の刀は、戦の絶えない時代に全国の武士に求められた。兼元の刀の、杉の木が並んだような刃文は「三本杉」と呼ばれる。'},
+{id:'cz_mn_rakuichi',c:S=>S.reg==='mino'&&rA(S)&&inY(S,1567,1582)&&(rCho(S)||vil(S)),w:CW,once:1,
+ t:S=>rCho(S)?'岐阜の城下の加納に、楽市楽座の制札が立った。座に入っていなくても、よそ者でも、ここでは自由に商いができる。':'岐阜の城下に、誰でも物を売り買いできる市が立った。籠に野菜を詰めて、売りに行った。',
+ fx:S=>rCho(S)?null:{kan:rnd(1,3),en:1},
+ ch:[['加納の市に店を出す',S=>{if(chance(.65)){ad(S,{kan:rnd(5,12),en:3});return '人の波が途切れない。持っていった品は、昼までに売り切れた。'}ad(S,{kan:-Math.min(S.kan,2)});return '同じことを考えた商人が多すぎて、値崩れした。'},rCho,'六割五分ほどで儲かる'],
+     ['様子を見る',S=>'様子を見ることにした。',rCho]],
+ ji:'永禄十年（1567年）、斎藤家を追った織田信長は、稲葉山の城下を「岐阜」と改め、城下の加納に楽市楽座の制札を出した。座（同じ商いの者の組合）に入らなくても、よそ者でも、自由に商いができるようにして、城下に人と物と銭を集めた。'},
+{id:'cz_mn_kaname',c:S=>S.reg==='mino'&&rBu(S)&&S.y<1567,w:CW,once:1,
+ t:'美濃の国境の砦に詰めることになった。尾張からも、近江からも、越前からも、敵がやって来るかもしれない。',fx:{bu:2,kok:-2},
+ ji:'美濃は、京と東国を結ぶ東山道が通り、尾張・近江・越前・飛騨・信濃・伊勢に接する要の国だった。「美濃を制する者は天下を制す」と言われ、周りの大名たちがこの国を狙った。'},
+
+/* ===== 三河 ===== */
+{id:'cz_mk_momen',c:S=>S.reg==='mikawa'&&vil(S)&&S.y>=1510,w:CW,once:1,
+ t:'村で、田の一部をつぶして木綿を植える家が増えてきた。木綿は高く売れるらしい。',
+ ch:[['うちも木綿を植える',S=>{if(chance(.7)){ad(S,{kan:rnd(4,9)});return '秋、白い綿の実がはじけた。糸にして売ると、米よりずっといい銭になった。'}ad(S,{kan:-Math.min(S.kan,1),kok:-3});return '慣れない作物で、虫にやられた。今年は損をした。'},null,'七割ほどで銭が増える'],
+     ['米を作り続ける',S=>{ad(S,{kok:1});return '先祖代々の田だ。米を作り続けることにした。'}]],
+ ji:'それまで木綿は、朝鮮や明から輸入する高価な布だった。十六世紀のはじめごろから三河などで綿の栽培が広まり、「三河木綿」として知られるようになる。木綿は麻より暖かく丈夫で、兵の衣や鉄砲の火縄、船の帆にも使われたので、よく売れた。'},
+{id:'cz_mk_imagawa',c:S=>S.reg==='mikawa'&&rBu(S)&&inY(S,1549,1560),w:2,once:1,
+ t:'今川家の命で、またしても三河の侍が戦の先手を務めることになった。年貢の多くは駿府へ運ばれ、こちらの台所は苦しいばかりだ。',
+ ch:[['「いつか必ず」と耐える',S=>{ad(S,{kok:-3,mei:3,bu:1});return '歯を食いしばって先手を務めた。古参の侍が「竹千代さまが戻られる日まで」とつぶやいた。'},null,'名と武が少し上がる'],
+     ['今川方の役人に取り入る',S=>{ad(S,{kan:3,en:-3});return '今川方の役人に付け届けをして、先手を免れた。仲間の目が冷たい。'},null,'銭は増えるが、仲間の信を失う']],
+ ji:'松平家の当主・竹千代（のちの徳川家康）が今川家の人質になっていたあいだ、三河は今川家に治められた。年貢の多くは駿府へ送られ、三河の侍たちは今川の戦で先鋒を務めさせられるなど、苦しい暮らしを強いられたと伝わる。この忍耐が、のちの「三河武士」の結束を生んだともいわれる。'},
+{id:'cz_mk_bushi',c:S=>S.reg==='mikawa'&&S.job==='samurai'&&hasLord(S)&&adult(S)&&inY(S,1561,1616),w:CW,once:1,
+ t:'古参の三河侍たちと酒を飲んだ。口は悪く、頑固で、着物は継ぎはぎだらけだが、殿の話になると皆、目の色が変わる。',fx:{en:4,mei:1,ko:2},
+ ji:'主君の松平（徳川）家が苦しかった時代も家を支え続けた三河の家臣団は、質素で頑固、主君に一途な「三河武士」として知られた。その気風は、のちに江戸幕府を支える旗本や譜代大名に受け継がれていく。'},
+{id:'cz_mk_tera',c:S=>S.reg==='mikawa'&&inY(S,1500,1563)&&S.age>=8&&(S.cls==='ji'||vil(S)),w:CW,once:1,
+ t:S=>S.cls==='ji'?'寺に、殿の役人が年貢のことで踏み込もうとした。住職は「この寺内には、守護の使いも入れぬ定め」と門を閉ざした。':'寺の門前で、殿の役人と坊さまが言い争っていた。寺の中には、役人も入れないのだという。',fx:{en:2},
+ ji:'三河には本證寺・上宮寺・勝鬘寺など、本願寺派の有力な寺があり、寺の境内には領主の役人も立ち入れない「守護使不入」の特権が認められていた。徳川家康がこの特権を破ろうとしたことが、永禄六年（1563年）の三河一向一揆のきっかけとされる。'},
+
+/* ===== 駿河 ===== */
+{id:'cz_sr_kuge',c:S=>S.reg==='suruga'&&rA(S)&&inY(S,1490,1568),w:CW,once:1,
+ t:S=>S.cls==='buke'||isBushi(S)?'今川の館で歌会が開かれ、末席に加わった。京から下ってきた公家が、上の句をさらりと詠んだ。':'京から公家の一行が駿府へ下ってきた。見たこともないきらびやかな装束に、町の者が群がった。',fx:{chi:2,en:1},
+ ji:'応仁の乱で京が荒れると、多くの公家や僧が戦乱を避けて地方の大名を頼った。今川家は都の文化を好み、駿府には冷泉為和などの公家が長く滞在して、和歌や蹴鞠の会が盛んに開かれた。駿府は「東の京」と呼ばれるほど華やかな町になった。'},
+{id:'cz_sr_kana',c:S=>S.reg==='suruga'&&rA(S)&&inY(S,1526,1568),w:CW,once:1,
+ t:S=>vil(S)?'隣村の者と水争いになり、殴り合いの喧嘩になった。今川家の決まりでは、喧嘩をした者は、どちらが悪くても両方とも罰せられるという。':'酒の席の口論から、殴り合いの喧嘩になった。今川家の決まりでは、喧嘩をした者は、どちらが悪くても両方とも罰せられるという。',
+ ch:[['先に手を出したのは向こうだと訴える',S=>{ad(S,{kan:-Math.min(S.kan,1),mei:-1});return '訴えたが、「理由は問わぬ」と、こちらも罰銭を取られた。'},null,'決まりは決まり。罰は免れない'],
+     ['相手と話をつけて、内々に収める',S=>{ad(S,{en:4});return '酒を一升持って相手のところへ行き、手打ちにした。役所沙汰にならずに済んだ。'},null,'縁が増える']],
+ ji:'今川氏親は大永六年（1526年）、家中や領内の決まりを「今川仮名目録」にまとめた。こうした大名独自の法を分国法という。喧嘩をした者は理由を問わず両方を罰する「喧嘩両成敗」の考えも記され、領内の私的な争いを抑えようとした。'},
+{id:'cz_sr_kinzan',c:S=>S.reg==='suruga'&&isFarmer(S)&&S.sex==='m'&&adult(S)&&inY(S,1500,1620),w:CW,once:1,
+ t:'安倍川の上流の金山で、掘子を募っている。給金は百姓仕事の何倍にもなるという。',
+ ch:[['山に入って掘子になる',S=>{if(chance(.1)){ad(S,{tai:-15});return '坑道が崩れ、足を挟まれた。命は助かったが、足を引きずるようになった。'}ad(S,{kan:rnd(5,10),tai:-5});return '一冬、山にこもって働いた。手の皮が厚くなったぶん、懐も厚くなった。'},null,'銭が大きく増える。一割ほどで大けが'],
+     ['川で砂金をすくってみる',S=>{if(chance(.3)){ad(S,{kan:rnd(3,6)});return 'ざるの底に、きらりと光る粒が残った。'}return '何日すくっても、砂しか残らなかった。'},null,'三割ほどで小銭になる'],
+     ['田を離れない',S=>'田を離れるわけにはいかない。']],
+ ji:'駿河の安倍川の上流には梅ヶ島などの金山があり、今川家、のちには武田家や徳川家の大事な財源になった。山で掘る者のほか、川の砂から砂金をすくう者もいた。'},
+{id:'cz_sr_doja',c:S=>S.reg==='suruga'&&rA(S),w:CW,once:1,
+ t:'白装束の一団が、鈴を鳴らしながら村を通っていった。富士の山に登る道者だという。',
+ ch:[['一緒に富士へ登ってみる',S=>{if(S.st.tai<35){ad(S,{tai:-6});return '六合目あたりで息が切れ、引き返した。'}ad(S,{kok:8,tai:-4,mei:1});return '夜明け前、山頂から雲の海に日が昇るのを見た。言葉が出なかった。'},S=>S.age<=55,'体しだい。心が大きく満ちる'],
+     ['宿と飯を世話して銭をもらう',S=>{ad(S,{kan:rnd(1,3),en:2});return '道者たちに湯と飯を出した。遠い国の話を聞かせてもらった。'}]],
+ ji:'富士山は古くから信仰の山で、戦国時代にも各地から白装束の「道者」が集まり、村山（いまの富士宮市）の修験者に導かれて山頂を目指した。登れるのは夏のあいだだけで、ふもとの村は道者の宿や案内でにぎわった。'},
+{id:'cz_sr_katsuo',c:S=>S.reg==='suruga'&&S.cls==='hyak'&&S.age>=10&&!wander(S)&&!isBushi(S),w:CW,once:1,
+ t:'浜に鰹の群れが寄せてきた。村じゅう総出で舟を出し、獲れた鰹を煮て干した。',fx:{kan:2,en:2},
+ ji:'駿河湾や伊豆の海は鰹がよく獲れた。干した鰹（堅魚）は、奈良・平安の昔から都への貢ぎ物で、のちの鰹節のもとになった。'},
+
+/* ===== 甲斐 ===== */
+{id:'cz_ki_tsutsumi',c:S=>S.reg==='kai'&&vil(S)&&S.sex==='m'&&inY(S,1542,1600),w:CW,once:1,
+ t:'釜無川の堤の普請に、村から人足が出された。大きな石を積んで、川の流れをそらすのだという。',
+ ch:[['普請に精を出す',S=>{ad(S,{tai:-4,en:3});if(S.y>=1560&&chance(.4)){ad(S,{kan:2});return '働きぶりを認められ、堤のそばの新しい村に移り住めば税を免じる、という話をもらった。'}return '何十日も石を運んだ。翌年の大水で、堤はびくともしなかった。'},null,'体は疲れるが、縁が増える'],
+     ['うまく怠ける',S=>{if(chance(.3)){ad(S,{mei:-3,kan:-Math.min(S.kan,1)});return '怠けているのを見つかり、罰として銭を取られた。'}ad(S,{tai:1});return '石を運ぶふりをして、日陰で休んだ。'},null,'三割ほどで見つかる']],
+ ji:'甲府盆地では、釜無川と御勅使川がぶつかるあたりで、たびたび洪水が起きた。武田晴信（信玄）は二十年近くかけて、川の流れを石積みでそらし、ところどころ切れ目のある「霞堤」を築いた。のちに「信玄堤」と呼ばれる。堤のそばに移り住む者には税を免じて、堤を守らせた。'},
+{id:'cz_ki_kikin',c:S=>S.reg==='kai'&&S.age>=6&&!wander(S)&&S.y<1600,w:.8,cd:12,
+ t:'春先、蔵の米が尽きた。山に入って葛の根や木の実を掘り、野草を煮て食いつないだ。',
+ ch:[['山で食べ物を探し回る',S=>{ad(S,{tai:-4,kok:-3});return '葛の根を叩いて、粉を取った。腹は満たないが、死にはしない。'},null,'体と心が少し減る'],
+     ['種籾に手をつける',S=>{ad(S,{tai:1,kok:-2,kan:-Math.min(S.kan,2)});return '来年まく種籾を食べた。秋のことは、秋になってから考える。'},null,'今は助かるが、あとで苦しい'],
+     ['他国へ出稼ぎに出る',S=>{if(chance(.2)){ad(S,{tai:-6});return '駿河へ向かう峠で、行き倒れかけた。'}ad(S,{kan:rnd(1,3),en:-2});return '駿河の浜で荷運びをして、ひと月食いつないだ。'},S=>adult(S)&&!isBushi(S),'銭が入るが、二割ほどで体を壊す']],
+ ji:'甲斐は山に囲まれて田が少なく、冷夏や長雨のたびに飢饉に見舞われた。富士山麓の寺の記録『勝山記（妙法寺記）』には、戦国時代の甲斐でたびたび飢饉が起き、多くの人が飢えたことが書き残されている。武田家が他国へ領地を広げようとした背景に、こうした貧しさを見る説もある。'},
+{id:'cz_ki_koshukin',c:S=>S.reg==='kai'&&rA(S)&&inY(S,1530,1600),w:CW,once:1,
+ t:S=>isBushi(S)?'恩賞として、甲州金の小粒を賜った。指先ほどの金の粒に、重さの刻印が打ってある。':'黒川の金山で掘られた金が、甲府へ運ばれていくのを見た。',
+ fx:S=>isBushi(S)?{kan:4,mei:1}:{chi:1},
+ ji:'甲斐には黒川金山などの金山があり、武田家はその金で戦の費用をまかなった。重さで価値を決める「甲州金」は、両・分・朱という単位を使い、これがのちの江戸幕府の金貨の単位のもとになった。'},
+{id:'cz_ki_hatto',c:S=>S.reg==='kai'&&rA(S)&&inY(S,1547,1582),w:CW,once:1,
+ t:'村の辻に、武田家の決まりを記した高札が立った。村の物知りが読み上げると、「殿ご自身も、この決まりに背いたなら、訴え出てよい」という条まであった。',
+ ch:[['本当かと笑う',S=>{ad(S,{chi:1});return '「殿さまが下々の訴えなど聞くものか」と笑ったが、物知りは真顔だった。'}],
+     ['決まりをよく覚えておく',S=>{ad(S,{chi:3});return '決まりを覚えておけば、いざというとき身を守れる。'},null,'知が増える']],
+ ji:'武田晴信（信玄）は天文十六年（1547年）、分国法「甲州法度之次第」を定めた。喧嘩両成敗などの決まりのほか、晴信自身の行いが法に背いていたら、身分を問わず訴え出てよいという条文があるのが珍しい。'},
+{id:'cz_ki_shinano',c:S=>S.reg==='kai'&&rBu(S)&&inY(S,1542,1573),w:CW,once:1,
+ t:'今年も信濃への出陣だ。甲府から北へまっすぐ延びる道を、兵が列をなして進んでいく。',fx:{bu:2,tai:-2},
+ ji:'貧しい山国の甲斐から、武田晴信（信玄）は隣の信濃へ攻め込み、二十年ほどかけてほぼ一国を手に入れた。甲府から信濃へ兵をすばやく送るため、まっすぐな軍用の道「棒道」を整えたとも伝えられる。北の越後の上杉家とは、信濃の川中島で何度もぶつかった。'},
+{id:'cz_ki_yu',c:S=>S.reg==='kai'&&rA(S)&&S.st.tai<60,w:CW,once:1,
+ t:'傷と疲れを癒やしに、山あいの湯へ湯治に出かけた。湯につかると、古傷の痛みが少し和らいだ。',fx:{tai:6,kok:3},
+ ji:'甲斐や信濃には温泉が多い。武田信玄が傷ついた兵を療養させたという「信玄の隠し湯」の言い伝えが、あちこちの温泉に残っている。'},
+
+/* ===== 越後 ===== */
+{id:'cz_eg_aoso',c:S=>S.reg==='echigo'&&S.y<1620&&(vil(S)||(S.cls==='hyak'&&S.age>=10&&!wander(S)&&!isBushi(S))),w:CW,once:1,
+ t:'雪に閉ざされた冬じゅう、青苧の繊維を爪で細く裂き、糸に績んだ。',
+ ch:[['上等な糸を丁寧に績む',S=>{ad(S,{kan:rnd(2,5),kok:2});return '春、青苧の買い付けに来た商人が、糸の細さに目を丸くした。'},null,'銭が増える'],
+     ['手早く数を作る',S=>{ad(S,{kan:rnd(1,3)});return 'とにかく数を作った。'}]],
+ ji:'越後では、からむし（苧麻）の茎の皮から取る繊維「青苧」がさかんに作られた。麻布の原料として京へ大量に運ばれ、その商いに掛ける税は、長尾・上杉家の大きな財源になった。雪に閉ざされる長い冬は、糸を績み、布を織る季節でもあった。'},
+{id:'cz_eg_yuki',c:S=>S.reg==='echigo'&&S.age>=8&&!wander(S),w:.8,cd:10,s:'冬',
+ t:'雪が軒まで積もった。戸口から出るにも、雪の壁に穴を掘らねばならない。',
+ ch:[['屋根の雪下ろしに励む',S=>{if(chance(.06)){ad(S,{tai:-10});return '屋根から足を滑らせ、雪の山に頭から落ちた。'}ad(S,{tai:-2,en:2});return '近所の年寄りの家の雪も下ろしてやった。'},S=>S.age>=12,'わずかに危ない。縁が増える'],
+     ['家にこもって手仕事をする',S=>{ad(S,{kan:1,chi:1});return '囲炉裏のそばで、わらじを編んで冬を越した。'}]],
+ ji:'越後は日本でも指折りの雪国で、冬は何か月も深い雪に閉ざされた。戦も雪に縛られ、越後の兵は雪が解けてから出陣し、雪が降る前に国へ戻るのが常だった。'},
+{id:'cz_eg_etsuzan',c:S=>S.reg==='echigo'&&rBu(S)&&inY(S,1560,1578),w:2,once:1,
+ t:'殿の関東への出陣に従い、雪の残る三国峠を越えた。峠の向こうには、越後とは比べものにならない広い平野が広がっていた。',
+ ch:[['関東の城攻めで手柄を狙う',S=>{if(chance(.35)){ad(S,{mei:4,bu:2});return '敵の城に一番乗りを果たした。'}ad(S,{tai:-4,mei:1});return '何度も城に取りついたが、跳ね返された。'},null,'手柄を立てやすいが、傷も負う'],
+     ['陣中の兵糧と荷を守る',S=>{ad(S,{kan:rnd(1,3),en:2});return '兵糧方を手伝った。冬の越後では見られないほどの米俵が、陣中に積まれていた。'},null,'少しの銭と縁']],
+ ji:'上杉謙信は、北条家に追われた関東管領・上杉憲政を助けるという名目で、十数回も三国峠を越えて関東へ出陣した。これを「越山」という。雪で田畑の仕事ができない冬のあいだ、越後の兵にとって関東での戦は、食い扶持を得る場でもあったという見方もある。'},
+{id:'cz_eg_bishamon',c:S=>S.reg==='echigo'&&rBu(S)&&inY(S,1548,1578),w:CW,once:1,
+ t:'戦の前、殿は城の毘沙門堂に何日もこもった。軍旗には大きく「毘」の一字。兵たちは「殿は毘沙門天の生まれ変わりだ」とささやき合っている。',fx:{kok:3,bu:1},
+ ji:'長尾景虎（上杉謙信）は、戦の神・毘沙門天を深く信じ、自らをその化身と考えたともいわれる。軍旗に「毘」の字を掲げ、出陣の前には毘沙門堂にこもって祈った。生涯妻を持たず、酒をこよなく愛したと伝わる。'},
+{id:'cz_eg_minato',c:S=>S.reg==='echigo'&&rA(S)&&S.y<1620,w:CW,once:1,
+ t:'直江津の湊に、北国船が着いた。積み込まれるのは青苧と米、降ろされるのは若狭や京からの品々だ。',
+ ch:[['船の荷揚げを手伝う',S=>{ad(S,{kan:rnd(1,3),tai:-1});return '荷揚げの駄賃をもらった。'}],
+     ['京の品を見て回る',S=>{ad(S,{chi:2,en:1});return '京の扇や、明の焼き物を眺めた。世の中は広い。'}]],
+ ji:'越後の直江津（府中）や柏崎は日本海の海運の湊で、青苧や米を積んだ船が若狭の小浜や越前の敦賀へ向かい、そこから陸路と琵琶湖の舟で京へ運ばれた。日本海の航路は、雪国の越後と都とを結ぶ大動脈だった。'},
+{id:'cz_eg_sado',c:S=>S.reg==='echigo'&&isFarmer(S)&&S.sex==='m'&&adult(S)&&S.age<=45&&inY(S,1601,1650),w:CW,once:1,
+ t:'佐渡で、金銀の大きな鉱脈が見つかったという。全国から一攫千金を狙う者が、海を渡っていく。',
+ ch:[['佐渡へ渡る',S=>{if(chance(.15)){ad(S,{tai:-14});return '坑道の中で煙を吸い、胸を悪くして戻ってきた。'}ad(S,{kan:rnd(6,14),tai:-6});return '一年、坑道で働いて戻った。懐は温かいが、咳が止まらない。'},null,'銭が大きく増える。体を壊すことも'],
+     ['田を守る',S=>'海の向こうの話だ。']],
+ ji:'関ヶ原の戦いの翌年（1601年）ごろから、佐渡の相川で金銀山の本格的な採掘が始まり、江戸幕府の直轄となった。全国から多くの人が集まったが、坑道の中の仕事は危険で、湧き水のくみ出しや煙で命を縮める者も多かった。'},
+
+/* ===== 相模 ===== */
+{id:'cz_sg_meyasu',c:S=>S.reg==='sagami'&&vil(S)&&inY(S,1517,1590),w:CW,once:1,
+ t:'代官が、決まりより多い年貢を取り立てようとした。村の乙名たちは「北条さまの役所に、じかに訴え出よう」と言っている。',
+ ch:[['乙名たちと訴え出る',S=>{if(chance(.6)){ad(S,{en:5,mei:2,kan:1});return '小田原の役所は訴えを取り上げ、代官は役を解かれた。'}ad(S,{en:2,kok:-2});return '訴えは「調べる」と言われたきり、返事が来ない。'},null,'六割ほどで訴えが通る'],
+     ['代官ににらまれたくない',S=>{ad(S,{kan:-Math.min(S.kan,1),kok:-2});return '黙って多めに納めた。'}]],
+ ji:'伊勢宗瑞（北条早雲）に始まる北条家は、年貢を収穫の四割ほど（四公六民）に抑えたと伝えられる。検地で村ごとの年貢高をはっきりさせ、代官の勝手な取り立てを禁じ、百姓がじかに訴え出られる仕組みも整えた。北条家が五代百年にわたって関東を治められたのは、こうした政の安定があったからともいわれる。'},
+{id:'cz_sg_uiro',c:S=>S.reg==='sagami'&&rA(S)&&inY(S,1504,1600),w:CW,once:1,
+ t:'小田原の城下に出かけた。外郎家の店先で、透頂香という薬を求める旅人が列をなしている。',
+ ch:[['薬を買い求める',S=>{ad(S,{kan:-1,tai:4});return '小さな粒を一つ口に含むと、すっとした香りが鼻に抜けた。'},S=>S.kan>=1,'体が少し良くなる'],
+     ['見物だけして帰る',S=>{ad(S,{chi:1,kok:2});return '関東一の城下のにぎわいを、目に焼きつけて帰った。'}]],
+ ji:'北条家の本拠・小田原は、関東随一の城下町として栄えた。京の外郎家は北条早雲に招かれて小田原に移り、薬の「透頂香（ういろう）」で名高かった。いまの菓子の「ういろう」の名も、この家に由来するといわれる。'},
+{id:'cz_sg_sougamae',c:S=>S.reg==='sagami'&&rA(S)&&inY(S,1587,1589),w:3,once:1,
+ t:'関白との戦に備え、小田原の城と町をまるごと囲む、長い堀と土塁を築く普請に駆り出された。',
+ ch:[['普請に精を出す',S=>{ad(S,{tai:-4,en:3});return '堀の底から見上げると、空が細長く見えた。これほどの構えなら、どんな大軍でも落とせまい。'}],
+     ['こんな普請は無駄だとぼやく',S=>{ad(S,{chi:1,en:-1});return '「堀を掘るより、関白に頭を下げたほうが早い」とぼやいたら、組頭ににらまれた。'}]],
+ ji:'豊臣秀吉との戦いに備え、北条家は城下町や田畑まで含めて、周囲およそ九キロメートルを堀と土塁で囲む「総構え」を築いた。町ごと籠城できるほどの広さで、天下の大軍も力攻めはできず、三か月の包囲の末に北条家は降伏した（1590年）。'},
+{id:'cz_sg_tsurugaoka',c:S=>S.reg==='sagami'&&rA(S)&&inY(S,1532,1540),w:CW,once:1,
+ t:'焼けた鶴岡八幡宮を造り直す普請が始まった。北条の殿は、奈良や京から大工を呼び寄せているという。',fx:{kan:1,kok:2,en:1},
+ ji:'鎌倉は源頼朝が幕府を開いた古都だが、戦国時代には寺社が荒れていた。北条氏綱は、関東の新しい主であることを示すため、戦で焼けた鶴岡八幡宮を、天文元年（1532年）から八年かけて大がかりに造り直した。'},
+{id:'cz_sg_edo',c:S=>S.reg==='sagami'&&rA(S)&&inY(S,1591,1610)&&!isBushi(S),w:CW,once:1,
+ t:'関東の新しい主となった徳川家は、小田原ではなく江戸を本拠に選んだ。入り江を埋め立てる大普請に、人足を募っている。',
+ ch:[['江戸の普請に出る',S=>{ad(S,{kan:rnd(3,6),tai:-3,chi:1});return '入り江に土を運ぶ毎日だった。泥の上に、見る見る町ができていく。'},null,'銭が増える'],
+     ['相模に残る',S=>'江戸は遠い。相模で暮らしを続けた。']],
+ ji:'小田原攻めの後、豊臣秀吉は徳川家康に北条家の旧領・関東を与えた。家康は小田原ではなく江戸を本拠に選んだ。当時の江戸は入り江に面した小さな城下で、家康は堀や水路を掘り、入り江を埋め立てて、町を一からつくり上げていった。'},
+{id:'cz_sg_fuma',c:S=>S.reg==='sagami'&&rBu(S)&&inY(S,1560,1590),w:CW,once:1,
+ t:'夜更け、敵陣の方角で火の手が上がった。北条家に仕える「風魔」という乱破の仕業だという。',fx:{chi:1},
+ ji:'北条家には「風魔」と呼ばれる乱破（忍び）の一団が仕えていたと伝わる。夜討ちや放火、敵地の撹乱を得意としたというが、その姿は、江戸時代に書かれた軍記物の中で語られることが多い。'},
+
+/* ===== 近江 ===== */
+{id:'cz_om_sou',c:S=>S.reg==='omi'&&vil(S)&&S.y<1590,w:CW,once:1,
+ t:'村の寄合で、隣村との境の山の争いをどうするか話し合った。掟を破った者は村から追い出す、と乙名が言った。',
+ ch:[['村のために体を張る',S=>{if(chance(.15)){ad(S,{tai:-8,mei:3});return '隣村の者と鎌を振り回す騒ぎになり、額を切った。'}ad(S,{en:5,mei:3});return '山の境で隣村とにらみ合った。数で勝るこちらに、向こうが折れた。'},null,'縁と名が増える。少し危ない'],
+     ['寄合の決まりに従う',S=>{ad(S,{en:2});return '寄合の決めたとおり、見張りの番を務めた。'}]],
+ ji:'近江には、村人が寄合を開いて掟を決め、自分たちで村を治める「惣（そう）」の村が多かった。琵琶湖の北岸の菅浦では、隣の大浦と田畑や山の境を百年以上も争い、その記録（菅浦文書）がいまも残っている。'},
+{id:'cz_om_shonin',c:S=>S.reg==='omi'&&rA(S)&&S.sex==='m'&&S.age<=45&&(vil(S)||rCho(S))&&S.y>=1490,w:CW,once:1,
+ t:'村の若い衆が、天秤棒に荷を担いで、伊勢や美濃へ行商に出ていく。',
+ ch:[['自分も行商に出てみる',S=>{if(chance(.6)){ad(S,{kan:rnd(4,9),en:4,chi:1});return '近江の麻布と針を担いで美濃を回った。帰りの荷には、美濃の紙を積んだ。'}ad(S,{kan:-Math.min(S.kan,2),tai:-3});return '慣れない道で荷を盗まれ、手ぶらで帰ってきた。'},null,'六割ほどで銭と縁が増える'],
+     ['村に残る',S=>'村に残った。']],
+ ji:'近江は京と東国・北国を結ぶ交通の要で、湖東の保内商人などが、天秤棒ひとつで各地を行商した。座の特権をめぐって他国の商人と訴訟を起こすほど勢いがあった。のちに全国で活躍する「近江商人」の先駆けである。'},
+{id:'cz_om_kunitomo',c:S=>S.reg==='omi'&&rA(S)&&inY(S,1550,1615),w:CW,once:1,
+ t:S=>isBushi(S)?'国友村の鍛冶屋で、鉄砲を一挺誂えないかと勧められた。値は銭八貫文。':'国友村の鍛冶屋から、一日じゅう鉄を打つ音が響いてくる。鉄砲の注文が引きも切らないらしい。',
+ fx:S=>isBushi(S)?null:{chi:1},
+ ch:[['鉄砲を誂える（銭八貫文）',S=>{ad(S,{kan:-8,bu:3,mei:2});S.f.teppo=1;return '国友の鉄砲を手に入れた。的に当てるには、まだまだ稽古が要る。'},S=>isBushi(S)&&S.kan>=8,'銭が減るが、武が上がる'],
+     ['今は見送る',S=>'見送った。',isBushi]],
+ ji:'鉄砲が種子島に伝わってまもなく、近江の国友村の鍛冶たちは鉄砲づくりを始めた。堺と並ぶ鉄砲の一大産地となり、織田信長や豊臣秀吉、のちには徳川家も、国友に鉄砲を注文した。'},
+{id:'cz_om_katata',c:S=>S.reg==='omi'&&rA(S)&&S.y<1590,w:CW,once:1,
+ t:'琵琶湖を舟で渡ろうとしたら、堅田の者の舟が寄ってきて、「上乗りの銭を払え」と言われた。',
+ ch:[['銭を払う',S=>{ad(S,{kan:-Math.min(S.kan,1)});return '銭を払うと、堅田の男が舟に乗り込んできた。おかげで、ほかの湖賊には襲われずに済んだ。'},null,'銭が少し減るが安全'],
+     ['払わずに漕ぎ出す',S=>{if(chance(.45)){ad(S,{kan:-Math.min(S.kan,4),tai:-3});return '沖で囲まれ、荷を奪われた。'}ad(S,{mei:1});return 'うまく振り切った。'},null,'四割五分ほどで荷を奪われる']],
+ ji:'琵琶湖の堅田の人々は、湖を行く舟から通行料を取る権利を持ち、払わない舟を襲うこともあったため「湖賊」とも呼ばれた。そのかわり、銭を払えば舟に乗り込み（上乗り）、ほかの湖賊から守ってくれた。湖の水運は、京へ物を運ぶ大事な道だった。'},
+{id:'cz_om_azuchi',c:S=>S.reg==='omi'&&rA(S)&&inY(S,1577,1581),w:CW,once:1,
+ t:'安土の城下に出かけた。町の掟で、街道を通る商人は、必ず安土に泊まらなければならないという。おかげで町は旅人であふれている。',
+ fx:S=>rCho(S)?null:{kok:3,chi:1},
+ ch:[['安土に店を構える',S=>{ad(S,{kan:rnd(6,14),en:3});return '安土に小さな店を借りた。山の上の天主の瓦が、毎朝まぶしい。'},rCho,'銭が大きく増える'],
+     ['行商で立ち寄るだけにする',S=>{ad(S,{kan:rnd(2,4)});return '品を売り切って帰った。'},rCho]],
+ ji:'織田信長は琵琶湖のほとりの安土山に、五層七重の天主をもつ安土城を築いた（1576年着工）。城下には楽市楽座の掟（1577年）を出し、街道を行く商人に城下で宿を取るよう命じて町をにぎわせた。城は本能寺の変（1582年）の直後に焼けてしまった。'},
+{id:'cz_om_koka',c:S=>S.reg==='omi'&&rBu(S)&&S.y<1585,w:CW,once:1,
+ t:'甲賀の地侍たちが寄合を開いて、どの大名につくかを話し合っているという。物事は、皆の多数決で決めるらしい。',fx:{chi:2},
+ ji:'近江の甲賀郡では、地侍たちが「甲賀郡中惣」という同盟を結び、寄合の多数決で物事を決めた。山がちな土地での戦いや、敵地を探る仕事に長けた甲賀の者は、のちに伊賀の者と並んで「忍び」の代名詞となった。'},
+
+/* ===== 山城 ===== */
+{id:'cz_ys_kamae',c:S=>S.reg==='yamashiro'&&rCho(S)&&!wander(S)&&inY(S,1480,1590),w:CW,once:1,
+ t:'町内の寄合で、夜盗に備えて町の入り口の木戸を閉め、交代で番をすることに決まった。今夜は自分の番だ。',
+ ch:[['寝ずに番をする',S=>{if(chance(.25)){ad(S,{mei:4,en:3});return '夜半、木戸を乗り越えようとする影を見つけ、拍子木を打ち鳴らした。町じゅうが飛び起き、盗賊は逃げていった。'}ad(S,{en:2,tai:-1});return '何事もなく夜が明けた。'},null,'縁が増える'],
+     ['銭を払って番を代わってもらう',S=>{ad(S,{kan:-Math.min(S.kan,1)});return '若い者に銭を握らせて、番を代わってもらった。'}]],
+ ji:'応仁の乱のあと、京の町の人々（町衆）は、町ごとに掟を定め、町の境に木戸や堀を設けて、自分たちで町を守った。いくつもの町が集まって「町組」をつくり、上京と下京はそれぞれ一つの大きなまとまりとして、戦国の京を生き抜いた。'},
+{id:'cz_ys_shogun',c:S=>S.reg==='yamashiro'&&rA(S)&&inY(S,1490,1573),w:CW,once:1,
+ t:'将軍さまが、また京を逃げ出したそうだ。御所の門は閉ざされ、町の者は「次は誰の天下か」と噂し合っている。',fx:{chi:1},
+ ji:'応仁の乱のあと、室町幕府の将軍は、管領の細川家やその家臣の三好家などの争いに振り回され、何度も京を追われて近江などへ逃れた。十代将軍義稙、十二代義晴、十三代義輝と、都落ちを経験した将軍は少なくない。'},
+{id:'cz_ys_nishijin',c:S=>S.reg==='yamashiro'&&rA(S)&&(S.cls==='cho'||S.cls==='hyak')&&!isBushi(S)&&S.y>=1500,w:CW,once:1,
+ t:'西陣の機屋で、織り子の手が足りないという話を聞いた。',
+ ch:[['機屋に通って織りを習う',S=>{ad(S,{kan:rnd(2,5),chi:2});return '金糸を織り込んだ帯が、少しずつ織れるようになった。'},null,'銭と知が増える'],
+     ['断る',S=>'断った。']],
+ ji:'応仁の乱で西軍が陣を置いたあたりは、のちに「西陣」と呼ばれた。乱を逃れて堺などへ散っていた織物職人たちが戻って機を構え、明から伝わった技も取り入れて、高級な絹織物の産地として栄えた。'},
+{id:'cz_ys_sokui',c:S=>S.job==='kuge'&&(inY(S,1500,1521)||inY(S,1526,1536)),w:2,once:1,
+ t:'帝が位を継がれてもう何年もたつのに、即位の礼が行えずにいる。費用が足りないのだ。公家衆で、大名や寺に献金を頼む文を書くことになった。',
+ ch:[['筆を執って頼み状を書く',S=>{if(chance(.5+S.st.chi/300)){ad(S,{mei:4,chi:2});return 'いくつかの大名家から、献金を約束する返事が届いた。'}ad(S,{chi:1});return '返事は、なしのつぶてだった。'},null,S=>`知しだい（今の知${S.st.chi}）。名が上がる`],
+     ['自分の家計で手一杯だと断る',S=>{ad(S,{mei:-2});return '人の心配をしている余裕はない。'}]],
+ ji:'戦国時代、朝廷の収入は乏しく、儀式の費用にも事欠いた。後柏原天皇は位を継いでから即位の礼を挙げるまで二十年以上かかり（1500→1521年）、次の後奈良天皇も、大名たちの献金でようやく即位の礼を挙げた（1536年）。後奈良天皇は、自ら書いた書を売って暮らしの足しにしたとも伝わる。'},
+{id:'cz_ys_odoi',c:S=>S.reg==='yamashiro'&&S.age>=8&&!wander(S)&&S.y===1591,w:4,once:1,
+ t:'関白の命で、京の町をぐるりと囲む土塁と堀を築く普請が始まった。町の通りも、短冊のように割り直されるという。',fx:{chi:1,en:1},
+ ji:'天正十九年（1591年）、豊臣秀吉は京の周りに全長およそ二十二キロメートルの土塁と堀「御土居」を築き、町の区画も南北に細長い短冊形に整え直した。寺は寺町に集められ、戦国の焼け跡だった京は、新しい城下町のような姿に変わっていった。'},
+{id:'cz_ys_hokke',c:S=>S.reg==='yamashiro'&&rA(S)&&inY(S,1532,1535)&&!isMonk(S),w:2,once:1,
+ t:'町内の法華宗の衆が、題目を唱えながら列をつくって町を見回っている。山科の本願寺の一揆が攻めてくるかもしれないという。',
+ ch:[['見回りの列に加わる',S=>{ad(S,{en:4,bu:1,mei:1});return '「南無妙法蓮華経」と唱えながら、夜の町を歩いた。'},null,'縁が増える'],
+     ['関わらない',S=>'宗旨の争いには、関わらないことにした。']],
+ ji:'京の町衆には法華宗（日蓮宗）の信者が多かった。天文元年（1532年）、法華宗徒は細川晴元と組んで山科本願寺を焼き討ちし、その後数年、京の町を自分たちで治めた（法華一揆）。しかし天文五年（1536年）、対立した比叡山延暦寺の大軍に攻められ、京の法華宗の寺はすべて焼かれた。'},
+
+/* ===== 和泉（堺） ===== */
+{id:'cz_iz_hori',c:S=>S.reg==='izumi'&&rA(S)&&inY(S,1500,1568),w:CW,once:1,
+ t:'堺の町を囲む堀を、さらに深く掘り直す普請が始まった。町の会合衆が銭を出し合い、腕の立つ牢人も雇い入れている。',
+ fx:S=>rCho(S)?null:{en:1},
+ ch:[['普請に銭を出す',S=>{ad(S,{kan:-Math.min(S.kan,3),mei:3,en:3});return '銭を出した。町のことは町で守る。それが堺のやり方だ。'},rCho,'銭は減るが、名と縁が増える'],
+     ['口だけ出す',S=>{ad(S,{en:-1});return '寄合で意見だけ言って、銭は出さなかった。'},rCho]],
+ ji:'堺は、会合衆と呼ばれる豪商たちが話し合いで町を治める自由な都市で、まわりを堀で囲み、雇った牢人に守らせて、大名の干渉をはねのけた。宣教師ガスパル・ヴィレラは、堺を「ベニスのように、執政官によって治められている」と書き送っている。'},
+{id:'cz_iz_minbune',c:S=>S.reg==='izumi'&&isMerch(S)&&!S.f.decchi&&adult(S)&&inY(S,1470,1550),w:CW,once:1,
+ t:'明へ渡る遣明船に、荷を積まないかという話が来た。うまくいけば、銭が何倍にもなって返ってくる。',
+ ch:[['銭を出して荷を積む',S=>{if(chance(.55)){ad(S,{kan:rnd(15,30),mei:3});return '二年がかりで船が戻った。明の生糸と陶磁器が、積んだ銭の何倍にも化けた。'}ad(S,{kan:-Math.min(S.kan,10)});return '船は嵐で積み荷の半分を失い、出した銭は戻らなかった。'},S=>S.kan>=10,'五割五分ほどで大儲け。しくじると大損'],
+     ['危ない橋は渡らない',S=>'見送った。']],
+ ji:'堺の商人は、細川家と結んで明との勘合貿易（日明貿易）にかかわり、明から銅銭・生糸・陶磁器・書物などを持ち帰った。遣明船の派遣をめぐって大内家と争い、明の寧波で双方の使節が争う騒ぎも起きた（1523年）。'},
+{id:'cz_iz_teppo',c:S=>S.reg==='izumi'&&rA(S)&&inY(S,1550,1615),w:CW,once:1,
+ t:S=>isMerch(S)&&!S.f.decchi?'南蛮船が持ち込んだ煙硝を、まとめて買わないかという話がある。鉄砲の火薬のもとで、大名たちが高値で欲しがっている。':'堺の鍛冶町では、鉄砲の筒を打つ音が夜まで響いている。',
+ fx:S=>isMerch(S)&&!S.f.decchi?null:{chi:1},
+ ch:[['煙硝を買って大名に売る',S=>{if(chance(.6)){ad(S,{kan:rnd(10,20)});return '仕入れた煙硝は、ある大名の使いが言い値で全部買っていった。'}ad(S,{kan:-Math.min(S.kan,5),mei:-2});return '敵方の大名にも売ったことが知れ、睨まれることになった。'},S=>isMerch(S)&&!S.f.decchi&&S.kan>=10,'六割ほどで大儲け'],
+     ['危ない品には手を出さない',S=>'見送った。',S=>isMerch(S)&&!S.f.decchi]],
+ ji:'種子島に伝わった鉄砲の作り方は、堺の商人によって持ち帰られたともいわれ、堺は近江の国友と並ぶ鉄砲の産地になった。火薬の原料の硝石（煙硝）は日本ではほとんど採れなかったため、堺の商人が南蛮船から買い入れて大名に売り、大きな利益を上げた。'},
+{id:'cz_iz_chakai',c:S=>S.reg==='izumi'&&isMerch(S)&&!S.f.decchi&&adult(S)&&inY(S,1540,1600),w:CW,once:1,
+ t:'豪商仲間の茶会に招かれた。床の間には名物の茶入れ。茶を飲みながら、大名家の兵糧の話がさらりと出た。',
+ ch:[['商談に乗る',S=>{if(chance(.6)){ad(S,{kan:rnd(6,12),en:3});return '兵糧米の買い付けの一口に乗せてもらった。'}ad(S,{kan:-Math.min(S.kan,3)});return '話に乗ったが、米の値が下がって損をした。'},null,'六割ほどで儲かる'],
+     ['茶の湯そのものを味わう',S=>{ad(S,{chi:3,kok:3});return '商いの話は聞き流し、茶の味と、ひと時の静けさを楽しんだ。'},null,'知と心が増える']],
+ ji:'堺の豪商たちのあいだでは茶の湯が盛んで、武野紹鴎や千利休、今井宗久、津田宗及らが出た。茶会は商談や知らせを交わす場でもあり、名物の茶道具は一国に値するとまでいわれた。'},
+{id:'cz_iz_osaka',c:S=>S.reg==='izumi'&&isMerch(S)&&!S.f.decchi&&adult(S)&&inY(S,1583,1598),w:CW,once:1,
+ t:'関白が、大坂の新しい城下に移り住む商人を募っている。堺の堀も埋められ始めたという。',
+ ch:[['大坂へ店を移す',S=>{ad(S,{kan:rnd(-2,6),en:3});return '大坂の新しい町に店を移した。城の普請で、町は人であふれている。'},null,'引っ越しに銭がかかるが、商いは伸びる'],
+     ['堺に残る',S=>{ad(S,{kok:2,kan:-Math.min(S.kan,1)});return '堺に残った。堀の消えた町は、どこか心もとない。'}]],
+ ji:'豊臣秀吉は大坂城の城下町をつくるとき、堺や平野の商人を移り住ませた。天正十四年（1586年）ごろ、堺の町を守ってきた堀は埋められ、堺は自由な都市としての力を失っていった。'},
+
+/* ===== 摂津 ===== */
+{id:'cz_st_jinai',c:S=>S.reg==='settsu'&&rA(S)&&inY(S,1533,1579),w:CW,once:1,
+ t:'大坂の本願寺のまわりの寺内町に、各地から門徒が集まってくる。ここでは、領主の課役もかからないという。',
+ ch:[['寺内町に移り住む',S=>{ad(S,{kan:rnd(1,4),en:3,kok:2});return '寺内町に住まいを移した。朝夕に念仏の声が響く。'},S=>!isBushi(S)&&!isMonk(S),'銭と縁が少し増える'],
+     ['参詣だけする',S=>{ad(S,{kok:3});return '御影堂に参り、念仏を唱えて帰った。'}]],
+ ji:'本願寺は天文元年（1532年）に山科を焼かれ、大坂（石山）に本拠を移した。寺のまわりには堀と土塁で囲まれた寺内町ができ、門徒の商人や職人が集まって、領主の課役や商いの縛りを免れる自由な町として栄えた。のちにこの場所に、豊臣秀吉が大坂城を築く。'},
+{id:'cz_st_araki',c:S=>S.reg==='settsu'&&S.job==='samurai'&&hasLord(S)&&adult(S)&&S.y===1578,w:6,once:1,k:'big',
+ t:'摂津を任されている荒木村重さまが、突然、織田家に背いて有岡城に立てこもった。荒木さまの与力である自分の家にも、城に入れとの使いが来た。',
+ ch:[['荒木さまに従って籠城する',S=>{if(chance(.3)){die(S,'有岡城の籠城中に討死');return '一年近い籠城の末、城は落ちた。'}ad(S,{mei:3,tai:-8});S.job='ronin';S.koku=0;mj('有岡城に籠城し、浪人となる');return '一年近い籠城の末、村重さまは城を抜け出して逃げた。城は落ち、浪人の身となった。'},null,'三割ほどで討死。生き残っても浪人になる'],
+     ['織田方に寝返る',S=>{const a=Math.max(10,Math.round(S.koku*.2/10)*10);ad(S,{mei:-4,en:-3,koku:a});mj('荒木村重を見限り、織田方につく');return '城を出て織田方に降った。所領は安堵され、加増まで受けた。'},null,'所領は守れるが、名を落とす'],
+     ['病と称して屋敷にこもる',S=>{ad(S,{mei:-2,kok:-4});return '病と称して、どちらにもつかなかった。やがて城に残された村重さまの一族が処刑されたと聞き、震えが止まらなかった。'},null,'危険はないが、名を落とす']],
+ ji:'天正六年（1578年）、織田信長から摂津一国を任されていた荒木村重が、突然信長に背き、有岡城に立てこもった。説得に来た黒田官兵衛は捕らえられて牢に入れられた。翌年、村重は城を抜け出し、残された一族や家臣の妻子は信長によって処刑された。'},
+{id:'cz_st_minato',c:S=>S.reg==='settsu'&&rA(S)&&S.y<1620,w:CW,once:1,
+ t:'兵庫の湊に、西国からの船が何艘も着いた。米俵、塩、材木、そして明から来たという品々が、次々と陸に揚げられていく。',
+ ch:[['荷揚げの人足に出る',S=>{ad(S,{kan:rnd(1,3),tai:-1});return '一日じゅう米俵を担いだ。'},S=>!isBushi(S)],
+     ['唐物を見て回る',S=>{ad(S,{chi:2});return '明の青磁の皿に、見とれた。'}]],
+ ji:'摂津の兵庫や尼崎は、瀬戸内海を通って西国から来る船が、京・大坂へ荷を運び込む湊だった。米・塩・材木のほか、明や朝鮮からの品もここで陸揚げされた。'},
+{id:'cz_st_arima',c:S=>S.reg==='settsu'&&rA(S)&&S.kan>=2,w:CW,once:1,
+ t:'有馬の湯へ湯治に出かけた。赤茶けた湯につかると、体の芯まで温まった。',fx:{tai:6,kok:4,kan:-2},
+ ji:'摂津の有馬温泉は、日本でもっとも古い湯の一つとされる。豊臣秀吉はたびたび有馬を訪れ、湯山御殿を建てて茶会も開いた。鉄分を含んだ赤茶色の湯で知られる。'},
+{id:'cz_st_sake',c:S=>S.reg==='settsu'&&rA(S)&&inY(S,1600,1700),w:CW,once:1,
+ t:'伊丹で造った、にごりのない澄んだ酒が、樽に詰められて江戸へ下っていく。',
+ fx:S=>isMerch(S)&&!S.f.decchi?null:{kok:2},
+ ch:[['酒の商いに一口乗る',S=>{if(chance(.65)){ad(S,{kan:rnd(5,12)});return '江戸の酒問屋から、追加の注文が来た。'}ad(S,{kan:-Math.min(S.kan,3)});return '船が嵐に遭い、樽の半分が駄目になった。'},S=>isMerch(S)&&!S.f.decchi&&S.kan>=5,'六割五分ほどで儲かる'],
+     ['見送る',S=>'見送った。',S=>isMerch(S)&&!S.f.decchi]],
+ ji:'摂津の伊丹や池田では、江戸時代のはじめごろから、にごりのない澄んだ酒（清酒）を大量に造る技が広まった。樽に詰めて船で江戸へ運ばれ、「下り酒」ともてはやされた。上方から江戸へ下らない、つまらない物を「くだらない」と言うようになった、という話もある。'},
+
+/* ===== 加賀 ===== */
+{id:'cz_kg_sou',c:S=>S.reg==='kaga'&&rA(S)&&inY(S,1489,1580),w:CW,once:1,
+ t:'村の講の寄合で、国の政のことまで話し合われた。年貢を誰にどれだけ納めるかも、門徒の寄合で決めるのだという。',fx:{en:3,chi:1},
+ ji:'長享二年（1488年）、加賀の一向宗（浄土真宗本願寺派）の門徒は、守護の富樫政親を攻め滅ぼした。以後およそ百年、門徒の国人や百姓が加賀を治め、人々はこれを「百姓の持ちたる国」と呼んだ。'},
+{id:'cz_kg_ko',c:S=>S.reg==='kaga'&&S.age>=8&&!wander(S)&&inY(S,1470,1620),w:CW,once:1,
+ t:'村の道場で講が開かれた。坊さまが、蓮如上人の「御文」を読み聞かせてくれた。',
+ ch:[['熱心に聞き入る',S=>{ad(S,{kok:4,chi:1});return '難しいことはわからないが、「ただ念仏すれば救われる」というところだけは、胸にすとんと落ちた。'}],
+     ['講のあとの寄り合いの飯が目当て',S=>{ad(S,{en:3});return '講のあとは、村じゅうで鍋を囲む。これが楽しみだ。'}]],
+ ji:'本願寺の蓮如は、教えを手紙の形でやさしく書いた「御文」で広め、村ごとに門徒が集まる「講」をつくらせた。講は信仰の集まりであると同時に、村人が団結する場にもなり、一向一揆の力の源になった。'},
+{id:'cz_kg_oyama',c:S=>S.reg==='kaga'&&rA(S)&&inY(S,1546,1580),w:CW,once:1,
+ t:'金沢の尾山御坊に、加賀じゅうの門徒の代表が集まった。越前の朝倉の軍勢、のちには織田の軍勢が迫ってくるという。',
+ ch:[['御坊を守る衆に加わる',S=>{ad(S,{bu:2,mei:2,kok:-2});return '竹槍を手に、御坊の見張りに立った。'},S=>S.sex==='m','武と名が増える'],
+     ['村で田を守る',S=>{ad(S,{kan:1});return '田を守るのも、門徒の務めだ。'}]],
+ ji:'天文十五年（1546年）、本願寺は加賀の拠点として尾山御坊（金沢御堂）を建てた。天正八年（1580年）、織田方の柴田勝家の軍勢に落とされて「百姓の持ちたる国」は終わり、その跡には、のちに前田家の金沢城が築かれた。'},
+{id:'cz_kg_kaisaku',c:S=>S.reg==='kaga'&&vil(S)&&inY(S,1651,1700),w:CW,once:1,
+ t:'殿の命で、村々の年貢の決まりが改められた。困っている百姓には、農具や種籾の代わりの銭を貸してくれるという。',fx:{kan:2,kok:3},
+ ji:'加賀・能登・越中を治めた前田家は、外様最大の百万石の大名だった。三代目の前田利常は「改作法」（1651年〜）で村々の年貢を整え、困窮した百姓に農具代や種籾を貸し付けて、田畑の立て直しを進めた。'},
+{id:'cz_kg_kogei',c:S=>S.reg==='kaga'&&rA(S)&&inY(S,1620,1700)&&!isBushi(S),w:CW,once:1,
+ t:'金沢の城下に、京から腕の立つ職人が招かれて、蒔絵や象嵌の工房が開かれた。',
+ ch:[['工房に弟子入りを願い出る',S=>{if(chance(.5)){ad(S,{chi:3,kan:2});return '下働きから始めることになった。漆にかぶれて腕が腫れたが、親方の手さばきから目が離せない。'}return '弟子は足りていると、すげなく断られた。'},S=>S.age<=30,'五割ほどで技が身につく'],
+     ['工房をのぞくだけにする',S=>{ad(S,{chi:1});return '金粉をまく手さばきに見とれた。'}]],
+ ji:'前田家は大坂の陣のあと、武よりも文化に力を入れ、京や江戸から職人を招いて、城の細工所で工芸品をつくらせた。金沢が工芸の町として栄えたのはこのためで、幕府に謀反を疑われないための策でもあったといわれる。'},
+
+/* ===== 安芸 ===== */
+{id:'cz_ak_monto',c:S=>S.reg==='aki'&&S.age>=8&&!wander(S),w:CW,once:1,
+ t:'村の寺の報恩講に、村じゅうが集まった。夜通し念仏を唱え、皆でお斎（とき）の膳を囲んだ。',fx:{kok:3,en:3},
+ ji:'安芸は浄土真宗の信者がとりわけ多く、「安芸門徒」と呼ばれた。毛利家は、大坂の本願寺が織田信長と戦ったとき（石山合戦）、瀬戸内海から兵糧を運び入れて本願寺を支えた。'},
+{id:'cz_ak_itsukushima',c:S=>S.reg==='aki'&&rA(S),w:CW,once:1,
+ t:'厳島の社に参った。潮が満ちると、朱塗りの社殿が海の上に浮かんで見える。',
+ ch:[['舟で大鳥居をくぐる',S=>{ad(S,{kok:5,kan:-1});return '満ち潮の海を舟で進み、大鳥居をくぐった。'},S=>S.kan>=1,'心が満ちる'],
+     ['家の者の無事を祈る',S=>{ad(S,{kok:3});return '家の者が、皆無事でいられるよう祈った。'}]],
+ ji:'安芸の厳島神社は、平清盛があつく信じた社で、海の上に社殿が建つ。戦国時代には大内家や毛利家が守った。弘治元年（1555年）、毛利元就はこの島に陶晴賢の大軍を誘い込み、嵐の夜に奇襲して打ち破った（厳島の戦い）。'},
+{id:'cz_ak_kasa',c:S=>S.reg==='aki'&&rBu(S)&&inY(S,1555,1600),w:CW,once:1,
+ t:'殿の家中と安芸の国衆たちが、誓いの書状を交わした。名前が円く、傘を広げたように書き連ねてある。誰が上座かわからないようにするためだという。',fx:{en:3,chi:1,ko:2},
+ ji:'毛利家は、もとは安芸の国衆の一つにすぎなかった。毛利元就は、ほかの国衆とは対等な仲間という形をとり、名前を円く放射状に書き連ねた「傘連判状」を交わして結束を固めた。弘治三年（1557年）には、三人の息子に兄弟の結束を説く長い手紙（三子教訓状）も書いている。のちの「三本の矢」の話は、これをもとにした作り話とされる。'},
+{id:'cz_ak_kaki',c:S=>S.reg==='aki'&&vil(S)&&S.y>=1532,w:CW,once:1,
+ t:'浜の干潟に竹や木の枝を立て、そこに牡蠣を付けて育てる仕事を手伝った。',fx:{kan:2,tai:-1},
+ ji:'広島湾では、天文年間（1532〜1555年）に、干潟に竹や枝を立てて牡蠣を育てる方法が始まったと伝わる。いまに続く広島の牡蠣の養殖の始まりとされる。'},
+{id:'cz_ak_hiroshima',c:S=>S.reg==='aki'&&rA(S)&&inY(S,1589,1600),w:CW,once:1,
+ t:'太田川の河口の三角州に、殿の新しい城と町がつくられている。山の上の古い城から、殿も家臣も移ってくるという。',
+ ch:[['新しい町に移る',S=>{ad(S,{kan:rnd(1,4),en:2});return '新しい町に移った。潮の香りのする町だ。'},S=>!isFarmer(S),'銭と縁が少し増える'],
+     ['普請の人足に出る',S=>{ad(S,{kan:rnd(1,3),tai:-2});return '湿った三角州に、土を運んで固めた。'},S=>!isBushi(S)],
+     ['遠くから眺める',S=>{ad(S,{chi:1});return '海辺に、見たこともない大きな城が建っていく。'}]],
+ ji:'天正十七年（1589年）、毛利輝元は、山の上の吉田郡山城から、太田川の河口の三角州に本拠を移し、広島城を築き始めた。これが、いまの広島の町の始まりである。'},
+{id:'cz_ak_kaieki',c:S=>S.reg==='aki'&&S.job==='samurai'&&hasLord(S)&&adult(S)&&S.y===1619,w:8,once:1,k:'big',
+ t:'殿の福島正則さまが、大水で崩れた広島城の石垣を、幕府の許しなく直したと咎められた。安芸・備後の領地は取り上げられ、殿は信濃の小さな領地へ移されるという。',
+ ch:[['新しく安芸に入る浅野家に仕える',S=>{ad(S,{mei:-2,koku:-Math.round(S.koku*.2)});mj('主家の改易で、浅野家に仕える');return '新しく安芸に入った浅野家に、召し抱えてもらえた。知行は少し減った。'},null,'知行が少し減る'],
+     ['殿への義理を通して浪人となる',S=>{S.job='ronin';S.koku=0;ad(S,{mei:4,kok:-5});mj('主家の改易で浪人となる');return '「二君に仕えず」と決めた。殿の後ろ姿を見送り、浪人の身となった。'},null,'名は上がるが、浪人になる']],
+ ji:'元和元年（1615年）に出た武家諸法度は、大名が城を修理するときは幕府に届け出ることを求めた。福島正則は、洪水で崩れた広島城の石垣を直したことを「無断の修理」と咎められ、元和五年（1619年）、安芸・備後五十万石を取り上げられた（改易）。'},
+
+/* ===== 筑前 ===== */
+{id:'cz_ck_shoubou',c:S=>S.reg==='chikuzen'&&S.age>=6&&!wander(S)&&S.y<1587,w:.8,cd:12,
+ t:'博多の町が、また戦で焼けた。焼け跡で、商人たちが早くも材木の値の話をしている。',
+ ch:[['焼け跡の片付けを手伝う',S=>{ad(S,{en:4,tai:-2});return '炭になった柱を運び出した。三日もすると、焼け跡に新しい小屋が建ち始めた。'}],
+     ['焼け残った品を拾う',S=>{if(chance(.4)){ad(S,{kan:rnd(2,5),mei:-1});return '焼け残った明の銅銭を拾い集めた。'}ad(S,{mei:-2});return '人の家の焼け跡をあさっているところを、見咎められた。'},null,'四割ほどで銭になるが、名を落とすことも']],
+ ji:'博多は古くから大陸との交易で栄えた湊町だが、戦国時代には大内・大友・少弐・龍造寺などが奪い合い、たびたび戦火で焼けた。それでも商人たちは、焼けるたびに町を建て直した。'},
+{id:'cz_ck_boeki',c:S=>S.reg==='chikuzen'&&isMerch(S)&&!S.f.decchi&&adult(S)&&S.y<1600,w:CW,once:1,
+ t:'博多の商人仲間が、対馬を経て朝鮮へ渡る船を仕立てている。荷を積まないかと誘われた。',
+ ch:[['銭を出して荷を積む',S=>{if(chance(.6)){ad(S,{kan:rnd(8,18),chi:1});return '船が戻った。朝鮮の木綿と人参、明の書物が、いい値で売れた。'}ad(S,{kan:-Math.min(S.kan,6)});return '船は戻ったが、積み荷は思ったほど売れなかった。'},S=>S.kan>=6,'六割ほどで儲かる'],
+     ['今回は見送る',S=>'見送った。']],
+ ji:'博多の商人は、対馬の宗氏を通じて朝鮮と、また遣明船で明と交易し、木綿・人参・生糸・陶磁器・書物などを持ち帰った。博多の商人・神屋寿禎は、石見銀山に新しい精錬法「灰吹法」を伝え（1533年）、日本の銀の産出を大きく増やしたことでも知られる。'},
+{id:'cz_ck_nagoya',c:S=>S.reg==='chikuzen'&&rA(S)&&inY(S,1592,1598),w:2,once:1,
+ t:'朝鮮へ渡る大軍が、筑前を通って肥前の名護屋へ向かっていく。村からも、兵糧の米と、船の漕ぎ手が出されることになった。',
+ ch:[['漕ぎ手に出る',S=>{if(chance(.15)){die(S,'朝鮮への渡海で船が沈み');return '玄界灘の荒波に、船ごと呑まれた。'}ad(S,{kan:rnd(3,6),tai:-6});return '朝鮮との海を何度も往復した。生きて戻れたのは運がよかった。'},S=>S.sex==='m'&&!isBushi(S)&&S.age<=50,'銭が増えるが、一割五分ほどで命を落とす'],
+     ['米を差し出して済ませる',S=>{ad(S,{kan:-Math.min(S.kan,2),kok:-3});return '蔵の米を差し出した。今年の冬は苦しい。'}]],
+ ji:'豊臣秀吉の朝鮮出兵（文禄・慶長の役 1592〜1598年）の拠点・名護屋城は、肥前の北の端に築かれ、全国の大名が集まった。九州の村々は、兵糧や、船を漕ぐ水夫（かこ）を出す重い負担に苦しんだ。'},
+{id:'cz_ck_namban',c:S=>S.reg==='chikuzen'&&rA(S)&&inY(S,1557,1586)&&!S.f.kiri&&!isMonk(S),w:CW,once:1,
+ t:'博多の南蛮寺で、南蛮の坊主が説教をしている。病人の手当てもしてくれるらしい。',
+ ch:[['話を聞きに行く',S=>{ad(S,{chi:2,en:2});return 'デウスという神の話を聞いた。見たこともない絵や、時を告げるからくりに驚いた。'},null,'知と縁が増える'],
+     ['近寄らない',S=>'寺の和尚に叱られそうなので、近寄らなかった。']],
+ ji:'豊後の大友宗麟はキリスト教を保護し、領内の博多にも南蛮寺（教会）が建てられた。しかし天正十五年（1587年）、九州を平らげた豊臣秀吉は、博多の筥崎で宣教師（バテレン）の国外追放を命じた。'},
+{id:'cz_ck_fukuoka',c:S=>S.reg==='chikuzen'&&rA(S)&&inY(S,1601,1612),w:CW,once:1,
+ t:'黒田の殿が、博多の隣に新しい城を築き、黒田家ゆかりの地の名をとって「福岡」と名づけた。',fx:{chi:1},
+ ji:'関ヶ原の功で筑前を得た黒田長政は、那珂川の西に城を築き、黒田家ゆかりの備前国の「福岡」にちなんで名づけた（1601年〜）。こうして、商人の町・博多と、武士の町・福岡が、川をはさんで並ぶことになった。'},
+
+/* ===== 薩摩 ===== */
+{id:'cz_sm_tanegashima',c:S=>S.reg==='satsuma'&&rA(S)&&inY(S,1544,1555),w:CW,once:1,
+ t:'種子島の殿が、南蛮人から手に入れた鉄砲という筒の作り方を、鍛冶に学ばせているという。筒の底をふさぐ「ねじ」が、どうしても作れないらしい。',fx:{chi:2},
+ ji:'天文十二年（1543年）、大隅国の種子島に明の船が流れ着き、乗っていたポルトガル人が鉄砲を伝えた。島主の種子島時尭は二挺を大金で買い取り、刀鍛冶の八板金兵衛に作り方を学ばせた。筒の底をふさぐねじの作り方に苦心したと伝わる。'},
+{id:'cz_sm_xavier',c:S=>S.reg==='satsuma'&&rA(S)&&inY(S,1549,1550)&&!S.f.kiri&&!isMonk(S),w:3,once:1,
+ t:'鹿児島の町で、黒い衣の南蛮の坊主が、日本の言葉を書いた紙を読み上げて、デウスの教えを説いている。',
+ ch:[['話を聞いてみる',S=>{ad(S,{chi:2});if(chance(.25)){const n=kirishitan(S);ad(S,{kok:4});mj(`洗礼を受け、${n}となる`);return `話に心を打たれ、洗礼を受けた。洗礼名は${n}。`}return '天地を造ったという神の話を聞いた。わかるような、わからないような。'},null,'四分の一ほどで洗礼を受ける'],
+     ['遠巻きに眺める',S=>{ad(S,{chi:1});return '人だかりの後ろから眺めた。'}]],
+ ji:'天文十八年（1549年）、イエズス会のフランシスコ・ザビエルが鹿児島に上陸し、日本で初めてキリスト教を伝えた。島津貴久は一時布教を許したが、のちに仏僧たちの反発を受けて禁じたため、ザビエルは平戸・山口・京へと移っていった。'},
+{id:'cz_sm_shirasu',c:S=>S.reg==='satsuma'&&vil(S),w:CW,once:1,
+ t:'畑を耕しても、出てくるのは白い灰のような土ばかりだ。雨が降ると、すぐに崩れて流れてしまう。',
+ ch:[['粟や稗、そばを植える',S=>{ad(S,{kan:1,kok:1});return '乾いた土地でも育つ粟と稗を植えた。腹は満たせる。'}],
+     ['谷あいの湿った土地を開く',S=>{if(chance(.5)){ad(S,{kan:3,tai:-3});return '谷の湧き水を引いて、小さな田を開いた。'}ad(S,{tai:-4});return '開いた田は、長雨で崩れた土に埋まった。'},null,'五割ほどで田が増える']],
+ ji:'薩摩の大地の多くは、大昔の火山の大噴火で積もった「シラス」という白い軽石や火山灰でできている。水はけがよすぎて稲作に向かず、雨で崩れやすいため、人々は粟や稗、そばなど乾いた土地の作物に頼った。'},
+{id:'cz_sm_ryukyu',c:S=>S.reg==='satsuma'&&rA(S)&&inY(S,1500,1640),w:CW,once:1,
+ t:'坊津の湊に、琉球の船が着いた。明の絹、南の国の香木、見たことのない色の織物が並んでいる。',
+ ch:[['珍しい香木を買う',S=>{ad(S,{kan:-Math.min(S.kan,2),kok:4,chi:1});return '香木を少し削って焚くと、甘い香りが部屋に満ちた。'},S=>S.kan>=2,'心が満ちる'],
+     ['見るだけにする',S=>{ad(S,{chi:1});return '琉球の言葉は、まるでわからなかった。'}]],
+ ji:'薩摩の坊津は、古くから大陸や琉球との交易の湊だった。島津家は琉球王国との交易を重んじ、慶長十四年（1609年）には琉球に兵を送って従わせ、琉球を通じた明との交易の利益を得た。'},
+{id:'cz_sm_tsurino',c:S=>S.reg==='satsuma'&&rBu(S)&&inY(S,1560,1600),w:CW,once:1,
+ t:'野で、戦の稽古があった。囮の隊がわざと逃げ、追ってきた「敵」を、左右に伏せた隊が挟み撃ちにする。',
+ ch:[['囮の隊に入る',S=>{ad(S,{bu:3,tai:-2});return '本気で逃げているように見せるのが難しい。逃げ足の速さを褒められた。'},null,'武が上がる'],
+     ['伏兵の隊に入る',S=>{ad(S,{bu:2,chi:1});return '草むらで息を殺して待った。合図の法螺貝が鳴った瞬間、一斉に飛び出した。'}]],
+ ji:'島津家は、囮の兵がわざと逃げて敵を誘い込み、両側に伏せていた兵で囲んで討つ「釣り野伏せ」を得意とした。耳川の戦い（1578年）や沖田畷の戦い（1584年）で、この戦法で大軍を破ったといわれる。'},
+{id:'cz_sm_gochu',c:S=>S.reg==='satsuma'&&S.cls==='buke'&&S.sex==='m'&&S.age>=10&&S.age<=24&&S.y>=1596&&!isMonk(S),w:2,once:1,
+ t:'近所の武家の若者たちの集まり「郷中」に加わった。年長の者が年下の者に、剣や学問、武士の心得をたたき込む。',
+ ch:[['剣の稽古に打ち込む',S=>{ad(S,{bu:4,tai:2});return '朝から晩まで木刀を振った。「負けるな、嘘をつくな、弱い者をいじめるな」と、先輩たちは繰り返した。'},null,'武が上がる'],
+     ['学問に励む',S=>{ad(S,{chi:4});return '先輩たちと、いろは歌や古い軍記を読み合った。'},null,'知が上がる']],
+ ji:'薩摩では、地域ごとに武家の若者たちが「郷中」という集まりをつくり、年長の者が年下の者に武芸や心構えを教えた。戦国の終わりごろに始まったといわれ、のちに西郷隆盛や大久保利通も、この郷中で育った。'},
+{id:'cz_sm_sakurajima',c:S=>S.reg==='satsuma'&&S.age>=3&&inY(S,1471,1476),w:3,once:1,
+ t:'桜島が火を噴いた。空が昼でも暗くなり、灰が雪のように降り積もった。',fx:{tai:-2,kok:-2},
+ ji:'桜島はいまも噴火を続ける火山だ。文明三年（1471年）からの大噴火では溶岩が流れ出し、多くの死者が出たと伝わる。灰は、作物や人々の暮らしを何年も苦しめた。'},
+
+/* ===== 陸奥 ===== */
+{id:'cz_mt_yamase',c:S=>S.reg==='mutsu'&&S.age>=6&&!wander(S),w:.8,cd:10,s:'夏',
+ t:'夏だというのに、海から冷たい霧が流れ込み、日が差さない日が続いた。稲の穂が、いつまでたっても実らない。',
+ ch:[['山で食べ物を探す',S=>{ad(S,{tai:-3});return 'わらびの根や、栃の実を集めた。'}],
+     ['隣国へ米を買いに行く',S=>{if(S.kan>=3){ad(S,{kan:-3,tai:1});return '峠を越えて米を買ってきた。足元を見られて、ひどく高かった。'}ad(S,{tai:-4});return '米を買う銭もなく、手ぶらで戻った。'},S=>adult(S),'銭があれば飢えをしのげる']],
+ ji:'陸奥の太平洋側では、夏に北東から冷たく湿った風「やませ」が吹き込むことがあった。霧が立ちこめて日が差さず、気温が上がらないため、稲が育たずに凶作や飢饉となった。'},
+{id:'cz_mt_uma',c:S=>S.reg==='mutsu'&&rA(S),w:CW,once:1,
+ t:'馬市が立った。毛並みのいい若駒が、京や関東から来た馬喰に、高値で買われていく。',
+ ch:[['育てた馬を売る',S=>{ad(S,{kan:rnd(3,7)});return '手塩にかけた栗毛の若駒が、いい値で売れた。少し寂しい。'},S=>isFarmer(S),'銭が増える'],
+     ['馬を眺めるだけ',S=>{ad(S,{kok:2});return '駆け回る若駒たちを、日が暮れるまで眺めた。'}]],
+ ji:'陸奥は昔から名馬の産地で、奥州の馬は都の武士たちに重んじられた。広い牧で育てられた馬は、戦の時代には何よりの財産だった。'},
+{id:'cz_mt_tenbun',c:S=>S.reg==='mutsu'&&rBu(S)&&hasLord(S)&&inY(S,1542,1547),w:4,once:1,k:'big',px:S=>S._wpx||'w_field',
+ t:'殿（伊達稙宗）と若殿の晴宗さまが争いを始め、殿は若殿の手で城に閉じ込められた。南奥州の大名たちも、二つに分かれて戦い始めた。どちらにつくか。',
+ ch:[['先代の稙宗さまにつく',S=>warGo(S,{nm:'天文の乱',ty:'field',win:.4,fin:(S,r)=>{ad(S,{ko:-6});return r==='win'?'この戦には勝ったが、争いは晴宗さまの側に傾いていった。':'晴宗方に押し返された。'}},1),null,'負けやすく、のちの殿の覚えも悪くなる'],
+     ['若殿の晴宗さまにつく',S=>warGo(S,{nm:'天文の乱',ty:'field',win:.6,fin:(S,r)=>{ad(S,{ko:5});return r==='win'?'稙宗方を打ち破った。若殿は、こちらの働きを覚えておくと言った。':'この戦では押し返されたが、争いは晴宗さまの側に傾いていった。'}},1),null,'勝ちやすく、のちの殿の覚えもよくなる']],
+ ji:'天文十一年（1542年）、伊達稙宗は、三男を越後の上杉家の養子に出し、選りすぐりの家臣をつけてやろうとした。これに反発した嫡男の晴宗が父を城に閉じ込めた。南奥州の大名たちを巻き込んだ親子の争いは六年続き、「天文の乱（洞の乱）」と呼ばれる。'},
+{id:'cz_mt_sendai',c:S=>S.reg==='mutsu'&&rA(S)&&inY(S,1601,1615),w:CW,once:1,
+ t:'殿が青葉山に新しい城を築き、ふもとに「仙台」という町を開いた。広瀬川を見下ろす崖の上の城だ。',
+ ch:[['新しい城下に移る',S=>{ad(S,{en:3,kan:rnd(0,3)});return '仙台の町に移った。碁盤の目の通りに、家が次々と建っていく。'},S=>!isFarmer(S),'縁が増える'],
+     ['普請の人足に出る',S=>{ad(S,{kan:rnd(1,3),tai:-2});return '石垣の石を運んだ。'},S=>!isBushi(S)],
+     ['遠くから眺める',S=>{ad(S,{chi:1});return '崖の上に、城の櫓が組み上がっていくのを眺めた。'}]],
+ ji:'伊達政宗は慶長六年（1601年）から青葉山に城を築き、「千代」と書いた地名を「仙台」と改めて城下町を開いた。これが、いまの仙台の町の始まりである。'},
+{id:'cz_mt_tsunami',c:S=>S.reg==='mutsu'&&S.age>=4&&!wander(S)&&S.y===1611,w:8,once:1,k:'big',s:'冬',
+ t:'冬の初め、大きな揺れがあった。しばらくして、浜の方から「波が来るぞ」という叫び声が聞こえた。',
+ ch:[['すぐに高台へ逃げる',S=>{ad(S,{kok:-6});return '着の身着のまま山へ駆け上がった。振り返ると、浜の村が海に呑まれていくのが見えた。'},null,'まず助かる'],
+     ['家財を運び出してから逃げる',S=>{if(chance(.3)){die(S,'慶長の大津波');S.f.sudden=1;return '米俵を背負ったところで、黒い水が戸口から押し寄せた。'}ad(S,{kok:-6,kan:1});return '米俵を背負って走った。波は、すぐ後ろの田まで来て止まった。'},S=>S.age>=12,'三割ほどで命を落とす']],
+ ji:'慶長十六年（1611年）、三陸沖を震源とする大地震と大津波が起き、伊達領の沿岸で多くの人が亡くなった。徳川家の記録『駿府記』には、政宗の領内で溺れ死んだ者が五千人と書き残されている。'},
+{id:'cz_mt_kinzan',c:S=>S.reg==='mutsu'&&isFarmer(S)&&S.sex==='m'&&adult(S)&&S.age<=50,w:CW,once:1,
+ t:'山あいの沢で、砂金を掘る者たちがいる。うまくすれば、一日で一年分の銭になるという。',
+ ch:[['砂金掘りに加わる',S=>{if(chance(.35)){ad(S,{kan:rnd(4,10)});return 'ざるの底に、黄金の粒がいくつも残った。'}ad(S,{tai:-3,kok:-2});return 'ひと月掘って、出てきたのは小指の爪ほどの粒ひとつだった。'},null,'三割五分ほどで大当たり'],
+     ['田を守る',S=>'田を離れなかった。']],
+ ji:'陸奥は古くから金の産地で、奈良の大仏に塗る金も陸奥から献上された。平安時代の奥州藤原氏が平泉に黄金の文化を築けたのも、この金のおかげである。戦国の世にも、沢の砂から金を掘る者が絶えなかった。'}
+);
+
+/* ===== 国ごとの暮らし・祭り・名物（子どもでも出会うもの） ===== */
+EV.push(
+{id:'cz_ow_atsuta',c:S=>S.reg==='owari'&&S.age>=6&&!wander(S),w:CW,once:1,
+ t:S=>S.y>=1561?'熱田の宮に参った。境内には、桶狭間の戦勝のお礼に信長さまが奉納したという、瓦を重ねた築地塀が延びている。':'熱田の宮に参った。草薙剣をまつる、尾張でいちばん大きな社だ。',fx:{kok:3},
+ ji:'熱田神宮は、三種の神器の一つ・草薙剣をまつる社として古くから尊ばれてきた。織田信長は桶狭間へ向かう途中にここで戦勝を祈り、勝った礼に築地塀（信長塀）を奉納したと伝わる。'},
+{id:'cz_mk_takechiyo',c:S=>S.reg==='mikawa'&&S.age>=6&&!wander(S)&&inY(S,1547,1549),w:4,once:1,
+ t:S=>S.y<=1548?'岡崎の若君・竹千代さまが、駿河の今川家へ人質に向かう途中、味方のはずの者に裏切られ、尾張の織田家へ渡されてしまったという。':'織田家にいた竹千代さまが、人質の取り替えで、今度は駿河の今川家へ送られることになった。',fx:{kok:-2},
+ ji:'三河の松平家は、東の今川家と西の織田家にはさまれた小さな家だった。当主の子・竹千代（のちの徳川家康）は六つで今川家への人質に出されたが、途中で織田家に奪われ、八つのときに人質の取り替えで今川家の駿府へ移された。少年時代のほとんどを、人質として過ごしたのである。'},
+{id:'cz_mk_manzai',c:S=>S.reg==='mikawa'&&S.age>=6&&!wander(S),w:CW,once:1,s:'春',
+ t:'正月、三河万歳の太夫と才蔵が家々を回ってきた。扇を手にした太夫の祝い言葉に、才蔵が鼓を打って茶々を入れる。',fx:{kok:4,en:1},
+ ji:'三河万歳は、正月に家々を回って祝いの言葉を述べる門付けの芸で、太夫と才蔵の掛け合いが見どころだった。徳川家康の保護を受け、江戸時代には江戸城や大名屋敷にも出入りした。この掛け合いが、いまの漫才のもとになったといわれる。'},
+{id:'cz_mk_hamamatsu',c:S=>S.reg==='mikawa'&&rBu(S)&&hasLord(S)&&S.y===1570,w:4,once:1,
+ t:'殿が本拠を遠江の浜松へ移すことになった。岡崎の城は、若殿の信康さまに任されるという。',fx:{en:1},
+ ji:'元亀元年（1570年）、徳川家康は武田信玄に備えるため、本拠を三河の岡崎から遠江の浜松に移し、岡崎城は嫡男の信康に任せた。信康はのちに武田との内通を疑われ、天正七年（1579年）に自害に追い込まれる。'},
+{id:'cz_sr_abekawa',c:S=>S.reg==='suruga'&&rA(S)&&S.y>=1600,w:CW,once:1,
+ t:'安倍川のほとりの茶店で、黄粉をまぶした餅を食べた。',fx:S=>({kok:3,kan:-Math.min(S.kan,1)}),
+ ji:'安倍川餅は、徳川家康が安倍川のほとりの茶店で黄粉をまぶした餅を出され、上流で採れる砂金にかけて「金粉餅」と名づけて喜んだ、という言い伝えがある。駿府の名物として、東海道の旅人にも親しまれた。'},
+{id:'cz_sr_ogosho',c:S=>S.reg==='suruga'&&rA(S)&&inY(S,1607,1616),w:CW,once:1,
+ t:'大御所さまが駿府の城にお住まいになり、町は江戸に負けないほどのにぎわいだ。南蛮や紅毛の国の使いまで、駿府へやってくるという。',fx:{chi:1,en:1},
+ ji:'徳川家康は将軍職を子の秀忠に譲ったのち、慶長十二年（1607年）から駿府城に住み、大御所として政を動かした。外国の使節も駿府を訪れ、駿府は江戸と並ぶ政治の中心になった。'},
+{id:'cz_ki_hoto',c:S=>S.reg==='kai'&&S.age>=6&&!wander(S),w:CW,once:1,s:'冬',
+ t:'冬の夜、囲炉裏の鍋で、太い麺を里芋や大根と味噌で煮込んだ「ほうとう」を食べた。体の芯まで温まる。',fx:{kok:3,tai:1},
+ ji:'ほうとうは、小麦粉を練った太い麺を野菜と味噌で煮込む甲斐の料理だ。米の穫れにくい山国では、粉ものが大事な食べ物だった。武田信玄が陣中で食べさせたという言い伝えもある。'},
+{id:'cz_eg_torioi',c:S=>S.reg==='echigo'&&S.age>=6&&S.age<=14&&!wander(S),w:3,once:1,s:'春',
+ t:'小正月の夜、村の子どもたちと拍子木を打ち鳴らし、「鳥追いだ、鳥追いだ」と唄いながら村じゅうを回った。',fx:{kok:4,en:2},
+ ji:'小正月（一月十五日ごろ）に、子どもたちが田畑を荒らす鳥を追い払う唄を歌って村を回る「鳥追い」は、越後など雪国の村で広く行われた。雪に閉ざされた冬の、子どもたちの大事な役目だった。'},
+{id:'cz_sg_hakone',c:S=>S.reg==='sagami'&&rA(S)&&S.y>=1620,w:CW,once:1,
+ t:'箱根の関所を通った。女の旅人は、髪の中まで調べられている。',fx:{chi:1},
+ ji:'江戸幕府は元和五年（1619年）ごろ、東海道の箱根に関所を置いた。江戸に鉄砲が入ることと、江戸に住まわせた大名の妻が国元へ逃げ出すことを特に警戒し、「入鉄砲に出女」として厳しく調べた。'},
+{id:'cz_sg_enoshima',c:S=>S.reg==='sagami'&&S.age>=6&&!wander(S),w:CW,once:1,
+ t:'江の島の弁財天に参った。潮が引くと、砂の道を歩いて島へ渡れる。',fx:{kok:3},
+ ji:'相模の江の島は、弁財天をまつる島として古くから信仰を集めた。潮が引くと砂州が現れて歩いて渡れ、北条家も弁財天を厚く敬った。江戸時代には、江戸の人々の行楽の地としてにぎわう。'},
+{id:'cz_om_funazushi',c:S=>S.reg==='omi'&&S.age>=6&&!wander(S),w:CW,once:1,
+ t:'琵琶湖で獲れた鮒を、塩と飯に漬けて寝かせた鮒寿司の樽を開けた。鼻をつく匂いに、子どもたちが逃げ出した。',fx:{kok:2,tai:1},
+ ji:'鮒寿司は、琵琶湖の鮒を塩漬けにしてから飯に漬け込み、長い時をかけて発酵させる「なれずし」で、すしの古い形を残している。近江では古くから作られ、贈り物にもされた。'},
+{id:'cz_om_hikone',c:S=>S.reg==='omi'&&rA(S)&&inY(S,1604,1622),w:CW,once:1,
+ t:'彦根山に新しい城が築かれている。近くの古い城の石垣や櫓まで、崩して運んでくるのだという。',fx:{chi:1},
+ ji:'関ヶ原の戦いの後、近江に入った井伊家は、石田三成の居城だった佐和山城に代わる城として、彦根城を築いた（1604年〜）。石垣や櫓には、大津城や佐和山城などから運んだものも使われたと伝わる。'},
+{id:'cz_ys_okuni',c:S=>S.reg==='yamashiro'&&rA(S)&&inY(S,1603,1610),w:CW,once:1,
+ t:'四条の河原で、女が男の着物を着て刀を差し、踊る「かぶき踊り」を見た。黒山の人だかりだ。',
+ ch:[['いちばん前で見る',S=>{ad(S,{kok:5,en:1});return '人をかき分けて前へ出た。踊り手が流し目をくれたような気がした。'},null,'心が満ちる'],
+     ['こんなものは見ていられぬと帰る',S=>{ad(S,{chi:1});return '眉をひそめて帰った。帰り道でも、囃子の音が耳に残った。'}]],
+ ji:'慶長八年（1603年）ごろ、出雲大社の巫女と名乗る阿国が、京の北野や四条河原で、男装して踊る「かぶき踊り」を始めて大評判になった。人目を引く奇抜な格好やふるまいを「かぶく」といい、これがのちの歌舞伎のはじまりとされる。'},
+{id:'cz_iz_yakeuchi',c:S=>S.reg==='izumi'&&S.age>=4&&!wander(S)&&S.y===1615,w:6,once:1,k:'big',s:'春',
+ t:'大坂方の軍勢が攻め寄せ、堺の町に火を放った。徳川方に味方した町への仕返しだという。',
+ ch:[['家財を担いで逃げる',S=>{ad(S,{kan:-Math.round(S.kan*.3),kok:-6});return '持てるだけの物を担いで逃げた。振り返ると、堺の空が赤く焼けていた。'},null,'銭の三割を失うが、命は助かる'],
+     ['店と家を守ろうと踏みとどまる',S=>{if(chance(.12)){die(S,'大坂方の焼き討ちで');S.f.sudden=1;return '炎に巻かれ、逃げ遅れた。'}if(chance(.5)){ad(S,{kok:-4});return '水をかけ続け、蔵だけは焼け残った。'}ad(S,{kan:-Math.round(S.kan*.6),tai:-6});return '火の勢いには勝てず、店は焼け落ちた。'},S=>adult(S),'一割ほどで命を落とす。半々で蔵が残る']],
+ ji:'慶長二十年（1615年）、大坂夏の陣の直前、豊臣方は徳川方に味方した堺を焼き払った。町はほとんど灰になったが、そのあと碁盤の目のように区画し直されて立て直された（元和の町割）。'},
+{id:'cz_st_osakajo',c:S=>S.reg==='settsu'&&rA(S)&&inY(S,1583,1586),w:CW,once:1,
+ t:'石山の本願寺の跡に、関白が見たこともない大きな城を築いている。金の瓦が、遠くからでもきらきら光って見える。',
+ ch:[['普請の人足に出る',S=>{ad(S,{kan:rnd(2,4),tai:-3});return '巨大な石を、何十人もで綱を引いて運んだ。'},S=>!isBushi(S)&&!rCho(S),'銭が入るが、体は疲れる'],
+     ['城下に店を出す',S=>{ad(S,{kan:rnd(4,10),en:2});return '城下に店を出した。普請の人足や侍たちで、品が飛ぶように売れた。'},S=>isMerch(S)&&!S.f.decchi,'銭が増える'],
+     ['遠くから眺める',S=>{ad(S,{chi:1,kok:2});return '天下人の城とは、こういうものか。'}]],
+ ji:'天正十一年（1583年）、羽柴秀吉は石山本願寺の跡に大坂城を築き始めた。金箔の瓦をのせた天守がそびえ、城下には堺や平野の商人が移り住んで、大坂は天下一の町になっていった。'},
+{id:'cz_kg_hakusan',c:S=>S.reg==='kaga'&&rA(S),w:CW,once:1,
+ t:'白山に登る道者の一行に加わった。雪をいただいた白い峰が、目の前にそびえている。',
+ ch:[['頂上まで登る',S=>{if(S.st.tai<40){ad(S,{tai:-5});return '途中で足が上がらなくなり、引き返した。'}ad(S,{kok:7,tai:-3});return '頂上の池に朝日が差し込むのを見た。手を合わせずにはいられなかった。'},S=>S.age<=55,'体しだい。心が大きく満ちる'],
+     ['ふもとの社に参るだけにする',S=>{ad(S,{kok:3});return 'ふもとの白山の社に参り、遠くの峰に手を合わせた。'}]],
+ ji:'白山は加賀・越前・美濃にまたがる霊山で、古くから修験者や道者が登って祈った。加賀の白山比咩神社は全国の白山神社のおおもとで、白山の信仰は北陸の人々の暮らしに深く根づいていた。'},
+{id:'cz_ck_matsubayashi',c:S=>S.reg==='chikuzen'&&S.age>=6&&!wander(S),w:CW,once:1,s:'春',
+ t:'正月、博多の町衆が、福神や恵比須、大黒の姿に扮して、囃子に合わせて町を練り歩いた。',fx:{kok:4,en:2},
+ ji:'博多では、正月に町の人々が福神・恵比須・大黒などに扮し、笛や太鼓の囃子とともに練り歩く「松囃子」が中世から続いてきた。これがのちの「博多どんたく」のもとになった。'},
+{id:'cz_sm_jigen',c:S=>S.reg==='satsuma'&&rBu(S)&&S.y>=1604&&S.age<=40,w:CW,once:1,
+ t:'示現流の稽古に通い始めた。叫び声を上げながら、立てた丸太を木刀で何千回も打ち続ける。',
+ ch:[['ひたすら打ち込む',S=>{ad(S,{bu:4,tai:-2});return '掌の皮がむけても、打ち続けた。'},null,'武が上がる'],
+     ['ほどほどにする',S=>{ad(S,{bu:1});return '腕が上がらなくなる前に、やめておいた。'}]],
+ ji:'薩摩の東郷重位が開いた示現流は、最初の一太刀にすべてをかける剣術だ。立てた木を木刀で打ち続ける「立木打ち」の猛稽古で知られ、のちに薩摩藩の御流儀となった。'},
+{id:'cz_mt_date',c:S=>S.reg==='mutsu'&&rBu(S)&&hasLord(S)&&inY(S,1592,1593),w:4,once:1,
+ t:'朝鮮へ向かう殿の軍勢が、京の町を行進した。金の飾りの陣笠に、黒地に金の具足。見物の人々からどよめきが上がった。',fx:{mei:2,kok:3},
+ ji:'文禄二年（1593年）、朝鮮へ向かうため京を出陣した伊達勢は、金の三角の陣笠や派手な具足で都の人々の目を奪った。人目を引くしゃれた身なりを「伊達」と呼ぶのは、このときの評判から生まれたともいわれる。'},
+{id:'cz_mt_tanabata',c:S=>S.reg==='mutsu'&&S.age>=6&&!wander(S)&&S.y>=1610,w:CW,once:1,s:'秋',
+ t:'七夕の日、仙台の町の家々の軒先に、色とりどりの短冊を下げた笹竹が並んだ。',fx:{kok:3,en:1},
+ ji:'仙台では、伊達政宗が七夕を奨励したと伝わり、町を挙げて笹飾りを立てる習わしが根づいた。いまも「仙台七夕まつり」として続いている。'}
+);
+
+/* ===== 国の名物と信仰（どの時代にも出会えるもの） ===== */
+EV.push(
+{id:'cz_ow_kiso',c:S=>S.reg==='owari'&&rA(S),w:CW,once:1,
+ t:'木曽の山から切り出した檜が、筏に組まれて木曽川を下ってきた。筏乗りが、長い竿一本で流れを操っている。',
+ ch:[['筏から材木を揚げる仕事を手伝う',S=>{ad(S,{kan:rnd(1,3),tai:-2});return '濡れた材木は、思ったよりずっと重かった。'},S=>!isBushi(S)&&!rCho(S),'少しの銭'],
+     ['材木の商いに一口乗る',S=>{if(chance(.6)){ad(S,{kan:rnd(4,9)});return '城や寺の普請が多く、檜は高く売れた。'}ad(S,{kan:-Math.min(S.kan,3)});return '川の増水で筏がばらけ、材木の一部が流された。'},S=>isMerch(S)&&!S.f.decchi&&S.kan>=3,'六割ほどで儲かる'],
+     ['川岸から眺める',S=>{ad(S,{kok:2});return '筏乗りの身のこなしに、しばらく見とれた。'}]],
+ ji:'木曽の山の檜は、まっすぐで腐りにくく、城や寺の建材として重宝された。切り出した木は筏に組んで木曽川を下り、尾張の湊から各地へ運ばれた。のちに木曽の森を治めた尾張徳川家は、勝手に木を切った者を厳しく罰し、「木一本、首一つ」とまでいわれた。'},
+{id:'cz_mn_hoshigaki',c:S=>S.reg==='mino'&&S.age>=6&&!wander(S),w:CW,once:1,s:'冬',
+ t:'軒先に吊るした蜂屋の干し柿が、白い粉をふいて食べごろになった。ひとつ口に入れると、蜜のように甘い。',fx:{kok:3,tai:1},
+ ji:'美濃の蜂屋あたりの干し柿は、その甘さで古くから知られ、室町将軍や織田信長・豊臣秀吉・徳川家康にも献上されたと伝わる。甘いものの少ない時代、干し柿は何よりのごちそうだった。'},
+{id:'cz_mk_miso',c:S=>S.reg==='mikawa'&&S.age>=6&&!wander(S),w:CW,once:1,
+ t:'大豆と塩だけで仕込んだ、黒々とした味噌の樽を開けた。重しの石を下ろすと、ぷんと濃い香りが立ちのぼる。',fx:{kok:2,tai:1},
+ ji:'三河や尾張では、大豆と塩だけで仕込み、長く寝かせる色の濃い「豆味噌」が作られてきた。夏の蒸し暑さでも傷みにくいためといわれる。岡崎の八丁村の味噌は、のちに「八丁味噌」として名高くなる。'},
+{id:'cz_sr_cha',c:S=>S.reg==='suruga'&&(vil(S)||S.cls==='hyak'&&S.age>=8&&!wander(S)&&!isBushi(S)),w:CW,once:1,s:'春',
+ t:'八十八夜のころ、安倍川の上流の茶畑で、茶摘みを手伝った。摘んだ若葉を蒸して、焙炉の上で手で揉む。',fx:{kan:1,kok:2},
+ ji:'駿河の安倍川の上流は、鎌倉時代に聖一国師が宋から持ち帰った茶の種をまいたのが始まりと伝わる茶どころだ。のちに駿府に住んだ徳川家康も、この本山の茶を好んだという。'},
+{id:'cz_ki_budo',c:S=>S.reg==='kai'&&S.age>=6&&!wander(S),w:CW,once:1,s:'秋',
+ t:'勝沼の村で、棚にたわわに実った葡萄をもらった。紫の粒を口に含むと、甘酸っぱい汁がはじけた。',fx:{kok:3},
+ ji:'甲斐の勝沼あたりでは、古くから葡萄が作られてきたと伝わる。水はけのよい扇状地と、昼と夜の寒暖の差が、甘い葡萄を育てた。江戸時代には、甲州の名物として知られるようになる。'},
+{id:'cz_eg_sake',c:S=>S.reg==='echigo'&&S.age>=6&&!wander(S),w:CW,once:1,s:'冬',
+ t:'秋に川を上ってきた鮭を、塩をまぶして軒下に吊るした。冬じゅう、少しずつ切り分けて食べる。',fx:{tai:2,kok:2},
+ ji:'越後の川には、秋になると海から鮭が群れをなして上ってきた。塩をまぶして寒風で干した「塩引き鮭」は、雪に閉ざされる冬の大事な食べ物で、年の暮れの贈り物にもされた。'},
+{id:'cz_sg_daibutsu',c:S=>S.reg==='sagami'&&S.age>=6&&!wander(S)&&S.y>=1500,w:CW,once:1,
+ t:'鎌倉の大仏を拝みに行った。雨ざらしの大仏さまの肩に、鳥がとまっている。',fx:{kok:3},
+ ji:'鎌倉の大仏は、もとは大きな堂の中に座っていたが、明応七年（1498年）の大地震と津波などで堂が失われ、それからは雨ざらしの「露座の大仏」となった。'},
+{id:'cz_om_taga',c:S=>S.reg==='omi'&&S.age>=6&&!wander(S),w:CW,once:1,
+ t:'多賀の社に参った。長生きの神さまだというので、年寄りたちの姿が多い。',fx:{kok:3,tai:1},
+ ji:'近江の多賀大社は延命長寿の神として知られ、「お伊勢参らばお多賀へ参れ」と歌われた。豊臣秀吉は、母の大政所の病が治るよう祈って、米一万石を寄進したと伝わる。'},
+{id:'cz_ys_uji',c:S=>S.reg==='yamashiro'&&rA(S)&&!isKuge(S),w:CW,once:1,s:'春',
+ t:'宇治の茶畑へ茶摘みの手伝いに出た。畑の上には葦簀や藁が掛けられ、昼でも薄暗い。',
+ ch:[['丁寧に新芽だけを摘む',S=>{ad(S,{kan:rnd(1,3),chi:1});return '指先が緑に染まった。茶師に「筋がいい」と言われた。'},null,'銭と知が少し増える'],
+     ['とにかく数を摘む',S=>{ad(S,{kan:rnd(1,2)});return '籠いっぱいに摘んだが、茶師は渋い顔をした。'}]],
+ ji:'山城の宇治は、室町将軍の保護を受けた茶どころで、戦国時代には茶畑に葦簀や藁で覆いをかけて日差しを遮る育て方が始まり、うまみの濃い茶が生まれた。茶の湯の流行とともに、宇治の茶は天下一とされた。'},
+{id:'cz_iz_hamono',c:S=>S.reg==='izumi'&&rA(S)&&S.y>=1600,w:CW,once:1,
+ t:'堺の鍛冶町で、たばこの葉を刻む包丁が飛ぶように売れている。鉄砲を打っていた鍛冶たちが、今は包丁を打っているのだという。',
+ ch:[['包丁を仕入れて売る',S=>{if(chance(.65)){ad(S,{kan:rnd(4,9)});return '江戸や大坂へ送った包丁は、すぐに売り切れた。'}ad(S,{kan:-Math.min(S.kan,2)});return '仕入れすぎて、蔵に包丁が積み上がった。'},S=>isMerch(S)&&!S.f.decchi,'六割五分ほどで儲かる'],
+     ['一本買って帰る',S=>{ad(S,{kan:-Math.min(S.kan,1),kok:2});return 'よく切れる包丁で、台所仕事がはかどるようになった。'}]],
+ ji:'鉄砲づくりで腕を磨いた堺の鍛冶たちは、戦の世が終わると、南蛮から伝わったたばこの葉を刻む包丁を盛んに作るようになった。幕府はその品の確かさを認めて「堺極」の印を許し、堺の刃物は天下に知られた。'},
+{id:'cz_st_sumiyoshi',c:S=>S.reg==='settsu'&&S.age>=6&&!wander(S),w:CW,once:1,
+ t:'住吉の社に参った。反り橋を渡ると、境内には船乗りや商人の姿が多い。',fx:{kok:3,en:1},
+ ji:'摂津の住吉大社は、海の神をまつる古い社で、航海の無事を願う船乗りや商人たちの信仰を集めた。大きく反った太鼓橋（反橋）は、豊臣秀吉の側室・淀殿が寄進したと伝わる。'},
+{id:'cz_kg_kutani',c:S=>S.reg==='kaga'&&rA(S)&&inY(S,1655,1700),w:CW,once:1,
+ t:'九谷の村で焼かれたという皿を見た。濃い緑や黄、紫で、大胆な絵が描かれている。',fx:{chi:1,kok:2},
+ ji:'加賀の前田家の分家が治める大聖寺藩の九谷村で、明暦元年（1655年）ごろ焼き物づくりが始まり、濃い色の大胆な絵付けの「九谷焼」が生まれた。のちに「古九谷」と呼ばれて珍重される。'},
+{id:'cz_ak_kaizoku',c:S=>S.reg==='aki'&&rA(S)&&S.y<1589,w:CW,once:1,
+ t:'瀬戸内の海を舟で行くと、島陰から小早船が現れて、「通るなら帆別銭を払え」と言われた。',
+ ch:[['銭を払って守ってもらう',S=>{ad(S,{kan:-Math.min(S.kan,1)});return '銭を払うと、旗をもらった。この旗を立てていれば、ほかの海賊には襲われないという。'},null,'銭が少し減るが安全'],
+     ['払わずに逃げる',S=>{if(chance(.5)){ad(S,{kan:-Math.min(S.kan,4),tai:-2});return '小早船に追いつかれ、荷を奪われた。'}return '潮に乗って振り切った。'},null,'五割ほどで荷を奪われる']],
+ ji:'瀬戸内海の島々を拠点とする村上氏などの「海賊衆」は、通る船から通行料を取り、その代わりに旗を渡して航海の安全を守った。毛利家は彼らを味方につけて、厳島の戦いや木津川口の戦いで勝利した。豊臣秀吉の海賊停止令（1588年）で、その力は失われていく。'},
+{id:'cz_ck_dazaifu',c:S=>S.reg==='chikuzen'&&S.age>=6&&!wander(S),w:CW,once:1,
+ t:'太宰府の天神さまに参った。境内の梅が、白い花をつけている。',fx:{kok:3,chi:1},
+ ji:'筑前の太宰府天満宮は、都から太宰府に流されてこの地で亡くなった菅原道真をまつる社で、学問の神として信仰を集めた。道真を慕って、京から一夜で飛んできたという「飛梅」の言い伝えも残る。'},
+{id:'cz_sm_shochu',c:S=>S.reg==='satsuma'&&adult(S)&&!wander(S)&&S.y>=1550,w:CW,once:1,
+ t:'祝いの席で、焼酎がふるまわれた。強い酒で、喉が焼けるようだ。',
+ ch:[['ぐいっと飲み干す',S=>{if(chance(.3)){ad(S,{tai:-2,mei:-1});return '三杯目で目の前が回り、縁側から転げ落ちた。'}ad(S,{kok:4,en:3});return '飲み干すと、まわりから歓声が上がった。'},null,'三割ほどで酔いつぶれる'],
+     ['ちびちびとなめる',S=>{ad(S,{kok:2});return '少しずつなめると、米の、ほのかな甘みがした。'}]],
+ ji:'薩摩の郡山八幡神社には、永禄二年（1559年）に社殿を直した大工が「座主がけちで、一度も焼酎を飲ませてくれなかった」と書き残した落書きがある。日本で「焼酎」という言葉が出てくる、いちばん古い記録とされる。'},
+{id:'cz_mt_chusonji',c:S=>S.reg==='mutsu'&&S.age>=6&&!wander(S),w:CW,once:1,
+ t:'平泉の中尊寺に参った。お堂の中は、柱から天井まで金色に輝いている。',fx:{kok:4,chi:1},
+ ji:'平泉の中尊寺金色堂は、平安時代の終わりに奥州藤原氏の藤原清衡が建てた阿弥陀堂で、陸奥で採れた金をふんだんに使っている。奥州藤原氏の栄華を今に伝える。'}
+);
 /* ===== 史実イベントと噂 ===== */
 const bw=S=>isBushi(S)&&adult(S)&&S.age<=62;
 const HIST=[
@@ -2441,6 +3413,13 @@ const HIST=[
  ch:[['茶道具を持って参加する',S=>{ad(S,{kok:8,en:5,mei:3});mj('北野大茶湯に参加');return '松原に茶席が並んでいた。関白自ら茶を点てている席もあった。'}],['見物だけする',S=>{ad(S,{kok:4});return '人の多さに圧倒された。'}]]},
 {id:'kanei_kikin',yr:1641,c:S=>S.cls==='hyak'||S.age>=60,k:'big',t:S=>{if(chance(.06+(S.age>60?.05:0))){die(S,'寛永の大飢饉');return '冷夏と長雨で、村の米が尽きた。'}ad(S,{tai:-10,kan:-Math.round(S.kan*.4),kok:-8});return '冷夏と長雨で米が穫れない。村では草の根まで食べた。'}}
 ];
+
+/* 年の決まっている国の出来事は、必ず起きるよう歴史の出来事として扱う（08e_chiiki.js から移す） */
+for(const [id,yr] of [['cz_st_araki',1578],['cz_ak_kaieki',1619],['cz_mt_tsunami',1611],['cz_iz_yakeuchi',1615],['cz_mt_tenbun',[1542,1547]],
+  ['cz_mk_takechiyo',[1547,1549]],['cz_mk_hamamatsu',1570],['cz_mt_date',1593],['cz_ys_odoi',1591],['cz_sg_sougamae',[1587,1589]],['cz_ow_kiyosu',[1610,1613]],['cz_mk_imagawa',[1549,1560]]]){
+  const i=EV.findIndex(e=>e.id===id);if(i<0)continue;
+  const e=EV.splice(i,1)[0];e.yr=yr;HIST.push(e);
+}
 /* ===== 史実の合戦（開戦→乱戦→決着の流れで戦う） ===== */
 const bwl=S=>bw(S)&&hasLord(S);
 const hw=(nm,o)=>Object.assign({nm,ty:'field',big:1},o);
@@ -3637,15 +4616,202 @@ const GL={
 '安土':['あづち',''],
 '陶隆房':['すえたかふさ',''],
 '陶晴賢':['すえはるかた',''],
-'大寧寺':['たいねいじ','']
+'大寧寺':['たいねいじ',''],
+/* --- 殿との主従 --- */
+'偏諱':['へんき','主君が、自分の名の一字を家臣に与えること。大きな名誉だった。'],
+'諱':['いみな','武士の本当の名（実名）。ふだんは口にせず、通り名で呼び合った。'],
+'殉死':['じゅんし','主君の死を追って、家臣が自ら命を絶つこと。江戸幕府は寛文三年（1663年）に禁じた。'],
+'追い腹':['おいばら','主君の後を追って切腹すること。殉死。'],
+'守役':['もりやく','主君の子の養育係。学問や武芸、作法を教える。'],
+'蟄居':['ちっきょ','家の一室にこもり、外に出ることを禁じられる罰。'],
+'御伽衆':['おとぎしゅう','主君の話し相手を務める者。経験豊かな老臣や物知りが選ばれた。'],
+'介錯':['かいしゃく','切腹する人の首を落とし、苦しみを短くする役目。'],
+'御成':['おなり','主君など身分の高い人が、家臣の屋敷などを訪れること。'],
+'勘気':['かんき','主君の怒りを受けて、とがめられること。'],
+'目通り':['めどおり','身分の高い人に、直接会うこと。'],
+'拝領':['はいりょう','主君から物をいただくこと。拝領の品は家の宝とされた。'],
+'巻狩り':['まきがり','大勢で山を囲み、獣を追い出して狩ること。戦の稽古も兼ねた。'],
+'勢子':['せこ','狩りで、獣を追い立てる役の人。'],
+'執筆':['しゅひつ','連歌の会で、詠まれた句を書き留める役。'],
+'目付':['めつけ','家臣の行いを見張り、主君に知らせる役。'],
+'茶坊主':['ちゃぼうず','城で茶の支度や雑用をする者。頭を丸めていた。'],
+'牛王宝印':['ごおうほういん','寺社が出す護符。この紙の裏に誓いを書くと、破れば神罰が下るとされた。'],
+'血判':['けっぱん','誓いの証に、指を切って血で押す判。'],
+'寵臣':['ちょうしん','主君に特に気に入られた家臣。'],
+'饗応':['きょうおう','客を酒や料理でもてなすこと。'],
+'普請奉行':['ふしんぶぎょう','城や道などの工事を取り仕切る役。'],
+'与力':['よりき','有力な武将の下につけられて、その指図で戦う武士。'],
+'譜代':['ふだい','代々その家に仕えてきた家臣。'],
+'外様':['とざま','あとから従った家臣や大名。'],
+'若君':['わかぎみ','主君の跡取りの子。'],
+/* --- お国事情 --- */
+'輪中':['わじゅう','洪水から村を守るため、村のまわりをぐるりと堤で囲んだもの。'],
+'水屋':['みずや','洪水のときに逃げ込むため、土台を高く盛って建てた蔵。'],
+'青苧':['あおそ','からむし（苧麻）の繊維。麻布の原料。'],
+'湖賊':['こぞく','湖の上で通行料を取り、払わない舟を襲った者たち。'],
+'上乗り':['うわのり','通行料を受け取った湖賊や海賊が舟に乗り込み、ほかの賊から守ること。'],
+'甲賀郡中惣':['こうかぐんちゅうそう','甲賀の地侍たちの同盟。物事を寄合の多数決で決めた。'],
+'今川仮名目録':['いまがわかなもくろく','今川氏親が定めた分国法（1526年）。'],
+'甲州法度之次第':['こうしゅうはっとのしだい','武田晴信（信玄）が定めた分国法（1547年）。'],
+'霞堤':['かすみてい','ところどころに切れ目を残した堤。あふれた水を切れ目から逃がし、また川へ戻す。'],
+'信玄堤':['しんげんづつみ',''],
+'甲州金':['こうしゅうきん','甲斐で造られた金貨。重さで価値を決め、両・分・朱の単位を使った。'],
+'越山':['えつざん','上杉謙信が三国峠を越えて関東へ出陣したこと。'],
+'総構え':['そうがまえ','城だけでなく、城下町まで堀や土塁で囲んだ守り。'],
+'外郎':['ういろう',''],
+'透頂香':['とうちんこう','小田原の外郎家が売った薬。'],
+'寺内町':['じないちょう','寺を中心に、堀や土塁で囲まれた町。門徒の商人や職人が集まった。'],
+'御文':['おふみ','蓮如が、教えをやさしい手紙の形で書いたもの。'],
+'報恩講':['ほうおんこう','浄土真宗の開祖・親鸞の命日に行う法要。'],
+'お斎':['おとき','法要や講のあとに出す食事。'],
+'傘連判状':['からかされんぱんじょう','名前を円く放射状に書き連ねた誓いの書状。上下をつけないための工夫。'],
+'三子教訓状':['さんしきょうくんじょう','毛利元就が三人の息子に、兄弟の結束を説いた手紙（1557年）。'],
+'灰吹法':['はいふきほう','鉛を使って、鉱石から銀を取り出す精錬のやり方。'],
+'郷中':['ごじゅう','薩摩の武家の若者たちの集まり。年長者が年少者を教え導いた。'],
+'やませ':['','夏に北東から吹く、冷たく湿った風。冷害のもとになる。'],
+'清洲越し':['きよすごし','清洲の町を丸ごと名古屋へ移したこと（1610年〜）。'],
+'勘合貿易':['かんごうぼうえき','明との貿易。正式な船の証として「勘合」という札を使った。'],
+'町組':['ちょうぐみ','京の町々が集まってつくった、自治のまとまり。'],
+'道者':['どうしゃ','山や寺社に参詣する信者の一行。'],
+'堅魚':['かつお',''],
+'掘子':['ほりこ','鉱山で鉱石を掘る人。'],
+'下り酒':['くだりざけ','上方（京・大坂のあたり）から江戸へ運ばれた酒。'],
+'改作法':['かいさくほう','加賀の前田利常が進めた、村の立て直しの政策。'],
+'御土居':['おどい','豊臣秀吉が京のまわりに築いた土塁と堀。'],
+'西陣':['にしじん',''],
+'天文の乱':['てんぶんのらん','伊達稙宗・晴宗の父子の争い（1542〜1548年）。洞の乱ともいう。'],
+'守護使不入':['しゅごしふにゅう','守護の役人が立ち入れない特権。'],
+'制札':['せいさつ','決まりや禁止事項を書いて立てた札。'],
+'高札':['こうさつ','決まりやお触れを書いて、人目につく所に立てた札。'],
+'天下普請':['てんかぶしん','江戸幕府が全国の大名に命じて行わせた、城などの工事。'],
+'棒道':['ぼうみち',''],
+'隠し湯':['かくしゆ',''],
+'三国峠':['みくにとうげ',''],
+'関東管領':['かんとうかんれい','室町幕府が関東を治めるために置いた役職。上杉家が務めた。'],
+'北国船':['ほっこくぶね','日本海を行き来した大きな荷船。'],
+'煙硝':['えんしょう','火薬の原料の硝石。'],
+'バテレン':['','キリスト教の宣教師（パードレ）のこと。'],
+'シラス':['','南九州に広がる、火山の噴火で積もった白い軽石や火山灰の土。'],
+'馬喰':['ばくろう','牛や馬の売り買いをする商人。'],
+'機屋':['はたや','機（はた）を据えて布を織る家。'],
+'即位の礼':['そくいのれい','天皇が位についたことを広く示す儀式。'],
+'楮':['こうぞ','和紙の原料になる木。'],
+'釉薬':['うわぐすり','焼き物の表面にかける、ガラス質の薬。'],
+'蒔絵':['まきえ','漆で描いた模様に、金や銀の粉をまいた工芸。'],
+'象嵌':['ぞうがん','金属や木に、別の素材をはめ込んで模様をつくる工芸。'],
+'香木':['こうぼく','焚くとよい香りがする木。南の国から運ばれた。'],
+'青磁':['せいじ','青みがかった釉薬をかけた焼き物。'],
+'唐物':['からもの','明（中国）など海の向こうから来た品。'],
+'題目':['だいもく','法華宗で唱える「南無妙法蓮華経」のこと。'],
+'塩焼き':['しおやき','海水を煮詰めて塩をつくること。'],
+'常滑焼':['とこなめやき',''],
+'天王祭':['てんのうまつり',''],
+'弾正忠':['だんじょうのじょう',''],
+'稲葉山':['いなばやま',''],
+'大矢田':['おおやだ',''],
+'兼元':['かねもと',''],
+'三本杉':['さんぼんすぎ',''],
+'御勅使川':['みだいがわ',''],
+'黒川金山':['くろかわきんざん',''],
+'梅ヶ島':['うめがしま',''],
+'冷泉為和':['れいぜいためかず',''],
+'勝山記':['かつやまき',''],
+'妙法寺記':['みょうほうじき',''],
+'直江津':['なおえつ',''],
+'敦賀':['つるが',''],
+'鶴岡八幡宮':['つるがおかはちまんぐう',''],
+'風魔':['ふうま',''],
+'乱破':['らっぱ','忍びの者。'],
+'菅浦':['すがうら',''],
+'保内':['ほない',''],
+'国友':['くにとも',''],
+'堅田':['かたた',''],
+'本證寺':['ほんしょうじ',''],
+'上宮寺':['じょうぐうじ',''],
+'勝鬘寺':['しょうまんじ',''],
+'尾山御坊':['おやまごぼう',''],
+'湯山御殿':['ゆのやまごてん',''],
+'有岡城':['ありおかじょう',''],
+'荒木村重':['あらきむらしげ',''],
+'黒田官兵衛':['くろだかんべえ',''],
+'吉田郡山城':['よしだこおりやまじょう',''],
+'神屋寿禎':['かみやじゅてい',''],
+'筥崎':['はこざき',''],
+'那珂川':['なかがわ',''],
+'坊津':['ぼうのつ',''],
+'種子島時尭':['たねがしまときたか',''],
+'八板金兵衛':['やいたきんべえ',''],
+'青葉山':['あおばやま',''],
+'駿府記':['すんぷき',''],
+'寿桂尼':['じゅけいに',''],
+'三法師':['さんぼうし',''],
+'栴岳承芳':['せんがくしょうほう',''],
+'守山崩れ':['もりやまくずれ',''],
+'花倉の乱':['はなくらのらん',''],
+'御館の乱':['おたてのらん',''],
+'大物崩れ':['だいもつくずれ',''],
+'船田合戦':['ふなだかっせん',''],
+'信恵':['のぶしげ',''],
+'稙宗':['たねむね',''],
+'草薙剣':['くさなぎのつるぎ','三種の神器の一つ。熱田神宮にまつられる。'],
+'信長塀':['のぶながべい',''],
+'築地塀':['ついじべい','土を突き固め、上に瓦をのせた塀。'],
+'三河万歳':['みかわまんざい',''],
+'門付け':['かどづけ','家々の門口で芸を見せ、祝儀をもらうこと。'],
+'太夫':['たゆう',''],
+'大御所':['おおごしょ','将軍職を譲ったあとの前の将軍。'],
+'紅毛':['こうもう','オランダやイギリスの人のこと。髪が赤いことから。'],
+'鳥追い':['とりおい',''],
+'入鉄砲に出女':['いりでっぽうにでおんな',''],
+'鮒寿司':['ふなずし',''],
+'なれずし':['','魚を飯に漬けて発酵させた、古い形のすし。'],
+'佐和山城':['さわやまじょう',''],
+'元和の町割':['げんなのまちわり',''],
+'白山比咩神社':['しらやまひめじんじゃ',''],
+'松囃子':['まつばやし',''],
+'東郷重位':['とうごうちゅうい',''],
+'示現流':['じげんりゅう','薩摩の剣術。最初の一太刀にすべてをかける。'],
+'立木打ち':['たてぎうち',''],
+'龍王丸':['たつおうまる',''],
+'筏':['いかだ',''],
+'蜂屋':['はちや',''],
+'豆味噌':['まめみそ',''],
+'八丁味噌':['はっちょうみそ',''],
+'八十八夜':['はちじゅうはちや','立春から数えて八十八日目。茶摘みや種まきの目安。'],
+'焙炉':['ほいろ','茶の葉を乾かしながら揉むための、火にかけた台。'],
+'聖一国師':['しょういちこくし',''],
+'勝沼':['かつぬま',''],
+'塩引き鮭':['しおびきざけ',''],
+'露座の大仏':['ろざのだいぶつ',''],
+'多賀大社':['たがたいしゃ',''],
+'大政所':['おおまんどころ','豊臣秀吉の母。'],
+'葦簀':['よしず','葦の茎を編んだすだれ。'],
+'堺極':['さかいきわめ',''],
+'住吉大社':['すみよしたいしゃ',''],
+'反橋':['そりはし',''],
+'淀殿':['よどどの',''],
+'大聖寺藩':['だいしょうじはん',''],
+'九谷焼':['くたにやき',''],
+'小早船':['こはやぶね','小型で速い軍船。'],
+'帆別銭':['ほべちせん','船の帆の数に応じて取る通行料。'],
+'海賊衆':['かいぞくしゅう','瀬戸内の海で通行料を取り、船を守った水軍の武士たち。'],
+'海賊停止令':['かいぞくちょうじれい',''],
+'菅原道真':['すがわらのみちざね',''],
+'飛梅':['とびうめ',''],
+'郡山八幡神社':['こおりやまはちまんじんじゃ',''],
+'座主':['ざす','寺や社をとりしきる僧。'],
+'中尊寺金色堂':['ちゅうそんじこんじきどう',''],
+'藤原清衡':['ふじわらのきよひら','']
 };
 const GLK=Object.keys(GL).sort((a,b)=>b.length-a.length);
 const GLRE=new RegExp('('+GLK.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(（[^（）]{1,14}）)?','g');
 /* text を読み仮名・※つきのHTMLにする。seen に初出の語を記録し、notes で返す */
 function gl(text,seen,inert){
-  const notes=[];
+  const notes=[],once=new Set();
   const html=esc(text).replace(GLRE,(m,k,par)=>{
     const [r,n]=GL[k];
+    /* 同じ文の中で二度目からは、読みも※もつけない */
+    if(once.has(k))return k+(par||'');once.add(k);
     const rd=par||(r?`（${r}）`:'');
     if(!n)return k+rd;
     if(seen&&!seen.has(k)){seen.add(k);notes.push(k)}
@@ -3911,7 +5077,7 @@ const WBASE=[0,2200,1600,700],PER=[0,120,85,35],CAP=[0,22000,15000,6000],GAP=[0,
 const SPD=GAP;let lastDelay=2000;
 function readMs(el){
   if(!speed)return 0;
-  const nt=[...el.querySelectorAll('.nt')].reduce((a,x)=>a+x.textContent.length,0);
+  const nt=[...el.querySelectorAll('.nt,.jj')].reduce((a,x)=>a+x.textContent.length,0);
   const ch=[...el.querySelectorAll('.d')].reduce((a,x)=>a+x.textContent.length,0);
   const body=el.textContent.length-nt-ch;
   return Math.min(CAP[speed],WBASE[speed]+PER[speed]*(body+nt*.5));
@@ -3939,7 +5105,8 @@ function renderKako(){
 function renderHead(){
   $('seal').textContent=isKid(S)?CLS[S.cls].seal:(SEAL[S.job]||CLS[S.cls].seal);
   $('nm').innerHTML=`${esc(fullName(S))}${S.mode==='bushi'?'<span class="badge">武士の道</span>':''}<small>${S.sex==='m'?'男':'女'}・数え${S.age}歳</small>`;
-  $('meta').innerHTML=`<b>${eraStr(S.y)}</b>（${S.y}年）・${esc(kuni(S))}国・${esc(jobName(S))}<br>領主　${esc(lordHead(S))}`;
+  const tn=S.tono&&tonoOK(S)?`<br>殿　${S.tono.nm?esc(S.tono.nm)+'　':''}<span class="obo">覚え <b>${koLv(S.tono.ko)}</b></span>`:'';
+  $('meta').innerHTML=`<b>${eraStr(S.y)}</b>（${S.y}年）・${esc(kuni(S))}国・${esc(jobName(S))}<br>領主　${esc(lordHead(S))}${tn}`;
   const st=SK.map(([k,c,d])=>{const v=S.st[k];return `<div class="st${v<25?' low':''}" title="${d}"><span class="k">${c}</span><span class="bar"><i style="width:${v}%"></i></span><span class="v">${v}</span></div>`}).join('');
   const kids=liveKids(S).length;
   const purse=[`銭 <b>${S.kan}</b>貫文<span class="yen">（${yenStr(S.kan)}）</span>`];
@@ -3974,7 +5141,8 @@ function entHTML(n,showS,live,seen){
   const t=gl(yenText(n.t),seen),pk=n.pick?gl(yenText(n.pick),seen,true):null,rs=n.pick?gl(yenText(n.res),seen):null;
   const res=n.pick?`<span class="res"><span class="pick">「${pk.html}」</span> ${rs.html}</span>`:'';
   const notes=[...t.notes,...(pk?pk.notes:[]),...(rs?rs.notes:[])].map(noteHTML).join('');
-  return `<p class="${cl}">${ss}${uw}${t.html}${res}${chips(n.d)}${notes}</p>`;
+  const ji=n.ji?`<span class="jj"><b>${esc(n.jk||'')}のお国事情</b>${gl(n.ji,null).html}</span>`:'';
+  return `<p class="${cl}">${ss}${uw}${t.html}${res}${chips(n.d)}${notes}${ji}</p>`;
 }
 function yrHead(Y){const e=eraOf(Y.y);return `<div class="y">${e.name}${e.num}年<small>${Y.y}年<br>${Y.age}歳</small></div>`}
 function yearHTML(Y,seen){
@@ -4066,6 +5234,7 @@ function showEnd(){
   rows.push(['死因',S.cause]);
   if(S.f.wars)rows.push(['戦',`${S.f.wars}度出陣`+(S.f.kubiT?`・討ち取った首${S.f.kubiT}`:'')+(S.f.kanjo?`・感状${S.f.kanjo}通`:'')]);
   if(S.koku>0)rows.push(['知行',S.koku+'石']);
+  if(S.f.tonos&&S.f.tonos.length)rows.push(['仕えた殿',S.f.tonos.join('・')]);
   rows.push(['蓄え',`${S.kan}貫文（${yenStr(S.kan)}）`],['家族',(S.sp?(S.sp.alive?'連れ合いあり':'連れ合いに先立たれた'):S.f.rien?'離縁':'連れ合いなし')+`・子${kids}人`+(kids?`（存命${alive}人）`:'')],['いちばんの取り柄',`${best[2]}（${best[1]} ${S.st[best[0]]}）`]);
   $('sum').innerHTML=rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('');
   $('major').innerHTML=S.major.length?S.major.slice(0,16).map(m=>`<li><b>${m.age}歳</b>　${gl(m.t,null,true).html}</li>`).join(''):'<li>大きな出来事のない、短い一生だった。</li>';
