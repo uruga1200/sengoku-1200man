@@ -628,7 +628,7 @@ function push(t,k,e,pk,res){
   if(pk){en.pick=pk;en.res=res||''}
   if(e&&e.px)en.px=typeof e.px==='function'?e.px(S):e.px;
   /* お国事情：その国ならではの出来事に、なぜ起きるのかを添える（同じ出来事では一度だけ） */
-  if(e&&e.ji&&e.id){const u=S.jis||(S.jis={});if(!u[e.id]){u[e.id]=1;en.ji=typeof e.ji==='function'?e.ji(S):e.ji;en.jk=kuni(S)}}
+  if(e&&e.ji&&e.id){const u=S.jis||(S.jis={});if(!u[e.id]){u[e.id]=1;en.ji=typeof e.ji==='function'?e.ji(S):e.ji;en.jk=e.jl||(kuni(S)+'のお国事情')}}
   S._d={};S.cur.ents.push(en);
   if(e&&e.mj){const m=typeof e.mj==='function'?e.mj(S,pk):e.mj;if(m)mj(m)}
   UI.ent(en);
@@ -1459,6 +1459,8 @@ const LAST_MO=S=>pick(['ちゃんと食べるんだよ','あんたが生まれ�
 /* ===== 主人公の心の声（大きな出来事のあとに一行） =====
    mj() で「大きな出来事」が記録されたら、その言葉に合う心の声を選ぶ。合戦のあとは結果で選ぶ */
 const OMOI=[
+ [/(地震|津波)を生き延びる/,['（生きているだけで、ありがたい。）','（地面が揺れるたびに、あの日のことを思い出す。）']],
+ [/飢饉を生き延びる/,['（米一粒が、こんなにありがたいとは。）','（あの年に死んだ者たちの顔が、ときどき夢に出る。）']],
  [/殿の代替わり/,['（新しい殿の下で、自分はどうなるのだろう。）','（先代の殿の声が、まだ耳に残っている。）']],
  [/拝領/,['（この品は、家の宝として子に伝えよう。）','（殿は、ちゃんと見ていてくださった。）']],
  [/一字を賜り/,['（殿の名の一字を、この身に背負うのだ。）']],
@@ -3434,6 +3436,105 @@ for(const [id,yr] of [['cz_st_araki',1578],['cz_ak_kaieki',1619],['cz_mt_tsunami
   const i=EV.findIndex(e=>e.id===id);if(i<0)continue;
   const e=EV.splice(i,1)[0];e.yr=yr;HIST.push(e);
 }
+/* ===== 災難：地震・飢饉・喧嘩（命を落とすこともある） ===== */
+const dropHist=id=>{const i=HIST.findIndex(h=>h.id===id);if(i>=0)HIST.splice(i,1)};
+['meio_jishin','tensho_jishin','fushimi','kanei_kikin'].forEach(dropHist);
+
+/* --- 地震：揺れた瞬間にどう動くかで、生死が分かれる。幼い子は大人に抱えられて逃げる --- */
+function jishinEv(o){
+  const r=o.risk||1,aft=S=>typeof o.after==='function'?o.after(S):o.after;
+  const live=(S,d,txt)=>{ad(S,d);if(adult(S))mj(`${o.nm}を生き延びる`);return txt+aft(S)};
+  const dead=(S,txt)=>{die(S,o.nm);S.f.sudden=1;return txt};
+  return {id:o.id,yr:o.yr,s:o.s,k:'big',jl:'地震の記録',ji:o.ji,
+   c:S=>inR(S,...o.regs)&&S.age>=3&&!wander(S),
+   t:S=>{if(S.age<12){if(chance(.04*r))return dead(S,o.t+'逃げ遅れ、崩れた家の下敷きになった。');ad(S,{kok:-6,tai:-2});return o.t+`${S.mo.alive?'母':'大人'}に抱えられて、外へ逃げ出した。`+aft(S)}
+     return o.t+'どうする。'},
+   ch:[['すぐに外へ飛び出す',S=>{if(chance(.03*r))return dead(S,'戸口を出たところで、軒が崩れ落ちてきた。');return live(S,{kan:-Math.round(S.kan*.25),kok:-6},'転がるように外へ出た。振り返ると、家が大きく傾いていた。')},null,'たいてい助かる。家は傷む'],
+       ['家族をかばって、柱の陰に伏せる',S=>{if(chance(.06*r))return dead(S,'家族の上に覆いかぶさった。落ちてきた梁が、背中を打った。家族は皆、助かった。');return live(S,{kan:-Math.round(S.kan*.25),kok:-4,en:4},'家族を抱えて伏せた。揺れが収まるまで、誰も声を出さなかった。皆、無事だった。')},S=>married(S)||liveKids(S).length>0,'少し危ないが、家族を守れる'],
+       ['銭箱と米俵を持ち出そうとする',S=>{if(chance(.15*r))return dead(S,'米俵に手をかけたところで、屋根が落ちてきた。');return live(S,{kan:-Math.round(S.kan*.05),kok:-6},'銭箱と米俵を抱えて飛び出した。そのすぐ後に、家が崩れた。')},null,'一割五分ほどで命を落とす。財は守れる']]};
+}
+HIST.push(
+jishinEv({id:'meio_jishin',yr:1498,s:'秋',regs:['suruga','mikawa','owari'],nm:'明応の大地震と津波',t:'秋のある日、大地が激しく揺れた。立っていられない。',
+  after:S=>S.reg==='owari'?'伊勢の海沿いの村々は、大津波にのまれたという。':'海沿いの村は、大津波で跡形もなくなったという。',
+  ji:'明応七年（1498年）、東海沖を震源とする巨大な地震が起き、駿河から紀伊にかけての海沿いを大津波が襲った。遠江の浜名湖は、このとき海とつながって、今のような入り江になったといわれる。'}),
+jishinEv({id:'eisho_jishin',yr:1510,s:'秋',regs:['settsu','izumi','yamashiro'],nm:'永正の大地震',t:'秋、大地が激しく揺れた。',
+  after:'摂津の四天王寺では、石の鳥居や金堂の本尊まで大きく壊れたという。',
+  ji:'永正七年（1510年）、摂津・河内を大きな地震が襲った。河内の藤井寺などが潰れ、摂津の四天王寺では石の鳥居や金堂の本尊が大きく壊れた。大坂でも、潰れた家の下敷きになって死んだ者が出たと記録されている。'}),
+jishinEv({id:'tensho_jishin',yr:1586,s:'冬',regs:['owari','mino','omi'],nm:'天正の大地震',t:'冬の夜、大地が激しく揺れた。',
+  after:S=>S.reg==='omi'?'長浜の城も崩れ、城主・山内一豊さまの幼い姫が亡くなったという。':'美濃の大垣の城も崩れて焼けたという。',
+  ji:'天正十三年十一月（1586年1月）、中部から近畿にかけて大地震が起きた。近江の長浜城は崩れて城主・山内一豊の幼い娘が亡くなり、美濃の大垣城は崩れて焼け、飛騨の帰雲城は山崩れで城ごと埋まったと伝わる。'}),
+jishinEv({id:'fushimi',yr:1596,s:'秋',regs:['yamashiro','settsu','izumi'],nm:'慶長伏見の大地震',t:'夜中、大地が激しく揺れた。',
+  after:S=>S.reg==='yamashiro'?'伏見の城の天守が崩れ、多くの人が下敷きになったという。':'堺や兵庫の町でも、家が数多く倒れたという。',
+  ji:'慶長元年（1596年）、京・伏見から大坂・堺・兵庫にかけて大地震が起きた。完成したばかりの伏見城の天守が崩れて城内で多くの死者が出て、京の方広寺の大仏も壊れた。'}),
+jishinEv({id:'odawara_jishin',yr:1633,s:'春',regs:['sagami'],nm:'寛永の小田原地震',t:'春先、大地が激しく揺れた。',
+  after:'小田原の城の石垣が崩れ、城下では多くの家が倒れたという。',
+  ji:'寛永十年（1633年）、相模の西部を大地震が襲い、小田原城の石垣や城下の家々が崩れて、多くの死者が出た。相模はこの後も、たびたび大地震に見舞われることになる。'}),
+jishinEv({id:'kanbun_jishin',yr:1662,s:'夏',regs:['omi','yamashiro'],nm:'寛文の大地震',t:'初夏、大地が激しく揺れた。',
+  after:'京でも、家や寺が数多く倒れたという。',
+  ji:'寛文二年（1662年）、近江と若狭を中心に大地震が起き、京・伏見から若狭の小浜まで大きな被害が出た。死者は七百〜九百人、倒れた家は四千軒を超えたとされる。'}),
+jishinEv({id:'takada_jishin',yr:1666,s:'冬',regs:['echigo'],nm:'越後高田の大地震',risk:1.4,t:'雪が軒より高く積もった冬、大地が激しく揺れた。',
+  after:'高田の城下では、家々が潰れたうえに火が出た。逃げ道は、雪の壁にふさがれていたという。',
+  ji:'寛文五年（1666年）、越後の高田を大地震が襲った。四メートルを超える大雪の中で家々が潰れ、火も出て、逃げようとした人々は雪の壁に行く手を阻まれた。死者は千五百人にのぼったと伝わる。'})
+);
+
+/* --- 飢饉：体が弱っている者、年寄り、幼い子から倒れていく --- */
+function kikinEv(o){
+  const sev=o.sev||1;
+  const rich=S=>S.kan>=40||(S.job==='samurai'&&S.koku>=300)||S.f.daimyo||S.f.egoshu;
+  const live=(S,d,txt)=>{ad(S,d);if(adult(S))mj(`${o.nm}を生き延びる`);return txt};
+  const dead=(S,txt,c)=>{die(S,c||`${o.nm}で飢え死に`);return txt};
+  return {id:o.id,yr:o.yr,s:o.s,k:'big',jl:'飢饉の記録',ji:o.ji,
+   c:S=>S.age>=3&&(!o.c||o.c(S)),
+   t:S=>{
+     if(rich(S)){ad(S,{kan:-Math.min(S.kan,Math.round(S.kan*.2)+3),tai:-2});return o.t+'米の値が何倍にも跳ね上がった。蔵の蓄えを少しずつ食べて、どうにかしのいだ。'}
+     if(S.age<12){if(chance(.07*sev))return dead(S,o.t+'日に日に痩せ細り、とうとう起き上がれなくなった。');ad(S,{tai:-8,kok:-4});return o.t+'親が自分の分まで食べさせてくれた。'}
+     return o.t+'どうしのぐか。'},
+   ch:[['山に入って、食べられるものを探す',S=>{const p=(.03+(S.st.tai<35?.07:0)+(S.age>=60?.06:0))*sev;
+         if(chance(p))return dead(S,'葛の根もわらびも、とうに掘り尽くされていた。山から戻る力も残っていなかった。');
+         return live(S,{tai:-8,kok:-6},'わらびの根や木の皮を叩いて粉にし、薄い粥に混ぜてしのいだ。')},S=>!rich(S)&&S.age>=12,S=>`体と年しだい。今の体${S.st.tai}${S.st.tai<35?'では危ない':''}`],
+       ['銭をはたいて米を買う',S=>{const c=Math.max(3,Math.round(S.kan*.5));ad(S,{kan:-c});return live(S,{tai:-2,kok:-3},`高値の米を、銭${c}貫文で買った。蓄えは消えたが、家の者は生き延びた。`)},S=>!rich(S)&&S.age>=12&&S.kan>=3,'銭が大きく減るが、まず助かる'],
+       ['寺の施しの粥に並ぶ',S=>{if(chance(.05*sev))return dead(S,'粥の列で、はやり病をもらった。','飢饉のさなかの疫病');
+         return live(S,{tai:-4,en:2,kok:-3},'寺の門前には、痩せこけた人々が長い列をつくっていた。一椀の粥で、命をつないだ。')},S=>!rich(S)&&S.age>=12,'はやり病をもらうこともある']]};
+}
+HIST.push(
+kikinEv({id:'tenbun_kikin',yr:1540,s:'春',nm:'天文の大飢饉',t:'去年の秋から米が尽き、春になっても食べるものがない。村には、はやり病まで広がっている。',
+  ji:'天文九年（1540年）ごろ、長雨や洪水、冷夏が重なって全国的な大飢饉となり、疫病も広がった。後奈良天皇は民の苦しみを憂えて、自ら般若心経を書き写し、諸国の寺社に納めた。'}),
+kikinEv({id:'kanei_kikin',yr:1642,s:'夏',nm:'寛永の大飢饉',t:'冷夏と長雨で、去年も今年も米が穫れない。村では、草の根まで食べ尽くした。',c:S=>S.cls==='hyak'||S.age>=60||S.kan<10,
+  ji:'寛永十七年から二十年（1640〜1643年）にかけて、冷夏・長雨・日照り・虫害が重なり、全国で多くの餓死者が出た（寛永の大飢饉）。幕府はこれをきっかけに百姓の暮らしを立て直す政策に乗り出し、田畑の売り買いを禁じた（田畑永代売買禁止令、1643年）。'}),
+kikinEv({id:'enpo_kikin',yr:1675,s:'夏',nm:'延宝の飢饉',sev:.8,t:'去年の大水と冷えで、米がまるで足りない。米の値が何倍にもなった。',
+  ji:'延宝二年から三年（1674〜1675年）にかけて、大雨や冷害で各地が凶作となり、飢饉が広がった（延宝の飢饉）。江戸などでは、飢えた人々に粥がふるまわれた。'})
+);
+
+/* --- 喧嘩・無礼討ち・辻斬り --- */
+const kenkaDie=(S,txt,c)=>{die(S,c||'喧嘩の末に斬り殺され');S.f.sudden=1;return txt};
+EV.push(
+{id:'kz_kiriai',c:S=>adult(S)&&S.sex==='m'&&!isMonk(S)&&!isKuge(S)&&S.age<=60,w:.35,cd:12,k:'big',
+ t:S=>pku(['酒の席の口論がこじれ、相手の男が刀を抜いた。','往来で肩が触れた触れないで言い合いになり、相手が刀の柄に手をかけた。','博打の勝ち負けで揉め、相手の男が脇差を抜いた。']),
+ ch:[['刀を抜いて応じる',S=>{if(chance(.45+S.st.bu/220)){ad(S,{mei:3,bu:2});
+        if(S.y>=1550&&chance(.35)){if(S.job==='samurai'&&hasLord(S)){const l=Math.round(S.koku*.3);ad(S,{koku:-l,mei:-4,ko:-6});return `相手の腕を斬り払い、刀を落とさせた。だが私闘を咎められ、知行を${l}石削られた。`}
+          ad(S,{kan:-Math.min(S.kan,5),mei:-3});return '相手の腕を斬り払い、刀を落とさせた。だが「喧嘩両成敗」で、こちらも罰銭を取られた。'}
+        return '相手の腕を斬り払い、刀を落とさせた。相手は捨て台詞を残して逃げていった。'}
+      if(chance(.45))return kenkaDie(S,'斬り結んだ末、相手の刀が先に届いた。');
+      ad(S,{tai:-15,mei:-2});return '肩口を斬られ、血だらけで倒れた。命だけは助かった。'},S=>S.y<1588||isWar(S)||isMerch(S),S=>`武しだい（今の武${S.st.bu}）。負ければ半分近くで命を落とす`],
+     ['素手で取り押さえようとする',S=>{if(chance(.35+S.st.bu/250)){ad(S,{mei:5,en:2});return '刀を持つ腕にしがみつき、周りの者と一緒に取り押さえた。'}
+      if(chance(.25))return kenkaDie(S,'飛びかかったところを、真正面から斬られた。');
+      ad(S,{tai:-10});return '腕を斬られたが、どうにか取り押さえた。'},null,S=>`武しだい（今の武${S.st.bu}）。しくじると命を落とすこともある`],
+     ['平謝りして引き下がる',S=>{if(chance(.04))return kenkaDie(S,'頭を下げたところを、背中から斬りつけられた。');ad(S,{mei:-3,kok:-4});return '土下座して詫びた。相手は唾を吐いて去っていった。'},null,'まず助かるが、名が下がる'],
+     ['一目散に逃げる',S=>{if(chance(.12)){ad(S,{tai:-8});return '背中を浅く斬られたが、人混みに紛れて逃げ切った。'}ad(S,{mei:-2});return '人混みに紛れて逃げ切った。'},null,'たいてい逃げ切れる。名が少し下がる']]},
+{id:'kz_burei',c:S=>adult(S)&&(S.cls==='hyak'||S.cls==='cho')&&!isBushi(S)&&!isMonk(S)&&!wander(S)&&S.y>=1560,w:.25,once:1,k:'big',
+ t:S=>`往来で、${S.y>=1635?'大名行列の前を、うっかり横切ってしまった':'酔った侍の刀の鞘に、うっかり体が触れてしまった'}。「無礼者」と、侍が刀の柄に手をかけた。`,
+ ch:[['地面に額をこすりつけて詫びる',S=>{if(chance(.05))return kenkaDie(S,'詫びの言葉が終わる前に、刀が振り下ろされた。','侍に無礼討ちにされ');ad(S,{kok:-5,mei:-1});return '額から血がにじむほど、地面にこすりつけた。侍は舌打ちをして去っていった。'},null,'まず助かる'],
+     ['「わざとではない」と言い返す',S=>{if(chance(.35))return kenkaDie(S,'言い終わらないうちに、刀が抜かれていた。','侍に無礼討ちにされ');ad(S,{tai:-6,mei:1});return '鞘で打ち据えられ、地面に転がった。命までは取られなかった。'},null,'三割五分ほどで斬り捨てられる'],
+     ['走って逃げる',S=>{if(chance(.1))return kenkaDie(S,'背中から斬りつけられた。','侍に無礼討ちにされ');if(chance(.3)){ad(S,{tai:-8});return '背中を浅く斬られたが、路地に逃げ込んだ。'}return '路地から路地へ逃げ、どうにか撒いた。'},null,'一割ほどで斬られて死ぬ']],
+ jl:'この時代のならい',ji:'武士は、町人や百姓から無礼を受けたとき、その場で斬り捨てることが許されていた（無礼討ち・切捨御免）。江戸時代には、本当に無礼があったのかを後で厳しく調べられ、認められなければ武士の側も罰せられた。'},
+{id:'kz_tsujigiri',c:S=>adult(S)&&!wander(S)&&!isMonk(S)&&S.y>=1590&&S.y<=1680&&(inR(S,'yamashiro','settsu','izumi','sagami')||rCho(S)),w:.3,once:1,k:'big',
+ t:'夜道を急いでいると、物陰から覆面の侍が現れ、無言で刀を抜いた。辻斬りだ。',
+ ch:[['刀を抜いて立ち向かう',S=>{if(chance(.45+S.st.bu/220)){ad(S,{mei:4,bu:2});return '斬りかかってきた刃を受け流し、逆に相手の肩を斬った。相手は闇に消えた。'}
+       if(chance(.5))return kenkaDie(S,'刃を合わせる間もなく、斬り伏せられた。','辻斬りに斬られ');ad(S,{tai:-12});return '腕を斬られたが、相手もこちらの抵抗に驚いて逃げていった。'},S=>isWar(S),S=>`武しだい（今の武${S.st.bu}）。負ければ半分ほどで命を落とす`],
+     ['銭を投げつけて逃げる',S=>{ad(S,{kan:-Math.min(S.kan,3)});if(chance(.12))return kenkaDie(S,'相手は銭には目もくれず、追ってきた。','辻斬りに斬られ');return '銭が散らばった隙に、全力で走った。'},null,'銭を失うが、たいてい助かる'],
+     ['大声で人を呼ぶ',S=>{if(chance(.2))return kenkaDie(S,'叫び声を上げた瞬間、斬られた。','辻斬りに斬られ');ad(S,{en:2});return '近くの番屋から人が飛び出してきた。辻斬りは闇に消えた。'},null,'二割ほどで斬られる']],
+ jl:'この時代のならい',ji:'戦国の世が終わったばかりの江戸時代のはじめごろ、腕試しや刀の切れ味を試すために、夜道で通りがかりの人を斬る「辻斬り」がたびたび起き、幕府は厳しく取り締まった。'}
+);
 /* ===== 史実の合戦（開戦→乱戦→決着の流れで戦う） ===== */
 const bwl=S=>bw(S)&&hasLord(S);
 const hw=(nm,o)=>Object.assign({nm,ty:'field',big:1},o);
@@ -4815,7 +4916,17 @@ const GL={
 '郡山八幡神社':['こおりやまはちまんじんじゃ',''],
 '座主':['ざす','寺や社をとりしきる僧。'],
 '中尊寺金色堂':['ちゅうそんじこんじきどう',''],
-'藤原清衡':['ふじわらのきよひら','']
+'藤原清衡':['ふじわらのきよひら',''],
+'無礼討ち':['ぶれいうち','武士が、無礼を働いた町人や百姓をその場で斬ること。'],
+'切捨御免':['きりすてごめん','無礼討ちが許されていたこと。'],
+'辻斬り':['つじぎり','夜道などで、通りがかりの人を斬ること。'],
+'般若心経':['はんにゃしんぎょう','よく読まれる短いお経。'],
+'帰雲城':['かえりくもじょう',''],
+'方広寺':['ほうこうじ',''],
+'山内一豊':['やまうちかずとよ',''],
+'番屋':['ばんや','町の見張りの番人が詰める小屋。'],
+'田畑永代売買禁止令':['でんぱたえいたいばいばいきんしれい','百姓が田畑を売り買いすることを禁じた法（1643年）。'],
+'罰銭':['ばっせん','罰として取られる銭。']
 };
 const GLK=Object.keys(GL).sort((a,b)=>b.length-a.length);
 const GLRE=new RegExp('('+GLK.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(（[^（）]{1,14}）)?','g');
@@ -5155,7 +5266,7 @@ function entHTML(n,showS,live,seen){
   const t=gl(yenText(n.t),seen),pk=n.pick?gl(yenText(n.pick),seen,true):null,rs=n.pick?gl(yenText(n.res),seen):null;
   const res=n.pick?`<span class="res"><span class="pick">「${pk.html}」</span> ${rs.html}</span>`:'';
   const notes=[...t.notes,...(pk?pk.notes:[]),...(rs?rs.notes:[])].map(noteHTML).join('');
-  const ji=n.ji?`<span class="jj"><b>${esc(n.jk||'')}のお国事情</b>${gl(n.ji,null).html}</span>`:'';
+  const ji=n.ji?`<span class="jj"><b>${esc(n.jk||'')}</b>${gl(n.ji,null).html}</span>`:'';
   return `<p class="${cl}">${ss}${uw}${t.html}${res}${chips(n.d)}${notes}${ji}</p>`;
 }
 function yrHead(Y){const e=eraOf(Y.y);return `<div class="y">${e.name}${e.num}年<small>${Y.y}年<br>${Y.age}歳</small></div>`}
